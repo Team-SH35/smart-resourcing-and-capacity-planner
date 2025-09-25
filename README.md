@@ -1,5 +1,4 @@
-# sh35-main
-
+# 2025 Team SH35 Project
 
 
 ## Getting started

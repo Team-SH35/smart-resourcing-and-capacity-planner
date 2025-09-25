@@ -1,6 +1,3 @@
-<<<<<<< HEAD
-# Team SH35 Main Project - Team Project 3 Course 2025-2026
-=======
 # 2025 Team SH35 Project
 
 

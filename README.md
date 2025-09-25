@@ -1,4 +1,4 @@
-# 2025 Team SH35 Project
+# 2025 Team SH35 Project 2025
 
 
 ## Getting started

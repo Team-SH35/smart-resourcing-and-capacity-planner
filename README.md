@@ -1,7 +1,6 @@
 
 # 2025 Team SH35 Project
 
-this is a test
 
 ## Getting started
 

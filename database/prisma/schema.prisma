@@ -1,0 +1,84 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Workspace {
+  workspaceID String @id @unique @db.VarChar(40)
+
+  // Reltaionship properties
+  employees Employee[]
+  jobs Job[]
+  forecastEntries ForcastEntry[]
+}
+
+model Employee {
+  employeeID    Int      @id @unique @default(autoincrement())
+  name          String   @db.VarChar(50)
+  specialism    String[]
+  excludeFromAI Boolean
+
+  // Workspace relation
+  workSpace   Workspace @relation(fields: [workspaceID], references: [workspaceID])
+  workspaceID String
+
+  // forecast entry relation
+  forecastEntries ForcastEntry[]
+}
+
+model Job {
+  jobCode        String    @id @unique @db.VarChar(25)
+  description    String    @db.VarChar(255)
+  timeBudget     Int? // TODO figure out better data type for this
+  monetaryBudget Decimal?  @db.Money
+  startDate      DateTime
+  finishDate     DateTime?
+
+  workspace   Workspace @relation(fields: [workspaceID], references: [workspaceID])
+  workspaceID String
+
+  forecastEntries ForcastEntry[]
+}
+
+model ForcastEntry {
+  employeeID Int
+  jobCode    String
+
+  cusomter    String
+  description String
+  cost        Decimal? @db.Money
+  days        Float
+  month       Month
+  workspaceID String
+
+  employeeRelation Employee @relation(fields: [employeeID], references: [employeeID])
+  jobRelation      Job      @relation(fields: [jobCode], references: [jobCode])
+  workspaceRelation Workspace @relation(fields: [workspaceID], references: [workspaceID])
+
+  @@id([employeeID, jobCode]) // Define as compound primary key
+}
+
+enum Month {
+  JANUARY
+  FEBUARY
+  MARCH
+  APRIL
+  MAY
+  JUNE
+  JULY
+  AUGUST
+  SEPTEMBER
+  OCTOBER
+  NOVEMBER
+  DECEMBER
+}

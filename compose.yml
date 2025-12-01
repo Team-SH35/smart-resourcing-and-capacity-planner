@@ -6,7 +6,8 @@ services:
     container_name: backend
     ports:
       - "4000:4000"
-
+    networks:
+      - backend-net
   frontend:
     build:
       context: ./frontend
@@ -14,3 +15,5 @@ services:
     container_name: frontend
     ports:
       - "5173:5173"
+    networks:
+      - hr_management-net

@@ -12,7 +12,7 @@ services:
     ports:
       - "5432:5432"
     networks:
-      - backend-net
+      - hr_management-net
 
   migrations:
     build: .
@@ -23,10 +23,10 @@ services:
     command: >
       sh -c "npx prisma migrate dev && npx prisma generate"
     networks:
-      - backend-net
+      - hr_management-net
 
 networks:
-  backend-net:
+  hr_management-net:
 
 volumes:
   db_data:

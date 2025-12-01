@@ -9,8 +9,8 @@
 
 ### Running the Backend and  Frontend
 1. In terminal navigate project's root directory 
-2. Run the command `docker compose up`
+2. Run the command `docker compose up --build`
 
 ### Running the database 
 1. Navigate to the `database` directory in terminal
-2. Run the command `docker compose up`
+2. Run the command `docker compose up --build`

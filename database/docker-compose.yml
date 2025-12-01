@@ -21,7 +21,7 @@ services:
     environment:
       DATABASE_URL: "postgresql://postgres:postgres@db:5432/appdb?schema=public"
     command: >
-      sh -c "npx prisma migrate deploy && npx prisma generate"
+      sh -c "npx prisma migrate dev && npx prisma generate"
     networks:
       - backend-net
 

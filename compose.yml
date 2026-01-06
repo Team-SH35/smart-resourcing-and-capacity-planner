@@ -4,6 +4,8 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: backend
+    networks:
+      - hr-forecasting
     ports:
       - "4000:4000"
 
@@ -14,3 +16,14 @@ services:
     container_name: frontend
     ports:
       - "5173:5173"
+
+  database:
+    extends:
+      file: ./database/docker-compose.postgres.yml
+      service: postgres
+
+networks:
+  hr-forecasting:
+
+volumes:
+  postgres_data:

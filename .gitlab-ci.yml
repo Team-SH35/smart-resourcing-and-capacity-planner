@@ -1,0 +1,6 @@
+build_image:
+    image: docker:24.0.5-cli
+    services:
+        - docker:24.0.5-dind
+    script:
+        - docker compose up

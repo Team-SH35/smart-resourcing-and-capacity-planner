@@ -4,8 +4,8 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: backend
-    networks:
-      - hr-forecasting
+    volumes:
+      - sqlite-db:/database
     ports:
       - "4000:4000"
 
@@ -18,12 +18,9 @@ services:
       - "5173:5173"
 
   database:
-    extends:
-      file: ./database/docker-compose.postgres.yml
-      service: postgres
-
-networks:
-  hr-forecasting:
-
+    build: 
+      context: ./database
+    volumes:
+      - sqlite-db:/database
 volumes:
-  postgres_data:
+  sqlite-db:

@@ -27,6 +27,7 @@ cur.execute("""CREATE TABLE Job (
                Description VARCHAR(1000) NOT NULL,
                BusinessUnit VARCHAR(20) NOT NULL,
                TimeBudget INT,
+               CurrencySymbol VARCHAR(1),
                MonetaryBudget DECIMAL,
                StartDate DATETIME NOT NULL,
                FinishDate DATETIME,

@@ -14,9 +14,9 @@ cur.execute("""CREATE TABLE EmployeeSpecialisms (
             );""")
 
 cur.execute("""CREATE TABLE Employee (
-               EmployeeID INTEGER PRIMARY KEY AUTOINCREMENT,  -- Fixed naming from Employee to EmployeeID
+               EmployeeID INTEGER PRIMARY KEY AUTOINCREMENT,
                Name VARCHAR(40) NOT NULL,
-               Specialism INT REFERENCES EmployeeSpecialisms(Id) ON DELETE CASCADE,  -- Specialism should be INT to match EmployeeSpecialisms(Id)
+               Specialism INT REFERENCES EmployeeSpecialisms(Id) ON DELETE CASCADE,  
                Exclude_from_AI BOOL NOT NULL,
                workspaceID INT NOT NULL,
                FOREIGN KEY (workspaceID) REFERENCES Workspace(workspaceID)
@@ -42,7 +42,7 @@ cur.execute("""CREATE TABLE ForecastEntry (
                Month VARCHAR(10) NOT NULL,
                workspaceID INT NOT NULL,
                PRIMARY KEY (EmployeeID, JobCode),
-               FOREIGN KEY (EmployeeID) REFERENCES Employee(EmployeeID),  -- Fixed typo here
+               FOREIGN KEY (EmployeeID) REFERENCES Employee(EmployeeID),
                FOREIGN KEY (JobCode) REFERENCES Job(JobCode),
                FOREIGN KEY (workspaceID) REFERENCES Workspace(workspaceID)
                );""")

@@ -1,12 +1,4 @@
-FROM node:20-alpine
-
-WORKDIR /app
-
-COPY package*.json ./
-RUN npm install
-
+FROM python:3.10-slim
+WORKDIR /database
 COPY . .
-
-RUN npx prisma generate
-
-CMD ["sleep", "infinity"]
+RUN python initdb.py

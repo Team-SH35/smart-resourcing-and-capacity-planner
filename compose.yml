@@ -4,6 +4,8 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: backend
+    volumes:
+      - sqlite-db:/database
     ports:
       - "4000:4000"
 
@@ -14,3 +16,11 @@ services:
     container_name: frontend
     ports:
       - "5173:5173"
+
+  database:
+    build: 
+      context: ./database
+    volumes:
+      - sqlite-db:/database
+volumes:
+  sqlite-db:

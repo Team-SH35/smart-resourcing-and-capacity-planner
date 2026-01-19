@@ -1,5 +1,5 @@
 import Excel from 'exceljs';
-import parsedExcelInfo from './db/parsedExcelInfo';
+import parsedExcelInfo from './parsedExcelInfo';
 
 
 const NAME_INDEX = 1;

@@ -1,4 +1,5 @@
 import Excel from 'exceljs';
+import parsedExcelInfo from './db/parsedExcelInfo';
 
 
 const NAME_INDEX = 1;
@@ -8,6 +9,7 @@ const UNKNOWN_FIELD_INDEX = 7;
 const JOB_CODE_INDEX = 8;
 const DESCRIPTION_INDEX = 9;
 const RESOURCE_ALLOCATION_RANGE = [10,16];
+
 
 
 export default async function excelToJSON(excelFileBase64: string) {
@@ -22,16 +24,16 @@ export default async function excelToJSON(excelFileBase64: string) {
     let row = worksheet.getRow(20);
 
     //TODO: get proper stop condition
-    let parsedExcelInfo = [];
+    let parsedExcelInfo: parsedExcelInfo[] = [];
     while (row.getCell(1).value != '') {
 
         parsedExcelInfo.push({
-            name                : row.getCell(NAME_INDEX).value,
-            resource_bu         : row.getCell(RESOURCE_BU_INDEX).value,
-            customer            : row.getCell(CUSTOMER_INDEX).value,
-            unknown             : row.getCell(UNKNOWN_FIELD_INDEX).value,
-            job_code            : row.getCell(JOB_CODE_INDEX).value,
-            description         : row.getCell(DESCRIPTION_INDEX).value,
+            name                : row.getCell(NAME_INDEX).value?.toString(),
+            resource_bu         : row.getCell(RESOURCE_BU_INDEX).value?.toString(),
+            customer            : row.getCell(CUSTOMER_INDEX).value?.toString(),
+            unknown             : row.getCell(UNKNOWN_FIELD_INDEX).value?.toString,
+            job_code            : row.getCell(JOB_CODE_INDEX).value?.toString(),
+            description         : row.getCell(DESCRIPTION_INDEX).value?.toString(),
             resource_allocation : getResourceAllocationArray(row)
         });
 
@@ -42,11 +44,11 @@ export default async function excelToJSON(excelFileBase64: string) {
     return parsedExcelInfo;
 }
 
-function getResourceAllocationArray(row: Excel.Row) {
+function getResourceAllocationArray(row: Excel.Row) : (string | undefined)[] {
     const [start, end] = RESOURCE_ALLOCATION_RANGE;
     const allocation = [];
     for (let col = start; col <= end; col++) {
-        allocation.push(row.getCell(col).value);
+        allocation.push(row.getCell(col).value?.toString());
     }
     return allocation;
 }

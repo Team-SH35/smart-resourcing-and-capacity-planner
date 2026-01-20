@@ -16,7 +16,7 @@ backend:
 frontend:
   image: node:slim
   #Checks if the frontend builds
-  stage: Build
+  stage: build
   script:
     - cd frontend
     - npm ci

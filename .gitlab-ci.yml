@@ -1,18 +1,23 @@
+stages:
+  - build
+  - test
+
+
 backend:
-  #runs before each test
-  stages:
-    - Build
-  # Before script runs go to backend directory and 'clean installs'
-  before_script:
-    - cd backend
-    - npm ci
+  image: node:slim
   #Checks if the backend builds
-  Build:
-    stage: Build
+  stage: build
   script:
-    - npm run dev
+    - cd backend
+    - npm run
+    - npm ci
 
 
 frontend:
-  stages:
-   - Build
+  image: node:slim
+  #Checks if the frontend builds
+  stage: Build
+  script:
+    - cd frontend
+    - npm ci
+    - npm run

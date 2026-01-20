@@ -23,7 +23,7 @@ frontend:
     - npm run
 
 database:
-  image: python:3:10
+  image: python:3.10-slim
   stage: build
   script:
     - cd database

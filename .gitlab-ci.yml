@@ -1,6 +1,6 @@
 stages:
   - build
-  - test
+  - test #not implemented yet
 
 
 backend:
@@ -21,3 +21,10 @@ frontend:
     - cd frontend
     - npm ci
     - npm run
+
+database:
+  image: python:3:10
+  stage: build
+  script:
+    - cd database
+    - python initdb.py

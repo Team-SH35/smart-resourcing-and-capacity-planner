@@ -1,12 +1,12 @@
 import { Router } from "express";
-import { query } from "../db/pool";
+import { queryGet } from "../db/pool";
 
 const router = Router();
 
 router.get("/", async (_req, res) => {
   try {
     // Simple DB check
-    await query("SELECT 1");
+    await queryGet("SELECT 1 as ok");
     res.json({ status: "ok", db: "connected" });
   } catch (err) {
     console.error("Health check failed:", err);

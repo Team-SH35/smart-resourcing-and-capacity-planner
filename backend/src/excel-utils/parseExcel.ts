@@ -33,12 +33,14 @@ export default async function parseExcelInfo(excelFileStream: fs.ReadStream) : P
     await workbook.xlsx.read(excelFileStream);
     const worksheet = workbook.worksheets[0];
 
+    // Row 20 is where the first row of forecast data is
     let currentRow = 20;
-    let row = worksheet.getRow(20);
+    let row = worksheet.getRow(currentRow);
 
     let parsedExcelInfo: parsedExcelInfo[] = [];
     while (getCellString(row.getCell(2)) != "") {
 
+        // If at total then at end of current employee. Go to next line
         if (getCellString(row.getCell(2)).startsWith("TOTAL")) {
             row = worksheet.getRow(++currentRow);
             continue;
@@ -63,7 +65,7 @@ export default async function parseExcelInfo(excelFileStream: fs.ReadStream) : P
     return parsedExcelInfo;
 }
 
-// Returns an empty string if the value would be undefined
+// Returns an empty string if the cell value would be undefined
 function getCellString(cell: Excel.Cell) : string {
     let cellString: string|undefined = cell.value?.toString();
     return cellString === undefined ? "" : cellString;

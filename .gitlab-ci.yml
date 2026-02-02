@@ -1,20 +1,30 @@
-image: node:20
-
 stages:
   - build
+  - test #not implemented yet
+
 
 backend:
+  image: node:slim
+  #Checks if the backend builds
   stage: build
-  before_script:
-    - cd backend
-    - npm ci
   script:
-    - npm run build
+    - cd backend
+    - npm run
+    - npm ci
+
 
 frontend:
+  image: node:slim
+  #Checks if the frontend builds
   stage: build
-  before_script:
+  script:
     - cd frontend
     - npm ci
+    - npm run
+
+database:
+  image: python:3.10-slim
+  stage: build
   script:
-    - npm run build
+    - cd database
+    - python initdb.py

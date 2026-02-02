@@ -4,12 +4,11 @@ con = sqlite3.connect("hr.db")
 cur = con.cursor()
 
 cur.execute("""CREATE TABLE Workspace (
-               workspaceID INTEGER NOT NULL,
-               PRIMARY KEY (workspaceID)
+               workspaceID INTEGER PRIMARY KEY
             );""")
 
 cur.execute("""CREATE TABLE EmployeeSpecialisms (
-               Id INT PRIMARY KEY, 
+               Id INTEGER PRIMARY KEY AUTOINCREMENT, 
                Specialism VARCHAR(20)
             );""")
 
@@ -26,7 +25,7 @@ cur.execute("""CREATE TABLE Job (
                JobCode VARCHAR(20) PRIMARY KEY,
                Description VARCHAR(1000) NOT NULL,
                BusinessUnit VARCHAR(20) NOT NULL,
-               TimeBudget INT,
+               TimeBudget FLOAT,
                CurrencySymbol VARCHAR(1),
                MonetaryBudget DECIMAL,
                StartDate DATETIME NOT NULL,
@@ -36,7 +35,7 @@ cur.execute("""CREATE TABLE Job (
                );""")
 
 cur.execute("""CREATE TABLE ForecastEntry (
-               EmployeeID INT NOT NULL,
+               EmployeeID INTEGER NOT NULL,
                JobCode VARCHAR(20) NOT NULL,
                Cost DECIMAL,
                Days FLOAT NOT NULL,

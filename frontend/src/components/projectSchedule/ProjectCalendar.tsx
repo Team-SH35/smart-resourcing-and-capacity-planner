@@ -1,0 +1,145 @@
+import { useMemo, useState } from "react";
+import CalendarHeader from "./CalendarHeader";
+import CalendarRows from "./CalendarRows";
+import {
+  mapJobCodesToCalendar,
+  startOfDay,
+  startOfWeekMonday,
+  parseDateUTC,
+} from "./utils";
+import { jobCodes } from "../data/jobCodes";
+
+type CalendarView = "week" | "fortnight" | "month";
+
+interface Props {
+  view: CalendarView;
+  clientFilter: string;
+  activeOnly: boolean;
+  teamFilter: string[];
+}
+
+export default function ProjectCalendar({
+  view,
+  clientFilter,
+  activeOnly,
+  teamFilter,
+}: Props) {
+  const [currentDate, setCurrentDate] = useState(new Date());
+
+  const calendarStart =
+    view === "month"
+      ? startOfDay(
+          new Date(Date.UTC(currentDate.getFullYear(), currentDate.getMonth(), 1))
+        )
+      : startOfWeekMonday(currentDate);
+
+  const daysVisible =
+    view === "week"
+      ? 7
+      : view === "fortnight"
+      ? 14
+      : new Date(
+          Date.UTC(currentDate.getFullYear(), currentDate.getMonth() + 1, 0)
+        ).getUTCDate();
+
+  const days = Array.from({ length: daysVisible }, (_, i) => {
+    const d = new Date(calendarStart);
+    d.setUTCDate(calendarStart.getUTCDate() + i);
+    return d;
+  });
+
+  function goPrev() {
+    setCurrentDate(d => {
+      const next = new Date(d);
+
+      if (view === "week") next.setUTCDate(d.getUTCDate() - 7);
+      else if (view === "fortnight") next.setUTCDate(d.getUTCDate() - 14);
+      else next.setUTCMonth(d.getUTCMonth() - 1);
+
+      return next;
+    });
+  }
+
+  function goNext() {
+    setCurrentDate(d => {
+      const next = new Date(d);
+
+      if (view === "week") next.setUTCDate(d.getUTCDate() + 7);
+      else if (view === "fortnight") next.setUTCDate(d.getUTCDate() + 14);
+      else next.setUTCMonth(d.getUTCMonth() + 1);
+
+      return next;
+    });
+  }
+
+  function goToday() {
+    setCurrentDate(new Date());
+  }
+
+  const rows = useMemo(() => {
+    let mapped = mapJobCodesToCalendar(jobCodes);
+
+    const today = startOfDay(new Date());
+
+    if (teamFilter.length) {
+      mapped = mapped.filter(r => teamFilter.includes(r.team));
+    }
+
+    mapped = mapped.map(r => ({
+      ...r,
+      projects: r.projects.filter(p => {
+        if (
+          clientFilter &&
+          !p.client.toLowerCase().includes(clientFilter.toLowerCase())
+        )
+          return false;
+
+        if (activeOnly) {
+          const start = startOfDay(parseDateUTC(p.startDate));
+          const end = startOfDay(parseDateUTC(p.endDate));
+
+          if (start > today || end < today) return false;
+        }
+
+        return true;
+      }),
+    }));
+
+    return mapped;
+  }, [clientFilter, activeOnly, teamFilter]);
+
+  return (
+    <div className="bg-white border rounded-xl overflow-hidden">
+      {/* Calendar nav */}
+      <div className="flex items-center justify-between px-4 py-3 border-b">
+        <h2 className="font-semibold">
+          {calendarStart.toLocaleDateString("en-GB", {
+            month: "long",
+            year: "numeric",
+            timeZone: "UTC",
+          })}
+        </h2>
+
+        <div className="flex items-center gap-2">
+
+          <button onClick={goToday} className="text-slate-400 border rounded px-3 py-1">
+            Today
+          </button>
+          <button onClick={goPrev} className="border rounded px-3 py-1">
+            ←
+          </button>
+          <button onClick={goNext} className="border rounded px-3 py-1">
+            →
+          </button>
+        </div>
+      </div>
+
+      <CalendarHeader days={days} />
+      <CalendarRows
+        rows={rows}
+        calendarStart={calendarStart}
+        daysVisible={daysVisible}
+      />
+    </div>
+  );
+}

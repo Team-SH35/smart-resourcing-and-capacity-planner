@@ -1,7 +1,7 @@
 import Excel from 'exceljs';
 import fs from 'node:fs'
 
-export interface parsedExcelInfo {
+export interface parsedExcelRow {
     name                    : string, 
     resource_bu             : string, 
     customer                : string, 
@@ -27,7 +27,7 @@ const DESCRIPTION_INDEX         = 10;
 const RESOURCE_ALLOCATION_RANGE = [11,17];
 
 
-export default async function parseExcelInfo(excelFileStream: fs.ReadStream) : Promise<parsedExcelInfo[]> {
+export default async function parseExcelInfo(excelFileStream: fs.ReadStream) : Promise<parsedExcelRow[]> {
     
     const workbook = new Excel.Workbook();
     await workbook.xlsx.read(excelFileStream);
@@ -37,7 +37,7 @@ export default async function parseExcelInfo(excelFileStream: fs.ReadStream) : P
     let currentRow = 20;
     let row = worksheet.getRow(currentRow);
 
-    let parsedExcelInfo: parsedExcelInfo[] = [];
+    let parsedExcelInfo: parsedExcelRow[] = [];
     while (getCellString(row.getCell(2)) != "") {
 
         // If at total then at end of current employee. Go to next line

@@ -21,23 +21,28 @@ interface MonthAllocation {
     HYPO: number | null,
     work: number | null,
 }
-
-interface parsedExcelRow {
+ 
+interface ParsedExcelRows {
     name                    : string, 
-    resource_bu             : string, 
-    customer                : string, 
-    reply_entity            : string, 
-    bussiness_unit          : string,
-    job_origin              : string,
-    t_code                  : string,
     job_code                : string, 
-    description             : string, 
     resource_allocation     : (string)[]
+}
+
+interface job {
+    job_code      : string,
+    description   : string,
+    business_unit : string,
+    resource_bu   : string,
+    job_origin    : string,
+    reply_entity  : string,
+    customer      : string,
+    t_code        : string,
 }
 
 export interface ParsedExcelInfo {
     allocation_days : MonthAllocations
-    rows : parsedExcelRow[]
+    jobs            : job[],
+    rows            : ParsedExcelRows[]
 }
 
 
@@ -47,7 +52,7 @@ const CUSTOMER_INDEX            = 3;
 const REPLY_ENTITY_INDEX        = 4;
 const BUSSINESS_UNIT_INDEX      = 5;
 const JOB_ORIGIN_INDEX          = 6;
-const T_CODE                    = 8;
+const T_CODE_INDEX              = 8;
 const JOB_CODE_INDEX            = 9;
 const DESCRIPTION_INDEX         = 10;
 const RESOURCE_ALLOCATION_RANGE = [11,17];
@@ -60,8 +65,9 @@ export default async function parseExcelInfo(excelFileStream: fs.ReadStream) : P
     const worksheet = workbook.worksheets[0];
 
     let parsedExcelData: ParsedExcelInfo = {
-        allocation_days: getMonthAllocationDays(worksheet),
-        rows: []
+        allocation_days : getMonthAllocationDays(worksheet),
+        rows            : [],
+        jobs            : []
     };
 
     parsedExcelData.allocation_days = getMonthAllocationDays(worksheet);
@@ -71,6 +77,9 @@ export default async function parseExcelInfo(excelFileStream: fs.ReadStream) : P
     let currentRow = 20;
     let row = worksheet.getRow(currentRow);
 
+    //Maps job code to job index
+    let registered_jobs = new Set<String>();
+
     while (getCellString(row.getCell(2)) != "") {
 
         // If at total then at end of current employee. Go to next line
@@ -79,16 +88,24 @@ export default async function parseExcelInfo(excelFileStream: fs.ReadStream) : P
             continue;
         }
 
+        // If job has not appeared yet add it to jobs array
+        if (!registered_jobs.has(getCellString(row.getCell(JOB_CODE_INDEX)))) {
+            parsedExcelData.jobs.push({
+                job_code        : getCellString(row.getCell(JOB_CODE_INDEX)),
+                description     : getCellString(row.getCell(DESCRIPTION_INDEX)),
+                resource_bu     : getCellString(row.getCell(RESOURCE_BU_INDEX)),
+                business_unit   : getCellString(row.getCell(BUSSINESS_UNIT_INDEX)),
+                job_origin      : getCellString(row.getCell(JOB_ORIGIN_INDEX)),
+                reply_entity    : getCellString(row.getCell(REPLY_ENTITY_INDEX)),
+                customer        : getCellString(row.getCell(CUSTOMER_INDEX)),
+                t_code          : getCellString(row.getCell(T_CODE_INDEX))
+            });
+
+        }
+
         parsedExcelData.rows.push({
             name                : getCellString(row.getCell(NAME_INDEX)),
-            resource_bu         : getCellString(row.getCell(RESOURCE_BU_INDEX)),
-            customer            : getCellString(row.getCell(CUSTOMER_INDEX)),
-            reply_entity        : getCellString(row.getCell(REPLY_ENTITY_INDEX)),
-            bussiness_unit      : getCellString(row.getCell(BUSSINESS_UNIT_INDEX)),
-            job_origin          : getCellString(row.getCell(JOB_ORIGIN_INDEX)),
-            t_code              : getCellString(row.getCell(T_CODE)),
             job_code            : getCellString(row.getCell(JOB_CODE_INDEX)),
-            description         : getCellString(row.getCell(DESCRIPTION_INDEX)),
             resource_allocation : getResourceAllocationArray(row)
         });
 

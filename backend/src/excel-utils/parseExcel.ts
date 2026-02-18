@@ -22,13 +22,13 @@ interface MonthAllocation {
     work: number | null,
 }
  
-interface ParsedExcelRows {
+interface ForecastEntry {
     name                    : string, 
     job_code                : string, 
     resource_allocation     : (string)[]
 }
 
-interface job {
+interface Job {
     job_code      : string,
     description   : string,
     business_unit : string,
@@ -39,10 +39,15 @@ interface job {
     t_code        : string,
 }
 
+interface Employee {
+    name : string,
+}
+
 export interface ParsedExcelInfo {
-    allocation_days : MonthAllocations
-    jobs            : job[],
-    rows            : ParsedExcelRows[]
+    allocation_days     : MonthAllocations,
+    employees           : Employee[],
+    jobs                : Job[],
+    forecast_entries    : ForecastEntry[]
 }
 
 
@@ -64,21 +69,22 @@ export default async function parseExcelInfo(excelFileStream: fs.ReadStream) : P
     await workbook.xlsx.read(excelFileStream);
     const worksheet = workbook.worksheets[0];
 
-    let parsedExcelData: ParsedExcelInfo = {
-        allocation_days : getMonthAllocationDays(worksheet),
-        rows            : [],
-        jobs            : []
+    let parsed_excel_data: ParsedExcelInfo = {
+        allocation_days     : getMonthAllocationDays(worksheet),
+        employees           : [],
+        forecast_entries    : [],
+        jobs                : []
     };
 
-    parsedExcelData.allocation_days = getMonthAllocationDays(worksheet);
+    parsed_excel_data.allocation_days = getMonthAllocationDays(worksheet);
 
     
     // Row 20 is where the first row of forecast data is
     let currentRow = 20;
     let row = worksheet.getRow(currentRow);
 
-    //Maps job code to job index
     let registered_jobs = new Set<String>();
+    let registered_employees = new Set<String>();
 
     while (getCellString(row.getCell(2)) != "") {
 
@@ -88,9 +94,15 @@ export default async function parseExcelInfo(excelFileStream: fs.ReadStream) : P
             continue;
         }
 
+        if (!registered_employees.has(getCellString(row.getCell(NAME_INDEX)))) {
+            parsed_excel_data.employees.push({
+                name: getCellString(row.getCell(NAME_INDEX))
+            })
+        }
+
         // If job has not appeared yet add it to jobs array
         if (!registered_jobs.has(getCellString(row.getCell(JOB_CODE_INDEX)))) {
-            parsedExcelData.jobs.push({
+            parsed_excel_data.jobs.push({
                 job_code        : getCellString(row.getCell(JOB_CODE_INDEX)),
                 description     : getCellString(row.getCell(DESCRIPTION_INDEX)),
                 resource_bu     : getCellString(row.getCell(RESOURCE_BU_INDEX)),
@@ -100,10 +112,9 @@ export default async function parseExcelInfo(excelFileStream: fs.ReadStream) : P
                 customer        : getCellString(row.getCell(CUSTOMER_INDEX)),
                 t_code          : getCellString(row.getCell(T_CODE_INDEX))
             });
-
         }
 
-        parsedExcelData.rows.push({
+        parsed_excel_data.forecast_entries.push({
             name                : getCellString(row.getCell(NAME_INDEX)),
             job_code            : getCellString(row.getCell(JOB_CODE_INDEX)),
             resource_allocation : getResourceAllocationArray(row)
@@ -112,13 +123,13 @@ export default async function parseExcelInfo(excelFileStream: fs.ReadStream) : P
         row = worksheet.getRow(++currentRow);
     } 
 
-    return parsedExcelData;
+    return parsed_excel_data;
 }
 
 // Returns an empty string if the cell value would be undefined
 function getCellString(cell: Excel.Cell) : string {
-    let cellString: string|undefined = cell.value?.toString();
-    return cellString === undefined ? "" : cellString;
+    let cell_string: string|undefined = cell.value?.toString();
+    return cell_string === undefined ? "" : cell_string;
 }
 
 function getResourceAllocationArray(row: Excel.Row) : (string)[] {

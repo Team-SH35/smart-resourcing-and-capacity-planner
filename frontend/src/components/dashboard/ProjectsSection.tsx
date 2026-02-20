@@ -2,6 +2,7 @@ import ProjectCard from './ProjectCard';
 import AddUnitCard from './AddUnitCard';
 
 interface Project {
+  jobCode: string;
   name: string;
   department: string;
   client: string;
@@ -11,8 +12,9 @@ interface Project {
   avatars: { initials: string; color: string }[];
 }
 
-const projects: Project[] = [
+const projects: Project[] = [ // Example jobCodes for demonstration; replace with real jobCodes if available
   {
+    jobCode: 'C345-CWPUK-28-7-4',
     name: 'Project A',
     department: 'Developers',
     client: 'Client Name',
@@ -26,6 +28,7 @@ const projects: Project[] = [
     ],
   },
   {
+    jobCode: 'A102-ANALYTICS-01',
     name: 'Marketing Push',
     department: 'Analytics',
     client: 'Client Name',
@@ -35,6 +38,7 @@ const projects: Project[] = [
     avatars: [{ initials: 'RR', color: 'bg-purple-500' }],
   },
   {
+    jobCode: 'A109-ANALYTICS-03',
     name: 'System Audit',
     department: 'Developers',
     client: 'Client Name',
@@ -44,6 +48,7 @@ const projects: Project[] = [
     avatars: [{ initials: 'T', color: 'bg-pink-400' }],
   },
   {
+    jobCode: 'A111-ANALYTICS-02',
     name: 'API Integrations',
     department: 'Analytics',
     client: 'Client Name',
@@ -53,6 +58,7 @@ const projects: Project[] = [
     avatars: [],
   },
   {
+    jobCode: 'A112-ANALYTICS-04',
     name: 'Cloud Migration',
     department: 'Analytics',
     client: 'Client Name',
@@ -63,7 +69,10 @@ const projects: Project[] = [
   },
 ];
 
+import { useNavigate } from 'react-router-dom';
+
 export default function ProjectsSection() {
+  const navigate = useNavigate();
   return (
     <section>
       <div className="flex justify-between items-center mb-6">
@@ -74,7 +83,11 @@ export default function ProjectsSection() {
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {projects.map((project, index) => (
-          <ProjectCard key={index} {...project} />
+          <ProjectCard
+            key={index}
+            {...project}
+            onClick={() => navigate(`/project/${project.jobCode}`)}
+          />
         ))}
         <AddUnitCard onClick={() => console.log('Add project')} />
       </div>

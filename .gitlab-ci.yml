@@ -1,0 +1,30 @@
+stages:
+  - build
+  - test #not implemented yet
+
+
+backend:
+  image: node:slim
+  #Checks if the backend builds
+  stage: build
+  script:
+    - cd backend
+    - npm run
+    - npm ci
+
+
+frontend:
+  image: node:slim
+  #Checks if the frontend builds
+  stage: build
+  script:
+    - cd frontend
+    - npm ci
+    - npm run
+
+database:
+  image: python:3.10-slim
+  stage: build
+  script:
+    - cd database
+    - python initdb.py

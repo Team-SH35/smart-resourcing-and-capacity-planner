@@ -57,7 +57,7 @@ cur.execute("""CREATE TABLE Job (
                );""")
 
 cur.execute("""CREATE TABLE ForecastEntry (
-               EmployeeID INT NOT NULL,
+               EmployeeID INTEGER NOT NULL,
                JobCode VARCHAR(20) NOT NULL,
                Cost DECIMAL,
                Days FLOAT NOT NULL,

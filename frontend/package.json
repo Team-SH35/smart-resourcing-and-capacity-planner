@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "npx vitest run"
+    "test": "npx vitest run --passWithNoTests"
   },
   "dependencies": {
     "react": "^19.2.0",

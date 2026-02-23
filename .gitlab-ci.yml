@@ -8,8 +8,8 @@ stages:
 backend:lint:
   stage: Lint
   before_script:
-    - npm install
     - cd backend
+    - npm ci
   script:
     - npm run lint
 
@@ -32,8 +32,8 @@ backend:test:
 frontend:lint:
   stage: Lint
   before_script:
-    - npm ci
     - cd frontend
+    - npm ci
   script:
     - npm run lint
 

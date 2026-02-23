@@ -2,7 +2,7 @@ import type { JobCode } from "../data/types";
 
 export const jobCodes: JobCode[] = [
   {
-    jobCode: "C345-CWPUK-28-7-4",
+    jobCode: "C341-CWPUK-28-7-4",
     description: "Comwrap Website Project",
     customerName: "Comwrap Reply",
     businessUnit: "Developers",
@@ -49,4 +49,13 @@ export const jobCodes: JobCode[] = [
     startDate: "2026-02-15",
     finishDate: "2026-03-04",
   },
+    {
+      jobCode: "C341-CWPUK-28-7-4",
+      description: "Comwrap Website Project",
+      customerName: "Comwrap Reply",
+      businessUnit: "Developers",
+      budgetTime: 120,
+      startDate: "2026-01-01",
+      finishDate: "2026-02-28",
+    },
 ];

@@ -1,102 +1,16 @@
-import { useMemo, useState } from "react";
-import { employees } from "../components/data/employees";
-import { forecastEntries as initialForecast } from "../components/data/forecastEntries";
-import { jobCodes } from "../components/data/jobCodes";
-import EmployeeAllocationList from "../components/IndividualProject/EmployeeAllocationList";
 import { useParams } from "react-router-dom";
+import { useState } from "react";
+import { employees } from "../components/data/employees";
+import { forecastEntries } from "../components/data/forecastEntries";
+import { jobCodes } from "../components/data/jobCodes";
+import EmployeeSchedule from "../components/IndividualProject/EmployeeSchedule";
 
-const MONTH_CAPACITY = 20;
-
-export default function ProjectDetail() {
+export default function IndividualProject() {
+  const { jobCode } = useParams();
+  const job = jobCodes.find(j => j.jobCode === jobCode);
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [forecastEntries, setForecastEntries] =
-    useState(initialForecast);
 
-  const params = useParams();
-  const JOB_CODE = params.jobCode ?? "";
-
-  const monthKey = useMemo(() => {
-    return currentDate.toLocaleString("default", {
-      month: "long",
-      year: "numeric",
-    });
-  }, [currentDate]);
-
-  const job = jobCodes.find(j => j.jobCode === JOB_CODE); // Find job based on dynamic JOB_CODE
-
-  const isTimeBudget =
-    job?.budgetTime !== null &&
-    job?.budgetTime !== undefined;
-
-  const employeesForMonth = useMemo(() => {
-    const names = new Set(
-      forecastEntries
-        .filter(
-          e =>
-            e.jobCode === JOB_CODE &&
-            e.month === monthKey
-        )
-        .map(e => e.employeeName)
-    );
-
-    return employees.filter(emp =>
-      names.has(emp.name)
-    );
-  }, [forecastEntries, monthKey]);
-
-  const totalAllocated = forecastEntries
-    .filter(e => e.jobCode === JOB_CODE && e.month === monthKey)
-    .reduce((sum, e) => sum + e.days, 0);
-
-  const updateAllocation = (
-    employeeName: string,
-    value: number
-  ) => {
-    setForecastEntries(prev => {
-      // Remove if 0
-      if (value === 0) {
-        return prev.filter(
-          e =>
-            !(
-              e.jobCode === JOB_CODE &&
-              e.employeeName === employeeName &&
-              e.month === monthKey
-            )
-        );
-      }
-
-      const existing = prev.find(
-        e =>
-          e.jobCode === JOB_CODE &&
-          e.employeeName === employeeName &&
-          e.month === monthKey
-      );
-
-      if (existing) {
-        return prev.map(e =>
-          e === existing
-            ? {
-                ...e,
-                days: value,
-              }
-            : e
-        );
-      }
-
-      return [
-        ...prev,
-        {
-          jobCode: JOB_CODE,
-          employeeName,
-          month: monthKey,
-          days: value,
-          cost: 0,
-          description: job?.description || "",
-          customer: job?.customerName || "",
-        },
-      ];
-    });
-  };
+  if (!jobCode) return null;
 
   const nextMonth = () => {
     const next = new Date(currentDate);
@@ -110,51 +24,62 @@ export default function ProjectDetail() {
     setCurrentDate(prev);
   };
 
-  if (!job) return null;
+  const monthLabel = currentDate.toLocaleString("default", {
+    month: "long",
+    year: "numeric",
+  });
 
   return (
-    <div className="p-6 space-y-6">
-      <h1 className="text-xl font-semibold">
-        {job.description}
-      </h1>
-
-      {/* Month Switcher */}
-      <div className="flex items-center gap-4">
-        <button
-          onClick={prevMonth}
-          className="px-3 py-1 bg-slate-200 rounded"
-        >
-          ◀
-        </button>
-
-        <div className="font-medium">
-          {monthKey}
-        </div>
-
-        <button
-          onClick={nextMonth}
-          className="px-3 py-1 bg-slate-200 rounded"
-        >
-          ▶
-        </button>
+    <div className="space-y-6 p-6">
+      {/* Job Header */}
+      <div>
+        <h1 className="text-xl font-semibold">
+          {job?.description}
+        </h1>
+        <p className="text-slate-400">
+          {job?.customerName} • {job?.jobCode}
+        </p>
       </div>
 
-      <EmployeeAllocationList
-        employees={employeesForMonth}
-        forecastEntries={forecastEntries}
-        monthKey={monthKey}
-        jobCode={JOB_CODE}
-        isTimeBudget={isTimeBudget}
-        updateAllocation={updateAllocation}
-      />
+      {/* Month Navigation */}
+      
+      <div className="bg-white border rounded-xl overflow-hidden">
+        {/* Header with Month and Navigation */}
+        <div className="flex items-center justify-between px-4 py-3 border-b">
+          <h2 className="font-semibold text-gray-800">{monthLabel}</h2>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentDate(new Date())} // Today button resets date
+              className="border rounded px-3 py-1 hover:bg-gray-100"
+            >
+              Today
+            </button>
+            <button
+              onClick={prevMonth}
+              className="border rounded px-3 py-1 hover:bg-gray-100"
+            >
+              ←
+            </button>
+            <button
+              onClick={nextMonth}
+              className="border rounded px-3 py-1 hover:bg-gray-100"
+            >
+              →
+            </button>
+          </div>
+        </div>
 
-      {/* Totals */}
-      <div className="border-t pt-4 text-sm space-y-1">
-        <div>
-          Allocated this month:{" "}
-          <strong>{totalAllocated} days</strong>
+        {/* Calendar / Employee Schedule */}
+        <div className="p-4">
+          <EmployeeSchedule
+            employees={employees}
+            forecastEntries={forecastEntries}
+            currentDate={currentDate}
+            jobCode={jobCode!}
+          />
         </div>
       </div>
+
     </div>
   );
 }

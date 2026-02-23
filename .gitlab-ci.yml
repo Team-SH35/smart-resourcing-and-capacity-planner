@@ -9,6 +9,7 @@ backend:lint:
   stage: Lint
   before_script:
     - cd backend
+  script:
     - npm run lint
 
 backend:build:
@@ -31,6 +32,7 @@ frontend:lint:
   stage: Lint
   before_script:
     - cd frontend
+  script:
     - npm run lint
 
 frontend:build:

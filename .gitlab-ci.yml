@@ -1,8 +1,15 @@
 image: node:latest
 
 stages:
+  - Lint
   - Build
   - Test
+
+backend:lint:
+  stage: Lint
+  before_script:
+    - cd backend
+    - npm run lint
 
 backend:build:
   stage: Build
@@ -19,6 +26,12 @@ backend:test:
     - npm ci
   script:
     - npm test
+
+frontend:lint:
+  stage: Lint
+  before_script:
+    - cd frontend
+    - npm run lint
 
 frontend:build:
   stage: Build

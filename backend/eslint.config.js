@@ -20,7 +20,8 @@ export default [
       'node_modules/',
       'dist/',
       '*.config.js',
-      '*.config.ts'
+      '*.config.ts',
+      'src/db/pool.ts'
     ],
   },
 ];

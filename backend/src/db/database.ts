@@ -1,5 +1,5 @@
 import sqlite3 from "sqlite3"
-import { ParsedExcelInfo } from '../excel-utils/parseExcel';
+import { ParsedExcelInfo } from '../excel-utils/parse_excel';
 
 const DATABASE_PATH = "/database/hr.db"
 

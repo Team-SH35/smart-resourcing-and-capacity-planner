@@ -14,10 +14,10 @@ interface Project {
 
 const projects: Project[] = [ // Example jobCodes for demonstration; replace with real jobCodes if available
   {
-    jobCode: 'C345-CWPUK-28-7-4',
-    name: 'Project A',
+    jobCode: 'C341-CWPUK-28-7-4',
+    name: 'Comwrap Website Project',
     department: 'Developers',
-    client: 'Client Name',
+    client: 'Comwrap Reply',
     daysLeft: 30,
     budget: '£1',
     progress: 85,

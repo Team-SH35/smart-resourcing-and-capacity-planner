@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import type { Employee, ForecastEntry } from "../data/types";
 import EmployeeRow from "./EmployeeRow";
 
@@ -7,6 +7,9 @@ interface Props {
   forecastEntries: ForecastEntry[];
   currentDate: Date;
   jobCode: string;
+  sortBy: "name-asc" | "name-desc" | "days-asc" | "days-desc";
+  filtersOpen: boolean;
+  setFiltersOpen: (open: boolean) => void;
 }
 
 export default function EmployeeSchedule({
@@ -14,6 +17,9 @@ export default function EmployeeSchedule({
   forecastEntries,
   currentDate,
   jobCode,
+  sortBy,
+  filtersOpen,
+  setFiltersOpen,
 }: Props) {
   const monthKey = useMemo(() => {
     return currentDate.toLocaleString("default", {
@@ -30,6 +36,10 @@ export default function EmployeeSchedule({
     ).getDate();
   }, [currentDate]);
 
+  const [searchName, setSearchName] = useState("");
+  const [specialismFilter, setSpecialismFilter] = useState("");
+
+  // Employees with allocations for this month
   const employeesForMonth = useMemo(() => {
     return employees
       .map(employee => {
@@ -47,30 +57,96 @@ export default function EmployeeSchedule({
           daysAllocated: entry.days,
         };
       })
-      .filter(Boolean) as {
-      employee: Employee;
-      daysAllocated: number;
-    }[];
+      .filter(Boolean) as { employee: Employee; daysAllocated: number }[];
   }, [employees, forecastEntries, jobCode, monthKey]);
+
+  const specialisms = useMemo(
+    () => Array.from(new Set(employees.flatMap(e => e.specialisms))),
+    [employees]
+  );
+
+  const displayedEmployees = useMemo(() => {
+    let filtered = employeesForMonth;
+
+    // Apply search by name
+    if (searchName) {
+      filtered = filtered.filter(f =>
+        f.employee.name.toLowerCase().includes(searchName.toLowerCase())
+      );
+    }
+    if (specialismFilter) {
+      filtered = filtered.filter(f =>
+        f.employee.specialisms.includes(specialismFilter)
+      );
+    }
+
+    filtered = [...filtered].sort((a, b) => {
+      if (sortBy === "name-asc") return a.employee.name.localeCompare(b.employee.name);
+      if (sortBy === "name-desc") return b.employee.name.localeCompare(a.employee.name);
+      if (sortBy === "days-asc") return a.daysAllocated - b.daysAllocated;
+      if (sortBy === "days-desc") return b.daysAllocated - a.daysAllocated;
+      return 0;
+    });
+
+    return filtered;
+  }, [employeesForMonth, sortBy, searchName, specialismFilter]);
 
   if (employeesForMonth.length === 0) {
     return (
-      <div className="p-4 text-slate-400">
-        No allocations this month
-      </div>
+      <div className="p-4 text-slate-400">No allocations this month</div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      {employeesForMonth.map(row => (
+    <div className="space-y-4 relative">
+      {displayedEmployees.map(({ employee, daysAllocated }) => (
         <EmployeeRow
-          key={row.employee.name}
-          employee={row.employee}
-          daysAllocated={row.daysAllocated}
+          key={employee.name}
+          employee={employee}
+          daysAllocated={daysAllocated}
           daysInMonth={daysInMonth}
         />
       ))}
+
+      {/* Filters Overlay */}
+      {filtersOpen && (
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 w-96 space-y-4">
+            <h2 className="font-semibold text-lg">Filters</h2>
+
+            {/* Search by name */}
+            <input
+              placeholder="Search employee"
+              value={searchName}
+              onChange={e => setSearchName(e.target.value)}
+              className="border rounded w-full px-3 py-2"
+            />
+
+            {/* Filter by specialism */}
+            <select
+              value={specialismFilter}
+              onChange={e => setSpecialismFilter(e.target.value)}
+              className="border rounded w-full px-3 py-2"
+            >
+              <option value="">All Specialisms</option>
+              {specialisms.map(s => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+
+            <div className="flex justify-end gap-2 pt-4">
+              <button
+                onClick={() => setFiltersOpen(false)}
+                className="border rounded px-3 py-1"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -69,7 +69,7 @@ export default async function parseExcelInfo(excelFileStream: fs.ReadStream) : P
     await workbook.xlsx.read(excelFileStream);
     const worksheet = workbook.worksheets[0];
 
-    let parsed_excel_data: ParsedExcelInfo = {
+    const parsed_excel_data: ParsedExcelInfo = {
         allocation_days     : getMonthAllocationDays(worksheet),
         employees           : [],
         forecast_entries    : [],
@@ -83,8 +83,8 @@ export default async function parseExcelInfo(excelFileStream: fs.ReadStream) : P
     let currentRow = 20;
     let row = worksheet.getRow(currentRow);
 
-    let registered_jobs = new Set<String>();
-    let registered_employees = new Set<String>();
+    const registered_jobs = new Set<string>();
+    const registered_employees = new Set<string>();
 
     while (getCellString(row.getCell(2)) != "") {
 
@@ -128,7 +128,7 @@ export default async function parseExcelInfo(excelFileStream: fs.ReadStream) : P
 
 // Returns an empty string if the cell value would be undefined
 function getCellString(cell: Excel.Cell) : string {
-    let cell_string: string|undefined = cell.value?.toString();
+    const cell_string: string|undefined = cell.value?.toString();
     return cell_string === undefined ? "" : cell_string;
 }
 

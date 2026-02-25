@@ -10,6 +10,8 @@ interface Props {
   sortBy: "name-asc" | "name-desc" | "days-asc" | "days-desc";
   filtersOpen: boolean;
   setFiltersOpen: (open: boolean) => void;
+  onUpdateAllocation: (employeeName: string, newDays: number) => void;
+  onDeleteAllocation: (employeeName: string) => void;
 }
 
 export default function EmployeeSchedule({
@@ -20,6 +22,8 @@ export default function EmployeeSchedule({
   sortBy,
   filtersOpen,
   setFiltersOpen,
+  onUpdateAllocation,
+  onDeleteAllocation
 }: Props) {
   const monthKey = useMemo(() => {
     return currentDate.toLocaleString("default", {
@@ -105,6 +109,8 @@ export default function EmployeeSchedule({
           employee={employee}
           daysAllocated={daysAllocated}
           daysInMonth={daysInMonth}
+          onUpdateAllocation={onUpdateAllocation}
+          onDeleteAllocation={onDeleteAllocation}
         />
       ))}
 

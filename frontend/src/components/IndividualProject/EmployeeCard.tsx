@@ -130,14 +130,19 @@ export default function EmployeeCard({
 
             <div className="flex justify-between items-center">
               <button
-                onClick={() => {
-                  onDeleteAllocation(employee.name);
-                  setEditOpen(false);
-                }}
-                className="text-red-600 text-sm hover:underline"
-              >
-                Delete Allocation
-              </button>
+                  onClick={() => {
+                    const confirmed = window.confirm(
+                      `Are you sure you want to delete ${employee.name}'s allocation for this month?`
+                    );
+                    if (confirmed) {
+                      onDeleteAllocation(employee.name);
+                      setEditOpen(false);
+                    }
+                  }}
+                  className="text-red-600 text-sm hover:underline"
+                >
+                  Delete Allocation
+                </button>
 
               <div className="flex gap-2">
                 <button

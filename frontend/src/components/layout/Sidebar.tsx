@@ -4,7 +4,6 @@ import { NavLink } from "react-router-dom";
 const navItems = [
   { label: "Dashboard", path: "/" },
   { label: "Projects", path: "/ProjectSchedule" },
-  { label: "Schedule", path: "/Schedule" },
   { label: "Settings", path: "/Settings" },
 ];
 

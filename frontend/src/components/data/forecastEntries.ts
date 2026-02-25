@@ -38,6 +38,15 @@ export const forecastEntries: ForecastEntry[] = [
     month: "February 2026",
   },
     {
+    employeeName: "Charlotte",
+    customer: "Comwrap Reply",
+    jobCode: "C341-CWPUK-28-7-4",
+    description: "Comwrap Website Project",
+    days: 19,
+    cost: null,
+    month: "January 2026",
+  },
+    {
     employeeName: "Aidan",
     customer: "Comwrap Reply",
     jobCode: "C341-CWPUK-28-7-4",

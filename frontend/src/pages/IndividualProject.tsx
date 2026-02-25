@@ -3,7 +3,7 @@ import { useState } from "react";
 import { employees } from "../components/data/employees";
 import { forecastEntries as initialForecastEntries } from "../components/data/forecastEntries";
 import { jobCodes } from "../components/data/jobCodes";
-import EmployeeSchedule from "../components/individualProject/EmployeeSchedule";
+import EmployeeSchedule from "../components/IndividualProject/EmployeeSchedule";
 import type { ForecastEntry } from "../components/data/types";
 
 type SortOption = "name-asc" | "name-desc" | "days-asc" | "days-desc";
@@ -87,8 +87,31 @@ export default function IndividualProject() {
           <div className="font-semibold">{monthKey}</div>
           <div className="flex gap-2">
             <button onClick={() => setCurrentDate(new Date())} className="border rounded px-3 py-1">Today</button>
-            <button onClick={() => setCurrentDate(d => new Date(d.setMonth(d.getMonth()-1)))} className="border rounded px-3 py-1">←</button>
-            <button onClick={() => setCurrentDate(d => new Date(d.setMonth(d.getMonth()+1)))} className="border rounded px-3 py-1">→</button>
+<button
+  onClick={() =>
+    setCurrentDate(prev => {
+      const d = new Date(prev);
+      d.setMonth(d.getMonth() - 1); 
+      return d;
+    })
+  }
+  className="border rounded px-3 py-1"
+>
+  ←
+</button>
+
+<button
+  onClick={() =>
+    setCurrentDate(prev => {
+      const d = new Date(prev); 
+      d.setMonth(d.getMonth() + 1); 
+      return d;
+    })
+  }
+  className="border rounded px-3 py-1"
+>
+  →
+</button>
           </div>
         </div>
          {/* Schedule */}

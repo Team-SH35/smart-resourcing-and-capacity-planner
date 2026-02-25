@@ -51,7 +51,7 @@ export const jobCodes: JobCode[] = [
   },
     {
       jobCode: "C341-CWPUK-28-7-4",
-      description: "Comwrap Website Project",
+      description: "Comwrap Website Maintenance",
       customerName: "Comwrap Reply",
       businessUnit: "Developers",
       budgetTime: 120,

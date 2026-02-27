@@ -2,12 +2,30 @@ import type { ReactNode } from "react";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
 import ChatbotOverlay from "../chatbot/chatbotOverlay";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { employees } from "../data/employees";
 
 type AppLayoutProps = {
   children: ReactNode;
 };
 
 export default function AppLayout({ children }: AppLayoutProps) {
+    const [query, setQuery] = useState("");
+  const navigate = useNavigate();
+
+  const handleSearch = () => {
+    const match = employees.find(emp =>
+      emp.name.toLowerCase().includes(query.toLowerCase())
+    );
+
+    if (match) {
+      navigate(`/employee/${match.name}`);
+      setQuery("");
+    } else {
+      alert("Employee not found");
+    }
+  };
   return (
     <div className="flex h-screen bg-slate-50 pt-16">
       {/* Topbar */}
@@ -30,6 +48,13 @@ export default function AppLayout({ children }: AppLayoutProps) {
           <div className="flex justify-center p-10">
             <input
               type="text"
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === "Enter") {
+                  handleSearch();
+                }
+              }}
               placeholder="Search for project, client, business department..."
               className="w-full max-w-5xl px-5 py-3 rounded-full border-[3px] border-black focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />

@@ -81,23 +81,72 @@ export default function EmployeeProjects() {
 
   const availableProjects = jobCodes.filter(j => !allocatedJobCodes.includes(j.jobCode));
 
+  // total allocated days for this employee this month
+  const totalAllocated = forecastEntries
+    .filter(entry => entry.employeeName === employeeName && entry.month === monthKey)
+    .reduce((sum, entry) => sum + entry.days, 0);
+
+  // remaining days (can be negative if overallocated)
+  const remainingDays = workingDays - totalAllocated;
+
   return (
     <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h1 className="text-xl font-semibold">{employee?.name}</h1>
-          <p className="text-slate-400">{employee?.specialisms[0]}</p>
+      <div className="flex items-end justify-between mb-4">
+        {/* Left: Name + Allocation */}
+        <div className="flex items-end gap-4">
+          {/* Employee info */}
+          <div>
+            <h1 className="text-xl font-semibold">{employee?.name}</h1>
+            <p className="text-slate-400">{employee?.specialisms[0]}</p>
+          </div>
+
+          {/* Allocation status card */}
+          <div
+            className={`w-60 rounded-lg border px-3 py-2 text-sm font-medium ${
+              totalAllocated < workingDays
+                ? "bg-red-100 text-red-400"
+                : totalAllocated > workingDays
+                ? "bg-yellow-100 text-yellow-600"
+                : "bg-green-100 text-green-600"
+            }`}
+          >
+            <div className="font-semibold">
+              Status:{" "}
+              {totalAllocated < workingDays
+                ? "Underallocated"
+                : totalAllocated > workingDays
+                ? "Overallocated"
+                : "Fully allocated"}
+            </div>
+
+            <hr className="my-2 border-current border-[2px] opacity-90" />
+
+            <div className="text-xs">
+              {totalAllocated < workingDays
+                ? `${workingDays - totalAllocated} day${
+                    workingDays - totalAllocated !== 1 ? "s" : ""
+                  } left`
+                : totalAllocated > workingDays
+                ? `${totalAllocated - workingDays} day${
+                    totalAllocated - workingDays !== 1 ? "s" : ""
+                  } overallocated`
+                : "All days allocated"}
+            </div>
+          </div>
         </div>
 
-        <button
-          onClick={() => {
-            setNewJobCode(availableProjects[0]?.jobCode || "");
-            setAddOpen(true);
-          }}
-          className="bg-blue-600 text-white rounded px-3 py-1 hover:bg-blue-700"
-        >
-          + New
-        </button>
+        {/* Right: + New button */}
+        <div>
+          <button
+            onClick={() => {
+              setNewJobCode(availableProjects[0]?.jobCode || "");
+              setAddOpen(true);
+            }}
+            className="bg-blue-600 text-white rounded px-3 py-1 hover:bg-blue-700"
+          >
+            + New
+          </button>
+        </div>
       </div>
 
       {/* Month Nav */}

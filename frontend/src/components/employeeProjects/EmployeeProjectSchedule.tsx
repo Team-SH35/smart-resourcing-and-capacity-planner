@@ -1,5 +1,4 @@
-// EmployeeProjectSchedule.tsx
-import type { ForecastEntry, JobCode } from "../data/types";
+import type { ForecastEntry, JobCode, Employee } from "../data/types";
 import EmployeeProjectRow from "./EmployeeProjectRow";
 
 interface Props {

@@ -1,4 +1,3 @@
-// EmployeeProjectRow.tsx
 import EmployeeProjectCard from "./EmployeeProjectCard";
 
 interface Props {

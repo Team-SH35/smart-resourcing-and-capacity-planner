@@ -15,6 +15,10 @@ export default function EmployeeProjects() {
   const [forecastEntries, setForecastEntries] =
     useState<ForecastEntry[]>(initialForecastEntries);
 
+  const [addOpen, setAddOpen] = useState(false);
+  const [newJobCode, setNewJobCode] = useState(jobCodes[0]?.jobCode || "");
+  const [newDays, setNewDays] = useState(0);
+
   if (!employeeName) return null;
 
   const monthKey = currentDate.toLocaleString("default", {
@@ -71,19 +75,30 @@ export default function EmployeeProjects() {
   };
   const workingDays = getWorkingDaysInMonth(currentDate);
 
+   const allocatedJobCodes = forecastEntries
+  .filter(entry => entry.employeeName === employeeName && entry.month === monthKey)
+  .map(entry => entry.jobCode);
+
+  const availableProjects = jobCodes.filter(j => !allocatedJobCodes.includes(j.jobCode));
 
   return (
     <div className="space-y-6 p-6">
-      <div>
-        <h1 className="text-xl font-semibold">
-          {employee?.name}
-        </h1>
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h1 className="text-xl font-semibold">{employee?.name}</h1>
+          <p className="text-slate-400">{employee?.specialisms[0]}</p>
+        </div>
 
-        <p className="text-slate-400">
-          {employee?.specialisms[0]}
-        </p>
+        <button
+          onClick={() => {
+            setNewJobCode(availableProjects[0]?.jobCode || "");
+            setAddOpen(true);
+          }}
+          className="bg-blue-600 text-white rounded px-3 py-1 hover:bg-blue-700"
+        >
+          + New
+        </button>
       </div>
-
 
       {/* Month Nav */}
       <div className="bg-white border rounded-xl overflow-hidden">
@@ -142,6 +157,87 @@ export default function EmployeeProjects() {
           />
         </div>
       </div>
+
+      {addOpen && (
+      <div
+        className="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
+        onClick={() => setAddOpen(false)}
+      >
+        <div
+          className="bg-white rounded-xl shadow-xl w-full max-w-md p-6"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <h2 className="text-lg font-semibold mb-6">
+            Add Allocation
+          </h2>
+
+          <div className="mb-4">
+            <label className="text-sm text-slate-400 block mb-1">Project</label>
+            <select
+              value={newJobCode}
+              onChange={(e) => setNewJobCode(e.target.value)}
+              className="w-full border rounded px-3 py-2"
+            >
+              {availableProjects.map(j => (
+                <option key={j.jobCode} value={j.jobCode}>
+                  {j.description} ({j.jobCode})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="mb-6">
+            <label className="text-sm text-slate-400 block mb-1">
+              Days Allocated
+            </label>
+            <input
+              type="number"
+              min={0}
+              max={workingDays}
+              value={newDays}
+              onChange={(e) => setNewDays(Number(e.target.value))}
+              className="w-full border rounded px-3 py-2"
+            />
+            <p className="text-xs text-slate-400 mt-1">
+              Maximum {workingDays} days
+            </p>
+          </div>
+
+          <div className="flex justify-end gap-2">
+            <button
+              onClick={() => setAddOpen(false)}
+              className="border rounded px-3 py-1 hover:bg-gray-100"
+            >
+              Cancel
+            </button>
+
+            <button
+              onClick={() => {
+                const selectedJob = jobCodes.find(j => j.jobCode === newJobCode);
+                if (!selectedJob) return;
+
+                const newEntry = {
+                  employeeName: employeeName!,
+                  customer: selectedJob.customerName, 
+                  jobCode: selectedJob.jobCode,
+                  description: selectedJob.description,
+                  days: newDays,
+                  cost: null,
+                  month: monthKey,
+                };
+
+                setForecastEntries(prev => [...prev, newEntry]);
+                setAddOpen(false);
+                setNewDays(0);
+              }}
+              className="bg-blue-600 text-white rounded px-3 py-1 hover:bg-blue-700"
+            >
+              Add
+            </button>
+          </div>
+        </div>
+      </div>
+      )}
     </div>
   );
 }

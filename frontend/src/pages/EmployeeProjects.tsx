@@ -6,6 +6,8 @@ import type { ForecastEntry } from "../components/data/types";
 import { employees } from "../components/data/employees";
 import EmployeeProjectSchedule from "../components/employeeProjects/EmployeeProjectSchedule";
 
+type SortOption = "name-asc" | "name-desc" | "days-asc" | "days-desc";
+
 export default function EmployeeProjects() {
   const { employeeName } = useParams();
   const employee = employees.find(e => e.name === employeeName);
@@ -50,6 +52,27 @@ export default function EmployeeProjects() {
     }
 
     return true;
+  });
+
+  const [sortBy, setSortBy] = useState<SortOption>("name-asc");
+
+  const sortedForecastEntries = [...filteredForecastEntries].sort((a, b) => {
+  switch (sortBy) {
+    case "name-asc":
+      return a.description.localeCompare(b.description);
+
+    case "name-desc":
+      return b.description.localeCompare(a.description);
+
+    case "days-asc":
+      return a.days - b.days;
+
+    case "days-desc":
+      return b.days - a.days;
+
+    default:
+      return 0;
+    }
   });
 
   if (!employeeName) return null;
@@ -170,13 +193,24 @@ export default function EmployeeProjects() {
         </div>
 
         {/* Right:Filter + New button */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <button
             onClick={() => setFiltersOpen(true)}
             className="border rounded px-3 py-1"
           >
             Filters
           </button>
+
+          <select
+              value={sortBy}
+              onChange={e => setSortBy(e.target.value as SortOption)}
+              className="border rounded px-3 py-1"
+            >
+              <option value="name-asc">Name A–Z</option>
+              <option value="name-desc">Name Z–A</option>
+              <option value="days-asc">Days Low–High</option>
+              <option value="days-desc">Days High–Low</option>
+            </select>
 
           <button
             onClick={() => {
@@ -244,7 +278,7 @@ export default function EmployeeProjects() {
           ) : (
             <EmployeeProjectSchedule
               employeeName={employeeName}
-              forecastEntries={filteredForecastEntries}
+              forecastEntries={sortedForecastEntries}
               jobCodes={jobCodes}
               currentDate={currentDate}
               onUpdateAllocation={updateAllocation}

@@ -138,7 +138,8 @@ export default function EmployeeProjects() {
     .reduce((sum, entry) => sum + entry.days, 0);
 
   // remaining days (can be negative if overallocated)
-  const remainingDays = workingDays - totalAllocated;
+  // remaining days (can be negative if overallocated)
+  // const remainingDays = workingDays - totalAllocated; // unused - removed to satisfy linter
 
   const monthAllocations = forecastEntries.filter(
   entry =>

@@ -29,6 +29,14 @@ export default function EmployeeProjectSchedule({
       entry.month === monthKey
   );
 
+  const allocations = forecastEntries; // or whatever array you map over
+
+  // Calculate the largest allocation for this set
+  const maxAllocatedDays = allocations.length > 0
+    ? Math.max(...allocations.map(a => a.days))
+    : 0;
+
+
   return (
     <div className="space-y-4">
       {employeeEntries.map(entry => {
@@ -41,6 +49,7 @@ export default function EmployeeProjectSchedule({
             jobDescription={job?.description ?? entry.jobCode}
             daysAllocated={entry.days}
             currentDate={currentDate}
+            maxAllocatedDays={maxAllocatedDays}
             onUpdateAllocation={onUpdateAllocation}
             onDeleteAllocation={onDeleteAllocation}
           />

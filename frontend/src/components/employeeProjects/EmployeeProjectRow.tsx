@@ -5,6 +5,7 @@ interface Props {
   jobDescription: string;
   daysAllocated: number;
   currentDate: Date;
+  maxAllocatedDays: number;
   onUpdateAllocation: (jobCode: string, newDays: number) => void;
   onDeleteAllocation: (jobCode: string) => void;
 }
@@ -14,6 +15,7 @@ export default function EmployeeProjectRow({
   jobDescription,
   daysAllocated,
   currentDate,
+  maxAllocatedDays,
   onUpdateAllocation,
   onDeleteAllocation,
 }: Props) {
@@ -23,6 +25,7 @@ export default function EmployeeProjectRow({
     0
   ).getDate();
 
+
   return (
     <div className="flex items-center gap-4">
       <div className="flex-1">
@@ -31,6 +34,7 @@ export default function EmployeeProjectRow({
           jobDescription={jobDescription}
           daysAllocated={daysAllocated}
           daysInMonth={daysInMonth}
+          maxAllocatedDays={maxAllocatedDays}
           onUpdateAllocation={onUpdateAllocation}
           onDeleteAllocation={onDeleteAllocation}
         />

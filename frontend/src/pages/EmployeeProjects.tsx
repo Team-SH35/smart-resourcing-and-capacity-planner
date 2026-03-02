@@ -153,7 +153,7 @@ export default function EmployeeProjects() {
         <div className="flex items-end gap-4">
           {/* Employee info */}
           <div>
-            <h1 className="text-xl font-semibold">{employee?.name}</h1>
+            <h1 className="text-xl font-semibold tracking-tight">{employee?.name}</h1>
             <p className="text-slate-400">{employee?.specialisms[0]}</p>
           </div>
 

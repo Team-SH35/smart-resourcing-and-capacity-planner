@@ -1,4 +1,3 @@
-// EmployeeProject.tsx
 import { useParams } from "react-router-dom";
 import { useState } from "react";
 import { forecastEntries as initialForecastEntries } from "../components/data/forecastEntries";
@@ -15,16 +14,45 @@ export default function EmployeeProjects() {
   const [forecastEntries, setForecastEntries] =
     useState<ForecastEntry[]>(initialForecastEntries);
 
-  const [addOpen, setAddOpen] = useState(false);
-  const [newJobCode, setNewJobCode] = useState(jobCodes[0]?.jobCode || "");
-  const [newDays, setNewDays] = useState(0);
-
-  if (!employeeName) return null;
-
   const monthKey = currentDate.toLocaleString("default", {
     month: "long",
     year: "numeric",
   });
+
+  const [addOpen, setAddOpen] = useState(false);
+  const [newJobCode, setNewJobCode] = useState(jobCodes[0]?.jobCode || "");
+  const [newDays, setNewDays] = useState(0);
+
+  const [clientFilter, setClientFilter] = useState("");
+  const [teamFilter, setTeamFilter] = useState<string[]>([]);
+  const businessUnits = ["Developers", "Analytics"];
+
+  const [filtersOpen, setFiltersOpen] = useState(false);
+
+    const filteredForecastEntries = forecastEntries.filter(entry => {
+    // Only this employee
+    if (entry.employeeName !== employeeName) return false;
+
+    // Only this month
+    if (entry.month !== monthKey) return false;
+
+    // Client name filter
+    if (
+      clientFilter &&
+      !entry.customer.toLowerCase().includes(clientFilter.toLowerCase())
+    )
+      return false;
+
+    // Business unit filter
+    if (teamFilter.length > 0) {
+      const job = jobCodes.find(j => j.jobCode === entry.jobCode);
+      if (!job || !teamFilter.includes(job.businessUnit)) return false;
+    }
+
+    return true;
+  });
+
+  if (!employeeName) return null;
 
   const updateAllocation = (jobCode: string, newDays: number) => {
     setForecastEntries(prev =>
@@ -89,6 +117,12 @@ export default function EmployeeProjects() {
   // remaining days (can be negative if overallocated)
   const remainingDays = workingDays - totalAllocated;
 
+  const monthAllocations = forecastEntries.filter(
+  entry =>
+    entry.employeeName === employeeName &&
+    entry.month === monthKey
+  );
+
   return (
     <div className="space-y-6 p-6">
       <div className="flex items-end justify-between mb-4">
@@ -135,8 +169,15 @@ export default function EmployeeProjects() {
           </div>
         </div>
 
-        {/* Right: + New button */}
-        <div>
+        {/* Right:Filter + New button */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setFiltersOpen(true)}
+            className="border rounded px-3 py-1"
+          >
+            Filters
+          </button>
+
           <button
             onClick={() => {
               setNewJobCode(availableProjects[0]?.jobCode || "");
@@ -196,14 +237,20 @@ export default function EmployeeProjects() {
         </div>
 
         <div className="p-4">
-          <EmployeeProjectSchedule
-            employeeName={employeeName}
-            forecastEntries={forecastEntries}
-            jobCodes={jobCodes}
-            currentDate={currentDate}
-            onUpdateAllocation={updateAllocation}
-            onDeleteAllocation={deleteAllocation}
-          />
+          {monthAllocations.length === 0 ? (
+            <p className="p-4 text-slate-400">
+              No allocations this month
+            </p>
+          ) : (
+            <EmployeeProjectSchedule
+              employeeName={employeeName}
+              forecastEntries={filteredForecastEntries}
+              jobCodes={jobCodes}
+              currentDate={currentDate}
+              onUpdateAllocation={updateAllocation}
+              onDeleteAllocation={deleteAllocation}
+            />
+          )}
         </div>
       </div>
 
@@ -286,6 +333,60 @@ export default function EmployeeProjects() {
           </div>
         </div>
       </div>
+      )}
+
+      {/* Filter modal */}
+      {filtersOpen && (
+        <div
+          className="fixed inset-0 bg-black/30 flex items-center justify-center z-50"
+          onClick={() => setFiltersOpen(false)}
+        >
+          <div
+            className="bg-white rounded-xl p-6 w-96 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="font-semibold text-lg">Filters</h2>
+
+            {/* Client filter */}
+            <input
+              placeholder="Client name"
+              value={clientFilter}
+              onChange={(e) => setClientFilter(e.target.value)}
+              className="border rounded w-full px-3 py-2"
+            />
+
+            {/* Business units */}
+            <div className="space-y-2">
+              <div className="font-medium text-sm">Business units</div>
+              {businessUnits.map((unit) => (
+                <label key={unit} className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={teamFilter.includes(unit)}
+                    onChange={(e) =>
+                      setTeamFilter((t) =>
+                        e.target.checked
+                          ? [...t, unit]
+                          : t.filter((x) => x !== unit)
+                      )
+                    }
+                  />
+                  {unit}
+                </label>
+              ))}
+            </div>
+
+            {/* Close button */}
+            <div className="flex justify-end gap-2 pt-4">
+              <button
+                onClick={() => setFiltersOpen(false)}
+                className="border rounded px-3 py-1"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

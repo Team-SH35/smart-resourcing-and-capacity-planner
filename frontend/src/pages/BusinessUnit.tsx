@@ -5,19 +5,24 @@ import { employees } from "../components/data/employees";
 import { jobCodes } from "../components/data/jobCodes";
 import { forecastEntries } from "../components/data/forecastEntries";
 
+type SortOption = "name-asc" | "name-desc" | "alloc-asc" | "alloc-desc";
+
+// Allocation filter type
+type AllocationFilter = "under" | "correct" | "over" | "";
+
 export default function BusinessUnit() {
   const { unit } = useParams<{ unit: string }>();
   const [filtersOpen, setFiltersOpen] = useState(false);
 
-  // --- Filter & Sort state ---
+  // Filters & Sort state
   const [filterName, setFilterName] = useState("");
   const [filterSpecialism, setFilterSpecialism] = useState("");
-  const [filterAllocation, setFilterAllocation] = useState<"under" | "correct" | "over" | "">("");
-  const [sortBy, setSortBy] = useState<"name-asc" | "name-desc" | "alloc-asc" | "alloc-desc">("name-asc");
+  const [filterAllocation, setFilterAllocation] = useState<AllocationFilter>("");
+  const [sortBy, setSortBy] = useState<SortOption>("name-asc");
 
   if (!unit) return <div>No business unit selected.</div>;
 
-  // Employees in this business unit
+  // --- Employees in this business unit via jobCodes + forecastEntries ---
   const unitJobCodes = jobCodes
     .filter((job) => job.businessUnit === unit)
     .map((job) => job.jobCode);
@@ -35,11 +40,13 @@ export default function BusinessUnit() {
   return (
     <div className="min-h-screen bg-slate-50 p-10">
       <div className="max-w-5xl mx-auto space-y-6">
+
         {/* Header */}
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold text-slate-900">{unit}</h1>
 
           <div className="flex gap-3 items-center">
+            {/* Filter overlay button */}
             <button
               onClick={() => setFiltersOpen(true)}
               className="font-medium text-slate-400 border rounded px-3 py-1"
@@ -50,7 +57,9 @@ export default function BusinessUnit() {
             {/* Sort By dropdown */}
             <select
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as any)}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                setSortBy(e.target.value as SortOption)
+              }
               className="border rounded px-3 py-1 flex items-center gap-2"
             >
               <option value="name-asc">Name (A-Z)</option>
@@ -97,7 +106,7 @@ export default function BusinessUnit() {
               <select
                 value={filterAllocation}
                 onChange={(e) =>
-                  setFilterAllocation(e.target.value as "under" | "correct" | "over" | "")
+                  setFilterAllocation(e.target.value as AllocationFilter)
                 }
                 className="border rounded w-full px-3 py-2"
               >

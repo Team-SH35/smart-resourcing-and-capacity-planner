@@ -3,12 +3,15 @@ import { employees } from "../data/employees";
 import { forecastEntries } from "../data/forecastEntries";
 import { jobCodes } from "../data/jobCodes";
 
+type SortOption = "name-asc" | "name-desc" | "alloc-asc" | "alloc-desc";
+type AllocationFilter = "under" | "correct" | "over" | "";
+
 interface Props {
   businessUnit: string;
   filterName?: string;
   filterSpecialism?: string;
-  filterAllocation?: "under" | "correct" | "over" | "";
-  sortBy?: "name-asc" | "name-desc" | "alloc-asc" | "alloc-desc";
+  filterAllocation?: AllocationFilter;
+  sortBy?: SortOption;
 }
 
 function getWorkingDaysInMonth(date: Date) {
@@ -35,17 +38,16 @@ export default function EmployeeByBUCard({
   const monthKey = today.toLocaleString("default", { month: "long", year: "numeric" });
   const workingDays = getWorkingDaysInMonth(today);
 
-  // Employees for this unit via forecastEntries + jobCodes
+  // Employees in this business unit
   const unitJobCodes = jobCodes.filter((job) => job.businessUnit === businessUnit).map((job) => job.jobCode);
   const unitEmployeeNames = new Set(
     unitJobCodes.flatMap((code) =>
       forecastEntries.filter((entry) => entry.jobCode === code).map((entry) => entry.employeeName)
     )
   );
-
   const unitEmployees = employees.filter((emp) => unitEmployeeNames.has(emp.name));
 
-  // Allocation
+  // Compute allocation
   const employeesWithAllocation = useMemo(() => {
     return unitEmployees.map((employee) => {
       const totalAllocated = forecastEntries
@@ -56,7 +58,7 @@ export default function EmployeeByBUCard({
     });
   }, [unitEmployees, monthKey, workingDays]);
 
-  // Filter & Sort
+  // Apply filters and sorting
   const filteredAndSorted = useMemo(() => {
     let result = [...employeesWithAllocation];
 
@@ -64,14 +66,15 @@ export default function EmployeeByBUCard({
     if (filterSpecialism) result = result.filter((e) => e.specialisms?.[0].toLowerCase() === filterSpecialism.toLowerCase());
 
     if (filterAllocation) {
-    result = result.filter((e) => {
+      result = result.filter((e) => {
         if (filterAllocation === "under") return e.allocation < 80;
         if (filterAllocation === "correct") return e.allocation >= 80 && e.allocation <= 100;
         if (filterAllocation === "over") return e.allocation > 100;
         return true;
-    });
-}
+      });
+    }
 
+    // Sorting
     result.sort((a, b) => {
       switch (sortBy) {
         case "name-asc": return a.name.localeCompare(b.name);
@@ -109,7 +112,6 @@ export default function EmployeeByBUCard({
                 <div className="text-slate-500">{employee.specialisms?.[0]}</div>
               </div>
             </div>
-
             <div className={`font-semibold text-lg ${getAllocationColor(employee.allocation)}`}>
               {employee.allocation}%
             </div>

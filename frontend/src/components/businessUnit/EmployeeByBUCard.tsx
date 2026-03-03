@@ -38,6 +38,12 @@ export default function EmployeeByBUCard({ businessUnit }: Props) {
     });
   }, [unitEmployees, monthKey, workingDays]);
 
+  const getAllocationColor = (value: number) => {
+    if (value < 80) return "text-orange-500";
+    if (value <= 100) return "text-green-500";
+    return "text-red-500";
+  };
+
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
       {employeesWithAllocation.length === 0 && (
@@ -59,6 +65,10 @@ export default function EmployeeByBUCard({ businessUnit }: Props) {
               </div>
             </div>
 
+            {/* Allocation */}
+            <div className={`font-semibold text-lg ${getAllocationColor(employee.allocation)}`}>
+              {employee.allocation}%
+            </div>
           </div>
 
           {index !== employeesWithAllocation.length - 1 && <div className="border-t border-slate-200 mx-8" />}

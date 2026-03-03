@@ -52,7 +52,7 @@ export function writeExcelToDB(workspaceID: string, excelData: ParsedExcelInfo) 
 
         //Insert jobs 
         for (let i = 0; excelData.jobs.length; i++) {
-            let job = excelData.jobs[i];
+            const job = excelData.jobs[i];
             db.run(
                 `INSERT INTO Job (JobCode, Description, BusinessUnit, Resource_bu, JobOrigin, reply_entity, customer, t_code, WorkSpaceID)
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
@@ -62,7 +62,7 @@ export function writeExcelToDB(workspaceID: string, excelData: ParsedExcelInfo) 
 
         // Insert employees and fore cast entries
         for (let i = 0; excelData.employees.length; i++) {
-            let employee = excelData.employees[i];
+            const employee = excelData.employees[i];
             db.run(
                 `INSERT INTO Employee (Name, ExcludeFromAI, WorkspaceID)
                  VALUES (?, FALSE, ?)`,
@@ -72,9 +72,9 @@ export function writeExcelToDB(workspaceID: string, excelData: ParsedExcelInfo) 
                         console.error(err);
                         return;
                     }
-                    let lastID = this.lastID;
+                    const lastID = this.lastID;
 
-                    let forecastEntry = excelData.forecast_entries[i];
+                    const forecastEntry = excelData.forecast_entries[i];
                     db.run(
                         `INSERT INTO ForecastEntry(EmployeeID, JobCode, WorkspaceID)
                         VALUES (?,?,?,?,?,?,?,?)`,

@@ -46,6 +46,15 @@ export const forecastEntries: ForecastEntry[] = [
     cost: null,
     month: "January 2026",
   },
+      {
+    employeeName: "Charlotte",
+    customer: "Internal",
+    jobCode: "A102-ANALYTICS-01",
+    description: "Analytics Platform Maintenance",
+    days: 5,
+    cost: null,
+    month: "January 2026",
+  },
     {
     employeeName: "Aidan",
     customer: "Comwrap Reply",

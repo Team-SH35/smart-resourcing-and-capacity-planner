@@ -37,6 +37,14 @@ cur.execute("""CREATE TABLE Month_Work_Days (
                FOREIGN KEY (WorkspaceID) REFERENCES Workspace(WorkspaceID)
             );""")
 
+cur.execute("""CREATE TABLE EmployeeSpecialisms (
+               ID INT AUTO_INCREMENT, 
+               EmployeeID INT ,
+               Specialism VARCHAR(20),
+               PRIMARY KEY (ID, EmployeeID)
+               FOREIGN KEY (EmployeeID) REFERENCES Employee(EmployeeID)
+            );""")
+
 
 cur.execute("""CREATE TABLE Employee (
                EmployeeID INTEGER PRIMARY KEY,
@@ -50,6 +58,9 @@ cur.execute("""CREATE TABLE Job (
                JobCode VARCHAR(20) PRIMARY KEY,
                Description VARCHAR(1000) NOT NULL,
                BusinessUnit VARCHAR(20) NOT NULL,
+               TimeBudget INT,
+               CurrencySymbol VARCHAR(1),
+               MonetaryBudget DECIMAL,
                StartDate DATETIME, 
                FinishDate DATETIME,
                WorkspaceID INTEGER NOT NULL,
@@ -57,7 +68,7 @@ cur.execute("""CREATE TABLE Job (
                );""")
 
 cur.execute("""CREATE TABLE ForecastEntry (
-               EmployeeID INTEGER NOT NULL,
+               EmployeeID INT NOT NULL,
                JobCode VARCHAR(20) NOT NULL,
                Cost DECIMAL,
                Days FLOAT NOT NULL,

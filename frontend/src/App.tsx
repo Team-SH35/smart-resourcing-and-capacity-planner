@@ -14,7 +14,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/ProjectSchedule" element={<ProjectSchedule />} />
-          <Route path="/BusinessUnit" element={<BusinessUnit />} />
+          <Route path="/BusinessUnit/:unit" element={<BusinessUnit />} />
           <Route path="/Project/:jobCode" element={<IndividualProject />} />
           <Route path="/Settings" element={<Settings />} />
           <Route path="/Employee/:employeeName" element={<EmployeeProject />} />

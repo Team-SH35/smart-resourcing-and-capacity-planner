@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import type { KeyboardEvent } from "react";
+import { askChatbot } from "../../api/client";
 
 type MessageType = {
   text: string;
@@ -10,6 +11,8 @@ export default function ChatbotOverlay() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<MessageType[]>([]);
   const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [sessionId, setSessionId] = useState<string | undefined>(undefined);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   //Auto-scroll to latest message
@@ -18,23 +21,26 @@ export default function ChatbotOverlay() {
   }, [messages]);
 
   //Send user message
-  const handleSend = () => {
-    if (!input.trim()) return;
+  const handleSend = async () => {
+    if (!input.trim() || loading) return;
 
-    //Add user message
-    setMessages((prev) => [...prev, { text: input, isUser: true }]);
+    const userText = input;
+    setMessages((prev) => [...prev, { text: userText, isUser: true }]);
     setInput("");
+    setLoading(true);
 
-    //After timeout, show bot message
-    setTimeout(() => {
-
-      const botMessage: MessageType = {
-        text: "ComChat is currently down. Please try again later.",
-        isUser: false,
-      };
-
-      setMessages((prev) => [...prev, botMessage]);
-    }, 2500);
+    try {
+      const data = await askChatbot(userText, "guest", sessionId);
+      if (data.session_id) setSessionId(data.session_id);
+      setMessages((prev) => [...prev, { text: data.response, isUser: false }]);
+    } catch {
+      setMessages((prev: MessageType[]) => [
+        ...prev,
+        { text: "ComChat is currently down. Please try again later.", isUser: false },
+      ]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {

@@ -5,7 +5,10 @@
   "scripts": {
     "dev": "nodemon --watch src --exec ts-node src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "lint": "eslint . --ext .ts,.js",
+    "lint:fix": "eslint . --ext .ts,.js --fix",
+    "test": "npx jest --passWithNoTests"
   },
   "keywords": [],
   "author": "",
@@ -22,13 +25,19 @@
     "@eslint/js": "^9.39.2",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.5",
+    "@types/jest": "^30.0.0",
     "@types/node": "^24.10.1",
     "@types/sqlite3": "^5.1.0",
     "@types/pg": "^8.15.6",
-    "jest": "^30.2.0",
-    "eslint": "^9.39.2",
+    "@typescript-eslint/eslint-plugin": "^8.56.0",
+    "@typescript-eslint/parser": "^8.56.0",
+    "eslint": "^10.0.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.5",
     "globals": "^17.0.0",
+    "jest": "^30.2.0",
     "nodemon": "^3.1.11",
+    "ts-jest": "^29.4.6",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.53.1"

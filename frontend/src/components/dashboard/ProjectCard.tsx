@@ -6,6 +6,7 @@ interface ProjectCardProps {
   budget: string;
   progress: number;
   avatars: { initials: string; color: string }[];
+  onClick?: () => void;
 }
 
 export default function ProjectCard({
@@ -16,6 +17,7 @@ export default function ProjectCard({
   budget,
   progress,
   avatars,
+  onClick,
 }: ProjectCardProps) {
   const getDaysColor = () => {
     if (daysLeft <= 1) return 'bg-red-50 dark:bg-red-900/20 text-red-500';
@@ -24,7 +26,12 @@ export default function ProjectCard({
   };
 
   return (
-    <div className="bg-card-light dark:bg-card-dark p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
+    <div
+      className="bg-card-light dark:bg-card-dark p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 cursor-pointer hover:shadow-md transition-shadow"
+      onClick={onClick}
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+    >
       <div className="flex justify-between items-start mb-2">
         <div>
           <h3 className="font-bold text-lg">{name}</h3>

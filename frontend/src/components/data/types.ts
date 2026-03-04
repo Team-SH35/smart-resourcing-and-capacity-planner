@@ -33,3 +33,13 @@ export interface CalendarRow {
   team: string;
   projects: CalendarProject[];
 }
+
+export type ForecastEntry = {
+  employeeName: string;
+  customer: string;
+  jobCode: string;
+  description: string;
+  days: number;
+  cost: number | null;
+  month: string;
+};

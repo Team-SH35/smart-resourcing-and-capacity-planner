@@ -75,9 +75,6 @@ export default async function parseExcelInfo(excelFileStream: fs.ReadStream) : P
         forecast_entries    : [],
         jobs                : []
     };
-
-    parsed_excel_data.allocation_days = getMonthAllocationDays(worksheet);
-
     
     // Row 20 is where the first row of forecast data is
     let currentRow = 20;
@@ -86,7 +83,7 @@ export default async function parseExcelInfo(excelFileStream: fs.ReadStream) : P
     const registered_jobs = new Set<string>();
     const registered_employees = new Set<string>();
 
-    while (getCellString(row.getCell(2)) != "") {
+    while (getCellString(row.getCell(2)) != "NULL") {
 
         // If at total then at end of current employee. Go to next line
         if (getCellString(row.getCell(2)).startsWith("TOTAL")) {
@@ -112,6 +109,7 @@ export default async function parseExcelInfo(excelFileStream: fs.ReadStream) : P
                 customer        : getCellString(row.getCell(CUSTOMER_INDEX)),
                 t_code          : getCellString(row.getCell(T_CODE_INDEX))
             });
+            registered_jobs.add(getCellString(row.getCell(JOB_CODE_INDEX)));
         }
 
         parsed_excel_data.forecast_entries.push({
@@ -129,7 +127,7 @@ export default async function parseExcelInfo(excelFileStream: fs.ReadStream) : P
 // Returns an empty string if the cell value would be undefined
 function getCellString(cell: Excel.Cell) : string {
     const cell_string: string|undefined = cell.value?.toString();
-    return cell_string === undefined ? "" : cell_string;
+    return cell_string === undefined ? "NULL" : cell_string;
 }
 
 function getResourceAllocationArray(row: Excel.Row) : (string)[] {
@@ -143,12 +141,12 @@ function getResourceAllocationArray(row: Excel.Row) : (string)[] {
 
 // Reads HYPO and normal work days from heading of excel sheet
 function getMonthAllocationDays(worksheet: Excel.Worksheet) {
-    const [start, end] = RESOURCE_ALLOCATION_RANGE;
+    const start = RESOURCE_ALLOCATION_RANGE[0];
 
     const row = worksheet.getRow(19);
     const workDays: MonthAllocation[] = [];
 
-    for (let col = start; col <= end; col++) {
+    for (let col = start; col <= start+12; col++) {
         const month = getCellString(row.getCell(col));
         const match = month.match(/(\d+)\/(\d+)/);
 

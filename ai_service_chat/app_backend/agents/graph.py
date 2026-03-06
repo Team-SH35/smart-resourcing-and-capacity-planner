@@ -87,7 +87,7 @@ class ResourceManagementAgent:
         Returns:
             Updated state with LLM response
         """
-        messages = state["messages"]
+        messages = [SystemMessage(content=self.get_system_prompt())] + list(state["messages"])
         response = self.llm_with_tools.invoke(messages)
         return {"messages": [response]}
 

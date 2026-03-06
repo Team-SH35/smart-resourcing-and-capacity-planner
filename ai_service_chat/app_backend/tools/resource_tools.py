@@ -17,6 +17,10 @@ def set_backend_url(url: str):
     global _backend_url
     _backend_url = url
 
+def _workspace_id() -> int:
+    # Returns the workspace ID from the WORKSPACE_ID environment variable,
+    # defaulting to 1 if not set. Used to scope API calls to a specific workspace.
+    return int(os.getenv("WORKSPACE_ID", "1"))
 
 @tool
 async def get_employee_availability(

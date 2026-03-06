@@ -9,7 +9,7 @@ from langchain_core.tools import tool
 import httpx
 
 
-_backend_url: str = "http://localhost:3001"
+_backend_url: str = "http://localhost:4000"
 
 
 def set_backend_url(url: str):

@@ -4,7 +4,7 @@ This implements an agent that can query and update resource allocations.
 """
 
 from typing import Annotated, TypedDict, Sequence
-from langchain_core.messages import BaseMessage, HumanMessage
+from langchain_core.messages import BaseMessage, HumanMessage, SyestemMessage
 from langchain_openai import ChatOpenAI
 from langgraph.graph import StateGraph, END
 from langgraph.graph.message import add_messages

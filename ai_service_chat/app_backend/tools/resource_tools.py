@@ -301,31 +301,33 @@ async def propose_allocation_change(
 
 @tool
 async def get_capacity_forecast(
-    department: Optional[str] = None,
-    start_date: Optional[str] = None,
-    end_date: Optional[str] = None,
+    month: Optional[str] = None,
+    employee_id: Optional[int] = None,
+    job_code: Optional[str] = None,
 ) -> str:
     """
-    Get capacity forecast for a department or company-wide.
+    Get forecast data showing days and cost allocated per employee per job per month.
 
     Args:
-        department: Department to filter by
-        start_date: Forecast start date (ISO format)
-        end_date: Forecast end date (ISO format)
+        month: Month in format YYYY-MM-DD (e.g. "2026-03-01")
+        employee_id: Filter by specific employee ID
+        job_code: Filter by specific job code
 
     Returns:
-        JSON string with capacity forecast data
+        JSON string with forecast entries
     """
-    params = {}
-    if department:
-        params["department"] = department
-    if start_date:
-        params["startDate"] = start_date
-    if end_date:
-        params["endDate"] = end_date
+    params = {"workspaceID": _workspace_id()}
+    if month:
+        params["month"] = month
+    if employee_id:
+        params["employeeID"] = employee_id
+    if job_code:
+        params["jobCode"] = job_code
 
     async with httpx.AsyncClient() as client:
-        response = await client.get(f"{_backend_url}/api/capacity/forecast", params=params)
+        response = await client.get(f"{_backend_url}/forecast", params=params)
+        if not response.is_success:
+            return json.dumps({"error": f"Backend error: {response.status_code}"})
         return response.text
 
 

@@ -208,28 +208,60 @@ async def get_project_staffing(
 
 @tool
 async def get_understaffed_projects(
-    start_date: Optional[str] = None,
-    end_date: Optional[str] = None,
+    month: Optional[str] = None,
 ) -> str:
     """
-    Identify projects that are understaffed in a given time period.
+    Identify projects where total allocated days are below their time budget.
 
     Args:
-        start_date: Start date in ISO format
-        end_date: End date in ISO format
+        month: Month to check in format YYYY-MM-DD (e.g. "2026-03-01")
 
     Returns:
-        JSON string with understaffed projects and capacity gaps
+        JSON string with understaffed projects and their gaps
     """
-    params = {}
-    if start_date:
-        params["startDate"] = start_date
-    if end_date:
-        params["endDate"] = end_date
+    workspace_id = _workspace_id()
+    forecast_params = {"workspaceID": workspace_id}
+    if month:
+        forecast_params["month"] = month
 
     async with httpx.AsyncClient() as client:
-        response = await client.get(f"{_backend_url}/api/projects/understaffed", params=params)
-        return response.text
+        jobs_resp, forecast_resp = await asyncio.gather(
+            client.get(f"{_backend_url}/jobs", params={"workspaceID": workspace_id}),
+            client.get(f"{_backend_url}/forecast", params=forecast_params),
+        )
+
+        if not jobs_resp.is_success:
+            return json.dumps({"error": "Failed to fetch jobs"})
+        if not forecast_resp.is_success:
+            return json.dumps({"error": "Failed to fetch forecast"})
+
+        jobs = jobs_resp.json()
+        forecast = forecast_resp.json()
+
+    # Sum allocated days per job
+    allocated_map = {}
+    for entry in forecast:
+        jc = entry["jobCode"]
+        allocated_map[jc] = allocated_map.get(jc, 0) + entry.get("days", 0)
+
+    understaffed = []
+    for job in jobs:
+        time_budget = job.get("timeBudget")
+        if time_budget is None:
+            continue
+        allocated = allocated_map.get(job["jobCode"], 0)
+        if allocated < time_budget:
+            understaffed.append({
+                "jobCode": job["jobCode"],
+                "description": job["description"],
+                "businessUnit": job["businessUnit"],
+                "timeBudget": time_budget,
+                "allocatedDays": allocated,
+                "gap": time_budget - allocated,
+            })
+
+    return json.dumps(understaffed)
+
 
 
 @tool

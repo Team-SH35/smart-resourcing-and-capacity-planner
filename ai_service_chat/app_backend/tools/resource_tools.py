@@ -176,6 +176,37 @@ async def get_employee_availability(
     return json.dumps(result)
 
 @tool
+async def get_project_staffing(
+    job_code: Optional[str] = None,
+    month: Optional[str] = None,
+) -> str:
+    """
+    Get staffing information showing which employees are assigned to which projects.
+
+    Args:
+        job_code: Specific job code to query (e.g. "P001")
+        month: Month in format YYYY-MM-DD (e.g. "2026-03-01")
+
+    Returns:
+        JSON string with project staffing details
+    """
+    params = {"workspaceID": _workspace_id()}
+    if month:
+        params["month"] = month
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get(f"{_backend_url}/schedule", params=params)
+        if not response.is_success:
+            return json.dumps({"error": f"Backend error: {response.status_code}"})
+
+        rows = response.json()
+
+    if job_code:
+        rows = [r for r in rows if r.get("jobCode") == job_code]
+
+    return json.dumps(rows)
+
+@tool
 async def get_understaffed_projects(
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,

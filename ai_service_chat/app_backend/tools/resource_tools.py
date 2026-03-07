@@ -329,7 +329,29 @@ async def get_capacity_forecast(
         if not response.is_success:
             return json.dumps({"error": f"Backend error: {response.status_code}"})
         return response.text
+    
+@tool
+async def get_schedule(
+    month: Optional[str] = None,
+) -> str:
+    """
+    Get the full schedule showing employees, their assigned jobs, days and cost for a month.
 
+    Args:
+        month: Month in format YYYY-MM-DD (e.g. "2026-03-01")
+
+    Returns:
+        JSON string with full schedule
+    """
+    params = {"workspaceID": _workspace_id()}
+    if month:
+        params["month"] = month
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get(f"{_backend_url}/schedule", params=params)
+        if not response.is_success:
+            return json.dumps({"error": f"Backend error: {response.status_code}"})
+        return response.text
 
 def get_resource_tools(backend_url: str) -> List:
     """Get list of resource management tools for LangGraph."""

@@ -114,6 +114,66 @@ async def get_project_staffing(
         response = await client.get(f"{_backend_url}/api/projects/staffing", params=params)
         return response.text
 
+@tool
+async def get_employee_availability(
+    specialism: Optional[str] = None,
+    month: Optional[str] = None,
+) -> str:
+    """
+    Get employees with their allocated days for a given month.
+    Use this to find out who is available or how busy employees are.
+
+    Args:
+        specialism: Filter by specialism (e.g. "Developer")
+        month: Month to check in format YYYY-MM-DD (e.g. "2026-03-01")
+
+    Returns:
+        JSON string with employees and their allocated days
+    """
+    workspace_id = _workspace_id()
+    forecast_params = {"workspaceID": workspace_id}
+    if month:
+        forecast_params["month"] = month
+
+    async with httpx.AsyncClient() as client:
+        emp_resp, forecast_resp = await asyncio.gather(
+            client.get(f"{_backend_url}/employees", params={"workspaceID": workspace_id}),
+            client.get(f"{_backend_url}/forecast", params=forecast_params),
+        )
+
+        if not emp_resp.is_success:
+            return json.dumps({"error": "Failed to fetch employees"})
+        if not forecast_resp.is_success:
+            return json.dumps({"error": "Failed to fetch forecast"})
+
+        employees = emp_resp.json()
+        forecast = forecast_resp.json()
+
+    # Sum allocated days per employee
+    allocation_map = {}
+    for entry in forecast:
+        eid = entry["employeeID"]
+        allocation_map[eid] = allocation_map.get(eid, 0) + entry.get("days", 0)
+
+    if specialism:
+        employees = [
+            e for e in employees
+            if e.get("specialism") and specialism.lower() in e["specialism"].lower()
+        ]
+
+    employees = [e for e in employees if not e.get("excludeFromAI")]
+
+    result = []
+    for emp in employees:
+        allocated = allocation_map.get(emp["employeeID"], 0)
+        result.append({
+            "employeeID": emp["employeeID"],
+            "name": emp["name"],
+            "specialism": emp.get("specialism"),
+            "allocatedDays": allocated,
+        })
+
+    return json.dumps(result)
 
 @tool
 async def get_understaffed_projects(

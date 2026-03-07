@@ -239,36 +239,37 @@ async def get_understaffed_projects(
 @tool
 async def propose_allocation_change(
     employee_id: str,
-    project_id: str,
-    start_date: str,
-    end_date: str,
-    hours_per_week: float,
+    job_code: str,
+    days: float,
+    month: str,
+    cost: Optional[float] = None,
 ) -> str:
     """
     Propose a new resource allocation change.
-    This creates a pending change that requires user approval.
+    This creates a pending change that requires user approval before it is applied.
 
     Args:
         employee_id: Employee ID to allocate
-        project_id: Project ID to assign to
-        start_date: Allocation start date (ISO format)
-        end_date: Allocation end date (ISO format)
-        hours_per_week: Hours per week to allocate
+        job_code: Job code to assign the employee to
+        days: Number of days to allocate
+        month: Month in format YYYY-MM-DD (e.g. "2026-03-01")
+        cost: Optional cost for the allocation
 
     Returns:
         JSON string with proposed change details
     """
-    payload = {
-        "employeeId": employee_id,
-        "projectId": project_id,
-        "startDate": start_date,
-        "endDate": end_date,
-        "hoursPerWeek": hours_per_week,
-    }
-
-    async with httpx.AsyncClient() as client:
-        response = await client.post(f"{_backend_url}/api/allocations/propose", json=payload)
-        return response.text
+    # TODO: Wire up once backend delivers POST /changes endpoint
+    return json.dumps({
+        "status": "pending_backend",
+        "message": "Change proposal endpoint not yet available. Inform the user that changes cannot be applied yet and that the backend team is working on it.",
+        "proposed": {
+            "employeeId": employee_id,
+            "jobCode": job_code,
+            "days": days,
+            "month": month,
+            "cost": cost,
+        },
+    })
 
 
 @tool

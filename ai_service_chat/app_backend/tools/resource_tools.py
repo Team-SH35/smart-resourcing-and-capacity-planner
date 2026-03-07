@@ -23,37 +23,36 @@ def _workspace_id() -> int:
     return int(os.getenv("WORKSPACE_ID", "1"))
 
 @tool
-async def get_employee_availability(
-    role: Optional[str] = None,
-    skills: Optional[List[str]] = None,
-    start_date: Optional[str] = None,
-    end_date: Optional[str] = None,
+async def get_employees(
+    specialism: Optional[str] = None,
 ) -> str:
     """
-    Get employee availability based on role, skills, and date range.
+    Get all employees, optionally filtered by specialism.
 
     Args:
-        role: Employee role (e.g., "front-end developer", "backend engineer")
-        skills: List of required skills
-        start_date: Start date in ISO format (YYYY-MM-DD)
-        end_date: End date in ISO format (YYYY-MM-DD)
+        specialism: Filter by specialism name (e.g. "Developer", "Designer")
 
     Returns:
-        JSON string with available employees and their capacity
+        JSON string with list of employees
     """
-    params = {}
-    if role:
-        params["role"] = role
-    if skills:
-        params["skills"] = ",".join(skills)
-    if start_date:
-        params["startDate"] = start_date
-    if end_date:
-        params["endDate"] = end_date
+    params = {"workspaceID": _workspace_id()}
 
     async with httpx.AsyncClient() as client:
-        response = await client.get(f"{_backend_url}/api/employees/availability", params=params)
-        return response.text
+        response = await client.get(f"{_backend_url}/employees", params=params)
+        if not response.is_success:
+            return json.dumps({"error": f"Backend error: {response.status_code}"})
+
+        employees = response.json()
+
+    if specialism:
+        employees = [
+            e for e in employees
+            if e.get("specialism") and specialism.lower() in e["specialism"].lower()
+        ]
+
+    employees = [e for e in employees if not e.get("excludeFromAI")]
+
+    return json.dumps(employees)
 
 
 @tool

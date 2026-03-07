@@ -54,6 +54,36 @@ async def get_employees(
 
     return json.dumps(employees)
 
+@tool
+async def get_jobs(
+    business_unit: Optional[str] = None,
+) -> str:
+    """
+    Get all jobs, optionally filtered by business unit.
+
+    Args:
+        business_unit: Filter by business unit name
+
+    Returns:
+        JSON string with list of jobs
+    """
+    params = {"workspaceID": _workspace_id()}
+
+    
+    async with httpx.AsyncClient() as client:
+        response = await client.get(f"{_backend_url}/jobs", params=params)
+        if not response.is_success:
+            return json.dumps({"error": f"Backend error: {response.status_code}"})
+
+        jobs = response.json()
+
+    if business_unit:
+        jobs = [
+            j for j in jobs
+            if j.get("businessUnit") and business_unit.lower() in j["businessUnit"].lower()
+        ]
+
+    return json.dumps(jobs)
 
 @tool
 async def get_project_staffing(

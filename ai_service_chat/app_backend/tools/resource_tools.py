@@ -331,9 +331,12 @@ def get_resource_tools(backend_url: str) -> List:
     set_backend_url(backend_url)
 
     return [
+        get_employees,
+        get_jobs,
         get_employee_availability,
         get_project_staffing,
         get_understaffed_projects,
-        propose_allocation_change,
         get_capacity_forecast,
+        get_schedule,
+        propose_allocation_change,
     ]

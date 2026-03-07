@@ -65,7 +65,7 @@ async def get_jobs(
         business_unit: Filter by business unit name
 
     Returns:
-        JSON string with list of jobs
+        JSON string with list of jobs including budgets and dates
     """
     params = {"workspaceID": _workspace_id()}
 
@@ -85,34 +85,6 @@ async def get_jobs(
 
     return json.dumps(jobs)
 
-@tool
-async def get_project_staffing(
-    project_id: Optional[str] = None,
-    start_date: Optional[str] = None,
-    end_date: Optional[str] = None,
-) -> str:
-    """
-    Get current staffing information for projects.
-
-    Args:
-        project_id: Specific project ID to query
-        start_date: Start date in ISO format
-        end_date: End date in ISO format
-
-    Returns:
-        JSON string with project staffing details
-    """
-    params = {}
-    if project_id:
-        params["projectId"] = project_id
-    if start_date:
-        params["startDate"] = start_date
-    if end_date:
-        params["endDate"] = end_date
-
-    async with httpx.AsyncClient() as client:
-        response = await client.get(f"{_backend_url}/api/projects/staffing", params=params)
-        return response.text
 
 @tool
 async def get_employee_availability(

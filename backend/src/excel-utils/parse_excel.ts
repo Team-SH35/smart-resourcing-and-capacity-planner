@@ -39,7 +39,7 @@ interface Job {
     t_code        : string,
 }
 
-interface Employee {
+export interface Employee {
     name : string,
 }
 
@@ -60,7 +60,7 @@ const JOB_ORIGIN_INDEX          = 6;
 const T_CODE_INDEX              = 8;
 const JOB_CODE_INDEX            = 9;
 const DESCRIPTION_INDEX         = 10;
-const RESOURCE_ALLOCATION_RANGE = [11,17];
+const RESOURCE_ALLOCATION_RANGE = [11,23];
 
 
 export default async function parseExcelInfo(excelFileStream: fs.ReadStream) : Promise<ParsedExcelInfo> {

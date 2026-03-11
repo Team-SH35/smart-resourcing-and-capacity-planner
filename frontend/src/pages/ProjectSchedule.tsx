@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import ProjectCalendar from "../components/projectSchedule/ProjectCalendar";
 
 type CalendarView = "week" | "fortnight" | "month";
@@ -7,7 +8,11 @@ export default function ProjectSchedule() {
   const [view, setView] = useState<CalendarView>("fortnight");
   const [filtersOpen, setFiltersOpen] = useState(false);
 
-  const [clientFilter, setClientFilter] = useState("");
+  const [searchParams] = useSearchParams();
+
+  const [clientFilter, setClientFilter] = useState(
+    searchParams.get("client") || ""
+  );
   const [activeOnly, setActiveOnly] = useState(false);
   const [teamFilter, setTeamFilter] = useState<string[]>([]);
 
@@ -33,6 +38,13 @@ export default function ProjectSchedule() {
     document.addEventListener("mousedown", onClick);
     return () => document.removeEventListener("mousedown", onClick);
   }, []);
+
+  useEffect(() => {
+    const client = searchParams.get("client");
+    if (client) {
+      setClientFilter(client);
+    }
+  }, [searchParams]);
 
   return (
     <div className="p-6 space-y-4">

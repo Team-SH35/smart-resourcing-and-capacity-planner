@@ -10,15 +10,15 @@ export default function ProjectSchedule() {
 
   const [searchParams] = useSearchParams();
 
-  const [clientFilter, setClientFilter] = useState(
-    searchParams.get("client") || ""
-  );
+  // Get client filter from URL
+  const clientFromUrl = searchParams.get("client") || "";
+
+  const [clientFilter, setClientFilter] = useState(clientFromUrl);
   const [activeOnly, setActiveOnly] = useState(false);
   const [teamFilter, setTeamFilter] = useState<string[]>([]);
 
   const businessUnits = ["Developers", "Analytics"];
 
-  // Dropdown options
   const viewOptions: { value: CalendarView; label: string }[] = [
     { value: "week", label: "Week" },
     { value: "fortnight", label: "Fortnight" },
@@ -39,20 +39,15 @@ export default function ProjectSchedule() {
     return () => document.removeEventListener("mousedown", onClick);
   }, []);
 
-  useEffect(() => {
-    const client = searchParams.get("client");
-    if (client) {
-      setClientFilter(client);
-    }
-  }, [searchParams]);
-
   return (
     <div className="p-6 space-y-4">
+
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Projects</h1>
 
         <div className="flex items-center gap-2">
-          {/* View By dropdown */}
+
+          {/* View dropdown */}
           <div id="viewDropdown" className="relative">
             <button
               onClick={() => setViewDropdownOpen(o => !o)}
@@ -87,6 +82,7 @@ export default function ProjectSchedule() {
           >
             Filters
           </button>
+
         </div>
       </div>
 
@@ -100,7 +96,9 @@ export default function ProjectSchedule() {
       {/* Filters overlay */}
       {filtersOpen && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
+
           <div className="bg-white rounded-xl p-6 w-96 space-y-4">
+
             <h2 className="font-semibold text-lg">Filters</h2>
 
             <input
@@ -121,6 +119,7 @@ export default function ProjectSchedule() {
 
             <div className="space-y-2">
               <div className="font-medium text-sm">Business units</div>
+
               {businessUnits.map(unit => (
                 <label key={unit} className="flex items-center gap-2">
                   <input
@@ -137,6 +136,7 @@ export default function ProjectSchedule() {
                   {unit}
                 </label>
               ))}
+
             </div>
 
             <div className="flex justify-end gap-2 pt-4">
@@ -147,13 +147,13 @@ export default function ProjectSchedule() {
                 Close
               </button>
             </div>
+
           </div>
+
         </div>
       )}
+
     </div>
   );
 }
-
-
-
 

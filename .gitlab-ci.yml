@@ -1,30 +1,54 @@
+image: node:latest
+
 stages:
-  - build
-  - test #not implemented yet
+  - Lint
+  - Build
+  - Test
 
-
-backend:
-  image: node:slim
-  #Checks if the backend builds
-  stage: build
-  script:
+backend:lint:
+  stage: Lint
+  before_script:
     - cd backend
-    - npm run
     - npm ci
-
-
-frontend:
-  image: node:slim
-  #Checks if the frontend builds
-  stage: build
   script:
+    - npm run lint
+
+backend:build:
+  stage: Build
+  before_script:
+    - cd backend
+    - npm install
+  script:
+    - npm run build
+
+backend:test:
+  stage: Test
+  before_script:
+    - cd backend
+    - npm ci
+  script:
+    - npm test
+
+frontend:lint:
+  stage: Lint
+  before_script:
     - cd frontend
     - npm ci
-    - npm run
-
-database:
-  image: python:3.10-slim
-  stage: build
   script:
-    - cd database
-    - python initdb.py
+    - npm run lint
+
+frontend:build:
+  stage: Build
+  before_script:
+    - cd frontend
+    - npm ci
+  script:
+    - npm run build
+
+frontend:test:
+  stage: Test
+  before_script:
+    - cd frontend
+    - npm ci
+  script:
+    - npm test

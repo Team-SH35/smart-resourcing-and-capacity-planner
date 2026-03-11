@@ -1,4 +1,4 @@
-import SearchBar from '../components/dashboard/SearchBar';
+
 import BusinessUnitSection from '../components/dashboard/BusinessUnitSection';
 import ProjectsSection from '../components/dashboard/ProjectsSection';
 import DarkModeToggle from '../components/dashboard/DarkModeToggle';
@@ -7,7 +7,6 @@ export default function Dashboard() {
   return (
     <>
       <div className="max-w-[1200px] mx-auto px-6 py-8">
-        <SearchBar />
 
         <div className="mb-10">
           <h1 className="text-2xl font-bold mb-1">

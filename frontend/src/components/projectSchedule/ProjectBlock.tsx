@@ -1,5 +1,7 @@
+
 import type { CalendarProject } from "../data/types";
 import { daysBetween, startOfDay, parseDateUTC } from "./utils";
+import { useNavigate } from "react-router-dom";
 
 export default function ProjectBlock({
   project,
@@ -10,6 +12,7 @@ export default function ProjectBlock({
   calendarStart: Date;
   daysVisible: number;
 }) {
+  const navigate = useNavigate();
   const projectStart = startOfDay(parseDateUTC(project.startDate));
   const projectEnd = startOfDay(parseDateUTC(project.endDate));
 
@@ -30,12 +33,15 @@ export default function ProjectBlock({
 
   return (
     <div
-      className="absolute top-2 h-16 rounded-xl bg-slate-100 border-l-4 px-3 flex items-center"
+      className="absolute top-2 h-16 rounded-xl bg-slate-100 border-l-4 px-3 flex items-center cursor-pointer hover:shadow-md transition-shadow"
       style={{
         left: `calc(${offset} * (100% / ${daysVisible}))`,
         width: `calc(${duration} * (100% / ${daysVisible}))`,
         borderColor: project.color,
       }}
+      onClick={() => navigate(`/project/${project.id}`)}
+      role="button"
+      tabIndex={0}
     >
       <div className="text-sm truncate">
         <div className="font-medium truncate">{project.title}</div>

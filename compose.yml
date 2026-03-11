@@ -18,9 +18,20 @@ services:
       - "5173:5173"
 
   database:
-    build: 
+    build:
       context: ./database
     volumes:
       - sqlite-db:/database
+
+  ai_service:
+    build:
+      context: ./ai_service_chat
+      dockerfile: Dockerfile
+    container_name: ai_service
+    env_file:
+      - ./ai_service_chat/.env
+    ports:
+      - "8000:8000"
+
 volumes:
   sqlite-db:

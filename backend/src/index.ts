@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import { test } from './excel-utils/excel_test'
 
 dotenv.config();
 
@@ -16,6 +17,8 @@ app.get("/", (_req, res) => {
 });
 
 const PORT = process.env.PORT || 4000;
+
+test()
 
 app.listen(PORT, () => {
   console.log(`Backend listening on http://localhost:${PORT}`);

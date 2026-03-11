@@ -4,7 +4,7 @@ This implements an agent that can query and update resource allocations.
 """
 
 from typing import Annotated, TypedDict, Sequence
-from langchain_core.messages import BaseMessage, HumanMessage
+from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
 from langgraph.graph import StateGraph, END
 from langgraph.graph.message import add_messages
@@ -87,7 +87,7 @@ class ResourceManagementAgent:
         Returns:
             Updated state with LLM response
         """
-        messages = state["messages"]
+        messages = [SystemMessage(content=self.get_system_prompt())] + list(state["messages"])
         response = self.llm_with_tools.invoke(messages)
         return {"messages": [response]}
 

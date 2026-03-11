@@ -1,7 +1,7 @@
 import { expect, describe, it, beforeAll } from "@jest/globals"
 import fs from "node:fs"
 import parseExcelInfo from "../src/excel-utils/parse_excel"
-import { ParsedExcelInfo, Employee } from "../src/excel-utils/parse_excel";
+import { ParsedExcelInfo } from "../src/excel-utils/parse_excel";
 
 describe("Checks that all employee names are read correctly", () => {
 

@@ -1,6 +1,8 @@
 FROM node:slim
+WORKDIR /src
+COPY package*.json ./
+RUN npm install
 COPY . .
 COPY .env.example .env
-RUN npm install
-CMD npm run dev
 EXPOSE 4000
+CMD ["npm", "run", "dev"]

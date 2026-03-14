@@ -25,7 +25,6 @@ export default function ProjectCard({
   budget,
   progress,
   avatars,
-  onClick,
   onSave,
 }: ProjectCardProps) {
   const [isEditing, setIsEditing] = useState(false);

@@ -36,7 +36,6 @@ export default function BusinessUnitCard({
 }: BusinessUnitCardProps) {
   const [editOpen, setEditOpen] = useState(false);
   const [unitName, setUnitName] = useState(name);
-  const [unitIcon, setUnitIcon] = useState(icon);
   const [employees, setEmployees] = useState<Employee[]>([...initialEmployees]);
   const [newEmployeeName, setNewEmployeeName] = useState("");
 
@@ -57,7 +56,7 @@ export default function BusinessUnitCard({
 
   const handleSave = () => {
     if (onSave) {
-      onSave({ name: unitName, icon: unitIcon, employees });
+      onSave({ name: unitName, icon: icon, employees });
     }
     setEditOpen(false);
   };

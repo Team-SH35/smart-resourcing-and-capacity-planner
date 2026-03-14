@@ -1,3 +1,10 @@
+import { useState } from "react";
+
+interface Avatar {
+  initials: string;
+  color: string;
+}
+
 interface ProjectCardProps {
   name: string;
   department: string;
@@ -5,8 +12,9 @@ interface ProjectCardProps {
   daysLeft: number;
   budget: string;
   progress: number;
-  avatars: { initials: string; color: string }[];
+  avatars: Avatar[];
   onClick?: () => void;
+  onSave?: (updatedProject: Omit<ProjectCardProps, "avatars" | "onClick" | "onSave">) => void;
 }
 
 export default function ProjectCard({
@@ -18,51 +26,61 @@ export default function ProjectCard({
   progress,
   avatars,
   onClick,
+  onSave,
 }: ProjectCardProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [form, setForm] = useState({ name, department, client, daysLeft, budget, progress });
+
   const getDaysColor = () => {
-    if (daysLeft <= 1) return 'bg-red-50 dark:bg-red-900/20 text-red-500';
-    if (daysLeft <= 8) return 'bg-orange-50 dark:bg-orange-900/20 text-orange-500';
+    if (form.daysLeft <= 1) return 'bg-red-50 dark:bg-red-900/20 text-red-500';
+    if (form.daysLeft <= 8) return 'bg-orange-50 dark:bg-orange-900/20 text-orange-500';
     return 'bg-slate-100 dark:bg-slate-800 text-slate-500';
   };
 
+  const handleSave = () => {
+    if (onSave) onSave(form);
+    setIsEditing(false);
+  };
+
   return (
-    <div
-      className="bg-card-light dark:bg-card-dark p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 cursor-pointer hover:shadow-md transition-shadow"
-      onClick={onClick}
-      role={onClick ? "button" : undefined}
-      tabIndex={onClick ? 0 : undefined}
-    >
+    <div className="bg-card-light dark:bg-card-dark p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 cursor-pointer hover:shadow-md transition-shadow relative">
       <div className="flex justify-between items-start mb-2">
         <div>
-          <h3 className="font-bold text-lg">{name}</h3>
+          <h3 className="font-bold text-lg">{form.name}</h3>
           <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold">
-            {department} · {client}
+            {form.department} · {form.client}
           </p>
         </div>
-        <button className="text-slate-400">
+        <button
+          className="text-slate-400"
+          onClick={(e) => { e.stopPropagation(); setIsEditing(true); }}
+        >
           <span className="material-icons-outlined text-xl">more_horiz</span>
         </button>
       </div>
+
       <div className="mt-4 mb-6">
         <span
           className={`inline-flex items-center gap-1.5 px-3 py-1 ${getDaysColor()} rounded-full text-xs font-medium`}
         >
           <span className="material-icons-outlined text-[14px]">schedule</span>
-          {daysLeft} days left
+          {form.daysLeft} days left
         </span>
       </div>
+
       <div className="space-y-2 mb-6">
         <div className="flex justify-between text-xs font-bold">
-          <span>Budget: {budget}</span>
-          <span className="text-slate-400">{progress}%</span>
+          <span>Budget: {form.budget}</span>
+          <span className="text-slate-400">{form.progress}%</span>
         </div>
         <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
           <div
             className="h-full bg-emerald-400 rounded-full"
-            style={{ width: `${progress}%` }}
+            style={{ width: `${form.progress}%` }}
           ></div>
         </div>
       </div>
+
       {avatars.length > 0 && (
         <div className="flex items-center">
           {avatars.map((avatar, index) => (
@@ -75,6 +93,82 @@ export default function ProjectCard({
               {avatar.initials}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Edit Overlay */}
+      {isEditing && (
+        <div
+          className="fixed inset-0 bg-black/30 flex items-center justify-center z-50"
+          onClick={() => setIsEditing(false)}
+        >
+          <div
+            className="bg-white dark:bg-gray-900 rounded-xl p-6 w-96 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="font-semibold text-lg">Edit Project</h2>
+            <div>
+              <h4 className="font-semibold mt-4 mb-2">Project Name</h4>
+              <input
+                className="border rounded w-full px-3 py-2"
+                placeholder="Project Name"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+              />
+            </div>
+            <div>
+              <h4 className="font-semibold mt-4 mb-2">Department</h4>
+              <input
+                className="border rounded w-full px-3 py-2"
+                placeholder="Department"
+                value={form.department}
+                onChange={(e) => setForm({ ...form, department: e.target.value })}
+              />
+            </div>
+            <div>
+              <h4 className="font-semibold mt-4 mb-2">Client</h4>
+              <input
+                className="border rounded w-full px-3 py-2"
+                placeholder="Client"
+                value={form.client}
+                onChange={(e) => setForm({ ...form, client: e.target.value })}
+              />
+            </div>
+            <div>
+              <h4 className="font-semibold mt-4 mb-2">Days Left</h4>
+              <input
+                type="number"
+                className="border rounded w-full px-3 py-2"
+                placeholder="Days Left"
+                value={form.daysLeft}
+                onChange={(e) => setForm({ ...form, daysLeft: parseInt(e.target.value) || 0 })}
+              />
+            </div>
+            <div>
+              <h4 className="font-semibold mt-4 mb-2">Budget</h4>
+              <input
+                className="border rounded w-full px-3 py-2"
+                placeholder="Budget"
+                value={form.budget}
+                onChange={(e) => setForm({ ...form, budget: e.target.value })}
+              />  
+            </div>
+
+            <div className="flex justify-end gap-2 pt-4">
+              <button
+                className="border rounded px-3 py-1"
+                onClick={() => setIsEditing(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="bg-emerald-500 text-white rounded px-3 py-1"
+                onClick={handleSave}
+              >
+                Save
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

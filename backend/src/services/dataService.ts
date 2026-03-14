@@ -34,6 +34,28 @@ type ForecastRow = {
   month?: string | null;
 };
 
+type ForecastWriteInput = {
+  employeeName: string;
+  jobCode: string;
+  days?: number;
+  month?: string; // accepted for future compatibility, ignored for now
+};
+
+type EmployeeLookupRow = {
+  employeeId: number;
+  workspaceId: number;
+};
+
+type JobLookupRow = {
+  jobCode: string;
+  workspaceId: number;
+};
+
+type ForecastExistingRow = {
+  employeeId: number;
+  jobCode: string;
+};
+
 function safeString(value: string | null | undefined, fallback = ""): string {
     return value ?? fallback;
 }
@@ -218,4 +240,159 @@ export function getCalendarRows(): CalendarRow[] {
     }
 
     return Array.from(rowsByTeam.values());
+}
+
+function getEmployeeByName(employeeName: string): EmployeeLookupRow | undefined {
+  return db
+    .prepare(`
+      SELECT
+        EmployeeID AS employeeId,
+        WorkspaceID AS workspaceId
+      FROM Employee
+      WHERE Name = ?
+    `)
+    .get(employeeName) as EmployeeLookupRow | undefined;
+}
+
+function getJobByCode(jobCode: string): JobLookupRow | undefined {
+  return db
+    .prepare(`
+      SELECT
+        JobCode AS jobCode,
+        WorkspaceID AS workspaceId
+      FROM Job
+      WHERE JobCode = ?
+    `)
+    .get(jobCode) as JobLookupRow | undefined;
+}
+
+function getExistingForecastEntry(employeeId: number, jobCode: string): ForecastExistingRow | undefined {
+  return db
+    .prepare(`
+      SELECT
+        EmployeeID AS employeeId,
+        JobCode AS jobCode
+      FROM ForecastEntry
+      WHERE EmployeeID = ? AND JobCode = ?
+    `)
+    .get(employeeId, jobCode) as ForecastExistingRow | undefined;
+}
+
+export function createForecastEntry(input: ForecastWriteInput) {
+  const { employeeName, jobCode, days = 0 } = input;
+
+  const employee = getEmployeeByName(employeeName);
+  if (!employee) {
+    throw new Error(`Employee not found: ${employeeName}`);
+  }
+
+  const job = getJobByCode(jobCode);
+  if (!job) {
+    throw new Error(`Job not found: ${jobCode}`);
+  }
+
+  const existing = getExistingForecastEntry(employee.employeeId, job.jobCode);
+  if (existing) {
+    throw new Error(
+      `Forecast entry already exists for employee "${employeeName}" and job "${jobCode}"`
+    );
+  }
+
+  // Temporary: month is ignored until schema supports it.
+  // Workspace choice: prefer the employee workspace for now.
+  db.prepare(`
+    INSERT INTO ForecastEntry (
+      EmployeeID,
+      JobCode,
+      Cost,
+      Days,
+      WorkspaceID
+    )
+    VALUES (?, ?, ?, ?, ?)
+  `).run(
+    employee.employeeId,
+    job.jobCode,
+    null,
+    days,
+    employee.workspaceId
+  );
+
+  return {
+    message: "Forecast entry created",
+    employeeName,
+    jobCode,
+    days,
+    month: input.month ?? null,
+    monthIgnored: true,
+  };
+}
+
+export function updateForecastEntryDays(input: ForecastWriteInput) {
+  const { employeeName, jobCode, days = 0 } = input;
+
+  const employee = getEmployeeByName(employeeName);
+  if (!employee) {
+    throw new Error(`Employee not found: ${employeeName}`);
+  }
+
+  const job = getJobByCode(jobCode);
+  if (!job) {
+    throw new Error(`Job not found: ${jobCode}`);
+  }
+
+  const existing = getExistingForecastEntry(employee.employeeId, job.jobCode);
+  if (!existing) {
+    throw new Error(
+      `Forecast entry not found for employee "${employeeName}" and job "${jobCode}"`
+    );
+  }
+
+  db.prepare(`
+    UPDATE ForecastEntry
+    SET Days = ?
+    WHERE EmployeeID = ? AND JobCode = ?
+  `).run(days, employee.employeeId, job.jobCode);
+
+  return {
+    message: "Forecast entry updated",
+    employeeName,
+    jobCode,
+    days,
+    month: input.month ?? null,
+    monthIgnored: true,
+  };
+}
+
+export function deleteForecastEntry(input: ForecastWriteInput) {
+  const { employeeName, jobCode } = input;
+
+  const employee = getEmployeeByName(employeeName);
+  if (!employee) {
+    throw new Error(`Employee not found: ${employeeName}`);
+  }
+
+  const job = getJobByCode(jobCode);
+  if (!job) {
+    throw new Error(`Job not found: ${jobCode}`);
+  }
+
+  const existing = getExistingForecastEntry(employee.employeeId, job.jobCode);
+  if (!existing) {
+    throw new Error(
+      `Forecast entry not found for employee "${employeeName}" and job "${jobCode}"`
+    );
+  }
+
+  db.prepare(`
+    DELETE FROM ForecastEntry
+    WHERE EmployeeID = ? AND JobCode = ?
+  `).run(employee.employeeId, job.jobCode);
+
+  return {
+    message: "Forecast entry deleted",
+    employeeName,
+    jobCode,
+    month: input.month ?? null,
+    monthIgnored: true,
+  };
 }

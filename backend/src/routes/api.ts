@@ -4,6 +4,9 @@ import {
     getJobCodes,
     getForecastEntries,
     getCalendarRows,
+    createForecastEntry,
+    updateForecastEntryDays,
+    deleteForecastEntry,
 } from "../services/dataService";
 
 const router = Router();

@@ -31,6 +31,7 @@
     "@types/express": "^5.0.5",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.10.1",
+    "@types/sqlite3": "^5.1.0",
     "@types/pg": "^8.15.6",
     "@typescript-eslint/eslint-plugin": "^8.56.0",
     "@typescript-eslint/parser": "^8.56.0",

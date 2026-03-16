@@ -8,12 +8,17 @@ services:
       - sqlite-db:/database
     ports:
       - "4000:4000"
+    depends_on:
+      - database
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: frontend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
     ports:
       - "5173:5173"
 

@@ -73,7 +73,7 @@ const defaultProps = {
   onDeleteAllocation: mockDelete,
 };
 
-describe("EmployeeProjectSchedule - realistic tests", () => {
+describe("EmployeeProjectSchedule - tests", () => {
   beforeEach(() => {
     mockUpdate.mockReset();
     mockDelete.mockReset();

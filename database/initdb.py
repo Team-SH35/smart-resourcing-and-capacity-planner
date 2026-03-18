@@ -77,7 +77,6 @@ cur.execute("""CREATE TABLE ForecastEntry (
                JobCode VARCHAR(20) NOT NULL,
                Cost DECIMAL,
                Days FLOAT,
-               Month VARCHAR(9),
                WorkspaceID INT NOT NULL,
                Days_allocated_jan float,
                Days_allocated_feb float,

@@ -82,13 +82,25 @@ export function writeExcelToDB(workspaceID: string, excelData: ParsedExcelInfo) 
 
             const result = insertEmployee.run(employee.name, workspaceID);
 
-            excelData.forecast_entries.forEach(forecast => {
-                if (forecast.employeeID == employee.employeeID) {
+            excelData.forecast_entries.forEach(forecast_entry => {
+                if (forecast_entry.employeeID == employee.employeeID) {
                     insertForecast.run(
                         result.lastInsertRowid,
-                        forecast.job_code,
+                        forecast_entry.job_code,
                         null,
                         null,
+                        forecast_entry.resource_allocation[0],
+                        forecast_entry.resource_allocation[1],
+                        forecast_entry.resource_allocation[2],
+                        forecast_entry.resource_allocation[3],
+                        forecast_entry.resource_allocation[4],
+                        forecast_entry.resource_allocation[5],
+                        forecast_entry.resource_allocation[6],
+                        forecast_entry.resource_allocation[7],
+                        forecast_entry.resource_allocation[8],
+                        forecast_entry.resource_allocation[9],
+                        forecast_entry.resource_allocation[10],
+                        forecast_entry.resource_allocation[11],
                         workspaceID
                     );
                 }

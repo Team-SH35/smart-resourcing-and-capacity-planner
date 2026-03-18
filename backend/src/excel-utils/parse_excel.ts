@@ -23,6 +23,7 @@ interface MonthAllocation {
 }
  
 interface ForecastEntry {
+    employeeID              : number,
     name                    : string, 
     job_code                : string, 
     resource_allocation     : (string)[]
@@ -40,6 +41,7 @@ interface Job {
 }
 
 export interface Employee {
+    employeeID : number,
     name : string,
 }
 
@@ -83,6 +85,8 @@ export default async function parseExcelInfo(excelFileStream: fs.ReadStream) : P
     const registered_jobs = new Set<string>();
     const registered_employees = new Set<string>();
 
+    let employeeID: number = 0;
+
     while (getCellString(row.getCell(2)) != "NULL") {
 
         // If at total then at end of current employee. Go to next line
@@ -93,8 +97,10 @@ export default async function parseExcelInfo(excelFileStream: fs.ReadStream) : P
 
         if (!registered_employees.has(getCellString(row.getCell(NAME_INDEX)))) {
             parsed_excel_data.employees.push({
-                name: getCellString(row.getCell(NAME_INDEX))
+                employeeID: employeeID,
+                name: getCellString(row.getCell(NAME_INDEX)),
             })
+            employeeID++;
         }
 
         // If job has not appeared yet add it to jobs array
@@ -115,7 +121,8 @@ export default async function parseExcelInfo(excelFileStream: fs.ReadStream) : P
         parsed_excel_data.forecast_entries.push({
             name                : getCellString(row.getCell(NAME_INDEX)),
             job_code            : getCellString(row.getCell(JOB_CODE_INDEX)),
-            resource_allocation : getResourceAllocationArray(row)
+            resource_allocation : getResourceAllocationArray(row),
+            employeeID          : employeeID
         });
 
         row = worksheet.getRow(++currentRow);

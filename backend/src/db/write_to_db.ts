@@ -66,30 +66,46 @@ export function writeExcelToDB(workspaceID: string, excelData: ParsedExcelInfo) 
         }
 
         const insertEmployee = db.prepare(`
-            INSERT INTO Employee (Name, ExcludeFromAI, WorkspaceID)
-            VALUES (?, FALSE, ?)
+            INSERT INTO Employee (EmployeeID, Name, ExcludeFromAI, WorkspaceID)
+            VALUES (?, ?, FALSE, ?)
         `);
 
         const insertForecast = db.prepare(`
             INSERT INTO ForecastEntry (
-                EmployeeID, JobCode, Cost, Days, WorkspaceID
+                EmployeeID, JobCode, Cost, Days, Days_allocated_jan float, Days_allocated_feb float, Days_allocated_mar float, Days_allocated_apr float, Days_allocated_may float, Days_allocated_jun float, Days_allocated_jul float, Days_allocated_sep float, Days_allocated_aug float, Days_allocated_oct float, Days_allocated_nov float,Days_allocated_dec float, WorkspaceID
             )
-            VALUES (?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `);
 
         for (let i = 0; i < excelData.employees.length; i++) {
             const employee = excelData.employees[i];
-            const forecast = excelData.forecast_entries[i];
 
-            const result = insertEmployee.run(employee.name, workspaceID);
+            const result = insertEmployee.run(employee.employeeID, employee.name, workspaceID);
 
-            insertForecast.run(
-                result.lastInsertRowid,
-                forecast.job_code,
-                null,
-                null,
-                workspaceID
-            );
+            excelData.forecast_entries.forEach(forecast_entry => {
+                if (forecast_entry.employeeID == employee.employeeID) {
+                    insertForecast.run(
+                        result.lastInsertRowid,
+                        forecast_entry.job_code,
+                        null,
+                        null,
+                        forecast_entry.resource_allocation[0],
+                        forecast_entry.resource_allocation[1],
+                        forecast_entry.resource_allocation[2],
+                        forecast_entry.resource_allocation[3],
+                        forecast_entry.resource_allocation[4],
+                        forecast_entry.resource_allocation[5],
+                        forecast_entry.resource_allocation[6],
+                        forecast_entry.resource_allocation[7],
+                        forecast_entry.resource_allocation[8],
+                        forecast_entry.resource_allocation[9],
+                        forecast_entry.resource_allocation[10],
+                        forecast_entry.resource_allocation[11],
+                        workspaceID
+                    );
+                }
+            });
+            
         }
     });
 

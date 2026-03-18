@@ -77,6 +77,7 @@ cur.execute("""CREATE TABLE ForecastEntry (
                JobCode VARCHAR(20) NOT NULL,
                Cost DECIMAL,
                Days FLOAT,
+               Month VARCHAR(9),
                WorkspaceID INT NOT NULL,
                PRIMARY KEY (EmployeeID, JobCode),
                FOREIGN KEY (EmployeeID) REFERENCES Employee(EmployeeID),

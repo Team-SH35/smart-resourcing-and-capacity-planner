@@ -72,9 +72,9 @@ export function writeExcelToDB(workspaceID: string, excelData: ParsedExcelInfo) 
 
         const insertForecast = db.prepare(`
             INSERT INTO ForecastEntry (
-                EmployeeID, JobCode, Cost, Days, WorkspaceID
+                EmployeeID, JobCode, Cost, Days, Month, WorkspaceID
             )
-            VALUES (?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?)
         `);
 
         for (let i = 0; i < excelData.employees.length; i++) {
@@ -86,6 +86,7 @@ export function writeExcelToDB(workspaceID: string, excelData: ParsedExcelInfo) 
             insertForecast.run(
                 result.lastInsertRowid,
                 forecast.job_code,
+                null,
                 null,
                 null,
                 workspaceID

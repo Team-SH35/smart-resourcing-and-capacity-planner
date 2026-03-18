@@ -66,8 +66,8 @@ export function writeExcelToDB(workspaceID: string, excelData: ParsedExcelInfo) 
         }
 
         const insertEmployee = db.prepare(`
-            INSERT INTO Employee (Name, ExcludeFromAI, WorkspaceID)
-            VALUES (?, FALSE, ?)
+            INSERT INTO Employee (EmployeeID, Name, ExcludeFromAI, WorkspaceID)
+            VALUES (?, ?, FALSE, ?)
         `);
 
         const insertForecast = db.prepare(`
@@ -80,7 +80,7 @@ export function writeExcelToDB(workspaceID: string, excelData: ParsedExcelInfo) 
         for (let i = 0; i < excelData.employees.length; i++) {
             const employee = excelData.employees[i];
 
-            const result = insertEmployee.run(employee.name, workspaceID);
+            const result = insertEmployee.run(employee.employeeID, employee.name, workspaceID);
 
             excelData.forecast_entries.forEach(forecast_entry => {
                 if (forecast_entry.employeeID == employee.employeeID) {

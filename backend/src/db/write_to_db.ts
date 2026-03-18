@@ -72,24 +72,28 @@ export function writeExcelToDB(workspaceID: string, excelData: ParsedExcelInfo) 
 
         const insertForecast = db.prepare(`
             INSERT INTO ForecastEntry (
-                EmployeeID, JobCode, Cost, Days, WorkspaceID
+                EmployeeID, JobCode, Cost, Days, Days_allocated_jan float, Days_allocated_feb float, Days_allocated_mar float, Days_allocated_apr float, Days_allocated_may float, Days_allocated_jun float, Days_allocated_jul float, Days_allocated_sep float, Days_allocated_aug float, Days_allocated_oct float, Days_allocated_nov float,Days_allocated_dec float, WorkspaceID
             )
-            VALUES (?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `);
 
         for (let i = 0; i < excelData.employees.length; i++) {
             const employee = excelData.employees[i];
-            const forecast = excelData.forecast_entries[i];
 
             const result = insertEmployee.run(employee.name, workspaceID);
 
-            insertForecast.run(
-                result.lastInsertRowid,
-                forecast.job_code,
-                null,
-                null,
-                workspaceID
-            );
+            excelData.forecast_entries.forEach(forecast => {
+                if (forecast.employeeID == employee.employeeID) {
+                    insertForecast.run(
+                        result.lastInsertRowid,
+                        forecast.job_code,
+                        null,
+                        null,
+                        workspaceID
+                    );
+                }
+            });
+            
         }
     });
 

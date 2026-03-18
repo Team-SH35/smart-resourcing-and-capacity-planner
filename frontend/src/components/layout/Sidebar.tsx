@@ -1,7 +1,6 @@
-// components/Sidebar.tsx
-import { useState } from "react"; 
+import { useState, useEffect } from "react";
 import { NavLink } from "react-router-dom";
-import { jobCodes } from "../data/jobCodes"; // just import the data itself
+import { getBusinessUnits } from "../../api/client"; // adjust path if needed
 
 const navItems = [
   { label: "Dashboard", path: "/" },
@@ -11,9 +10,27 @@ const navItems = [
 
 export default function Sidebar() {
   const [open, setOpen] = useState(true);
+  const [businessUnits, setBusinessUnits] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // dynamically get unique business units from jobCodes
-  const businessUnits = Array.from(new Set(jobCodes.map((job) => job.businessUnit)));
+  useEffect(() => {
+    async function loadBusinessUnits() {
+      try {
+        setLoading(true);
+        const units = await getBusinessUnits();
+        setBusinessUnits(units);
+        setError(null);
+      } catch (err: any) {
+        console.error("Failed to load business units", err);
+        setError("Failed to load business units");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadBusinessUnits();
+  }, []);
 
   return (
     <div className="space-y-6 p-4 w-60 bg-white shadow-md h-screen">
@@ -33,19 +50,37 @@ export default function Sidebar() {
             open ? "max-h-60 opacity-100" : "max-h-0 opacity-0"
           }`}
         >
-          {businessUnits.map((unit) => (
-            <NavLink
-              key={unit}
-              to={`/businessunit/${unit}`}
-              className={({ isActive }) =>
-                `block w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100 font-medium ${
-                  isActive ? "bg-slate-200 font-semibold" : "text-slate-700"
-                }`
-              }
-            >
-              {unit}
-            </NavLink>
-          ))}
+          {loading && (
+            <div className="text-sm text-slate-400 px-3">Loading...</div>
+          )}
+
+          {error && (
+            <div className="text-sm text-red-500 px-3">{error}</div>
+          )}
+
+          {!loading && !error && businessUnits.length === 0 && (
+            <div className="text-sm text-slate-400 px-3">
+              No business units found
+            </div>
+          )}
+
+          {!loading &&
+            !error &&
+            businessUnits.map((unit) => (
+              <NavLink
+                key={unit}
+                to={`/businessunit/${unit}`}
+                className={({ isActive }) =>
+                  `block w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100 font-medium ${
+                    isActive
+                      ? "bg-slate-200 font-semibold"
+                      : "text-slate-700"
+                  }`
+                }
+              >
+                {unit}
+              </NavLink>
+            ))}
         </div>
       </div>
 
@@ -62,7 +97,9 @@ export default function Sidebar() {
               end
               className={({ isActive }) =>
                 `w-full flex items-center px-3 py-2 rounded-lg hover:bg-slate-100 ${
-                  isActive ? "font-semibold text-custom-blue" : "font-medium text-black"
+                  isActive
+                    ? "font-semibold text-custom-blue"
+                    : "font-medium text-black"
                 }`
               }
             >

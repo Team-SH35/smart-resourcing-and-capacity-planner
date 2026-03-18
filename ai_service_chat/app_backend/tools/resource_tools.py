@@ -38,7 +38,7 @@ async def get_employees(
     params = {"workspaceID": _workspace_id()}
 
     async with httpx.AsyncClient() as client:
-        response = await client.get(f"{_backend_url}/employees", params=params)
+        response = await client.get(f"{_backend_url}/api/employees", params=params)
         if not response.is_success:
             return json.dumps({"error": f"Backend error: {response.status_code}"})
 
@@ -47,10 +47,10 @@ async def get_employees(
     if specialism:
         employees = [
             e for e in employees
-            if e.get("specialism") and specialism.lower() in e["specialism"].lower()
+            if any(specialism.lower() in s.lower() for s in e.get("specialisms", []))
         ]
 
-    employees = [e for e in employees if not e.get("excludeFromAI")]
+    employees = [e for e in employees if not e.get("excludedFromAI")]
 
     return json.dumps(employees)
 
@@ -69,9 +69,9 @@ async def get_jobs(
     """
     params = {"workspaceID": _workspace_id()}
 
-    
+
     async with httpx.AsyncClient() as client:
-        response = await client.get(f"{_backend_url}/jobs", params=params)
+        response = await client.get(f"{_backend_url}/api/job-codes", params=params)
         if not response.is_success:
             return json.dumps({"error": f"Backend error: {response.status_code}"})
 
@@ -109,8 +109,8 @@ async def get_employee_availability(
 
     async with httpx.AsyncClient() as client:
         emp_resp, forecast_resp = await asyncio.gather(
-            client.get(f"{_backend_url}/employees", params={"workspaceID": workspace_id}),
-            client.get(f"{_backend_url}/forecast", params=forecast_params),
+            client.get(f"{_backend_url}/api/employees", params={"workspaceID": workspace_id}),
+            client.get(f"{_backend_url}/api/forecast-entries", params=forecast_params),
         )
 
         if not emp_resp.is_success:
@@ -121,27 +121,27 @@ async def get_employee_availability(
         employees = emp_resp.json()
         forecast = forecast_resp.json()
 
-    # Sum allocated days per employee
+    # Sum allocated days per employee (keyed by name since backend has no employeeID)
     allocation_map = {}
     for entry in forecast:
-        eid = entry["employeeID"]
-        allocation_map[eid] = allocation_map.get(eid, 0) + entry.get("days", 0)
+        name = entry.get("employeeName", "")
+        allocation_map[name] = allocation_map.get(name, 0) + entry.get("days", 0)
 
     if specialism:
         employees = [
             e for e in employees
-            if e.get("specialism") and specialism.lower() in e["specialism"].lower()
+            if any(specialism.lower() in s.lower() for s in e.get("specialisms", []))
         ]
 
-    employees = [e for e in employees if not e.get("excludeFromAI")]
+    employees = [e for e in employees if not e.get("excludedFromAI")]
 
     result = []
     for emp in employees:
-        allocated = allocation_map.get(emp["employeeID"], 0)
+        name = emp.get("name", "")
+        allocated = allocation_map.get(name, 0)
         result.append({
-            "employeeID": emp["employeeID"],
-            "name": emp["name"],
-            "specialism": emp.get("specialism"),
+            "name": name,
+            "specialisms": emp.get("specialisms", []),
             "allocatedDays": allocated,
         })
 
@@ -167,7 +167,7 @@ async def get_project_staffing(
         params["month"] = month
 
     async with httpx.AsyncClient() as client:
-        response = await client.get(f"{_backend_url}/schedule", params=params)
+        response = await client.get(f"{_backend_url}/api/forecast-entries", params=params)
         if not response.is_success:
             return json.dumps({"error": f"Backend error: {response.status_code}"})
 
@@ -198,8 +198,8 @@ async def get_understaffed_projects(
 
     async with httpx.AsyncClient() as client:
         jobs_resp, forecast_resp = await asyncio.gather(
-            client.get(f"{_backend_url}/jobs", params={"workspaceID": workspace_id}),
-            client.get(f"{_backend_url}/forecast", params=forecast_params),
+            client.get(f"{_backend_url}/api/job-codes", params={"workspaceID": workspace_id}),
+            client.get(f"{_backend_url}/api/forecast-entries", params=forecast_params),
         )
 
         if not jobs_resp.is_success:
@@ -218,7 +218,7 @@ async def get_understaffed_projects(
 
     understaffed = []
     for job in jobs:
-        time_budget = job.get("timeBudget")
+        time_budget = job.get("budgetTime")
         if time_budget is None:
             continue
         allocated = allocated_map.get(job["jobCode"], 0)
@@ -227,7 +227,7 @@ async def get_understaffed_projects(
                 "jobCode": job["jobCode"],
                 "description": job["description"],
                 "businessUnit": job["businessUnit"],
-                "timeBudget": time_budget,
+                "budgetTime": time_budget,
                 "allocatedDays": allocated,
                 "gap": time_budget - allocated,
             })
@@ -298,11 +298,11 @@ async def get_capacity_forecast(
         params["jobCode"] = job_code
 
     async with httpx.AsyncClient() as client:
-        response = await client.get(f"{_backend_url}/forecast", params=params)
+        response = await client.get(f"{_backend_url}/api/forecast-entries", params=params)
         if not response.is_success:
             return json.dumps({"error": f"Backend error: {response.status_code}"})
         return response.text
-    
+
 @tool
 async def get_schedule(
     month: Optional[str] = None,
@@ -321,7 +321,7 @@ async def get_schedule(
         params["month"] = month
 
     async with httpx.AsyncClient() as client:
-        response = await client.get(f"{_backend_url}/schedule", params=params)
+        response = await client.get(f"{_backend_url}/api/forecast-entries", params=params)
         if not response.is_success:
             return json.dumps({"error": f"Backend error: {response.status_code}"})
         return response.text

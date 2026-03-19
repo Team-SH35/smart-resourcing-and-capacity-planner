@@ -39,7 +39,7 @@ async def get_agent():
     return _agent
 
 
-@router.post("/chat", response_model=ChatResponse)
+@router.post("/chat", response_model=ChatResponse, response_model_by_alias=True)
 async def chat(
     message: ChatMessage,
     agent=Depends(get_agent),
@@ -91,48 +91,58 @@ async def health_check():
     }
 
 
-@router.post("/approve-change/{change_id}")
-async def approve_change(change_id: str):
+@router.post("/approve-change/{session_id}", response_model=ChatResponse, response_model_by_alias=True)
+async def approve_change(session_id: str):
     """
-    Approve a proposed change.
+    Approve a proposed change and automatically resume agent execution.
 
     Args:
-        change_id: ID of the change to approve
+        session_id: The session string identifier containing the paused state
 
     Returns:
-        Confirmation of approval
+        Chat response summarizing the execution outcome
     """
-    # TODO: Later I or Declan will Implement change approval logic
-    # This would:
-    # 1. Fetch the proposed change
-    # 2. Validate it's still valid
-    # 3. Apply it to the backend system
-    # 4. Return confirmation
+    try:
+        agent = await get_agent()
+        result = await agent.approve_change(session_id)
+        
+        return ChatResponse(
+            id=str(uuid.uuid4()),
+            message="Change Approved",
+            response=result["response"],
+            timestamp=datetime.utcnow(),
+            session_id=session_id,
+            proposed_changes=result.get("proposed_changes"),
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error approving change: {str(e)}")
 
-    return {
-        "change_id": change_id,
-        "status": "approved",
-        "message": "Change approved and applied",
-    }
 
-
-@router.post("/reject-change/{change_id}")
-async def reject_change(change_id: str):
+@router.post("/reject-change/{session_id}", response_model=ChatResponse, response_model_by_alias=True)
+async def reject_change(session_id: str):
     """
-    Reject a proposed change.
+    Reject a proposed change and let the agent know.
 
     Args:
-        change_id: ID of the change to reject
+        session_id: The session string identifier
 
     Returns:
-        Confirmation of rejection
+        Chat response summarizing the rejection
     """
-    # TODO: I need to Implement change rejection logic, including in ui
-    return {
-        "change_id": change_id,
-        "status": "rejected",
-        "message": "Change rejected",
-    }
+    try:
+        agent = await get_agent()
+        result = await agent.reject_change(session_id)
+        
+        return ChatResponse(
+            id=str(uuid.uuid4()),
+            message="Change Rejected",
+            response=result["response"],
+            timestamp=datetime.utcnow(),
+            session_id=session_id,
+            proposed_changes=result.get("proposed_changes"),
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error rejecting change: {str(e)}")
 
 
 @router.get("/session/{session_id}/history")

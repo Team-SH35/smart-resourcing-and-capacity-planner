@@ -35,8 +35,12 @@ services:
     container_name: ai_service
     env_file:
       - ./ai_service_chat/.env
+    environment:
+      - BACKEND_URL=http://backend:4000
     ports:
       - "8000:8000"
+    depends_on:
+      - backend
 
 volumes:
   sqlite-db:

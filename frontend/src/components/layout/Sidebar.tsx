@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { NavLink } from "react-router-dom";
-import { getBusinessUnits } from "../../api/client"; // adjust path if needed
+import { getBusinessUnits } from "../../api/client"; 
 
 const navItems = [
   { label: "Dashboard", path: "/" },
@@ -21,7 +21,7 @@ export default function Sidebar() {
         const units = await getBusinessUnits();
         setBusinessUnits(units);
         setError(null);
-      } catch (err: any) {
+      } catch (err:unknown) {
         console.error("Failed to load business units", err);
         setError("Failed to load business units");
       } finally {

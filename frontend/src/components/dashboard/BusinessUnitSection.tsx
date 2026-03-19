@@ -3,7 +3,7 @@ import BusinessUnitCard from "./BusinessUnitCard";
 import AddUnitCard from "./AddUnitCard";
 import EmptyStateCard from "./EmptyStateCard";
 
-import type { Employee } from "../data/types";
+import type { Employee, JobCode, ForecastEntry } from "../data/types";
 
 import {
   getBusinessUnits,
@@ -38,7 +38,7 @@ export default function BusinessUnitSection() {
 
         // Map jobCode → businessUnit
         const jobToUnit: Record<string, string> = {};
-        jobs.forEach((job: any) => {
+        jobs.forEach((job: JobCode) => {
           if (job.jobCode && job.businessUnit) {
             jobToUnit[job.jobCode] = job.businessUnit;
           }
@@ -47,7 +47,7 @@ export default function BusinessUnitSection() {
         // Map businessUnit → employees
         const unitEmployeeMap: Record<string, Employee[]> = {};
 
-        forecast.forEach((entry: any) => {
+        forecast.forEach((entry: ForecastEntry) => {
           const unit = jobToUnit[entry.jobCode];
           if (!unit) return;
 

@@ -24,5 +24,21 @@ export async function askChatbot(
     throw new Error(`AI service error: ${res.status}`);
   }
 
-  return res.json() as Promise<{ response: string; session_id: string }>;
+  return res.json() as Promise<{ response: string; sessionId: string; proposed_changes: any[] }>;
+}
+
+export async function approveChange(sessionId: string) {
+  const res = await fetch(`${AI_BASE}/api/v1/approve-change/${sessionId}`, {
+    method: "POST",
+  });
+  if (!res.ok) throw new Error(`Approval failed: ${res.status}`);
+  return res.json() as Promise<{ response: string; sessionId: string; proposed_changes: any[] }>;
+}
+
+export async function rejectChange(sessionId: string) {
+  const res = await fetch(`${AI_BASE}/api/v1/reject-change/${sessionId}`, {
+    method: "POST",
+  });
+  if (!res.ok) throw new Error(`Rejection failed: ${res.status}`);
+  return res.json() as Promise<{ response: string; sessionId: string; proposed_changes: any[] }>;
 }

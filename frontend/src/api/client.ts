@@ -1,4 +1,5 @@
 import type { JobCode } from "../../../backend/src/types";
+import type { ChatResponse } from "../components/data/types";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL as string;
 const AI_BASE = import.meta.env.VITE_AI_API_URL as string;
@@ -26,7 +27,7 @@ export async function askChatbot(
     throw new Error(`AI service error: ${res.status}`);
   }
 
-  return res.json() as Promise<{ response: string; sessionId: string; proposed_changes: any[] }>;
+  return res.json() as Promise<ChatResponse>;
 }
 
 export async function approveChange(sessionId: string) {
@@ -34,7 +35,7 @@ export async function approveChange(sessionId: string) {
     method: "POST",
   });
   if (!res.ok) throw new Error(`Approval failed: ${res.status}`);
-  return res.json() as Promise<{ response: string; sessionId: string; proposed_changes: any[] }>;
+  return res.json() as Promise<ChatResponse>;
 }
 
 export async function rejectChange(sessionId: string) {
@@ -42,7 +43,7 @@ export async function rejectChange(sessionId: string) {
     method: "POST",
   });
   if (!res.ok) throw new Error(`Rejection failed: ${res.status}`);
-  return res.json() as Promise<{ response: string; sessionId: string; proposed_changes: any[] }>;
+  return res.json() as Promise<ChatResponse>;
 }
 
 export async function getBusinessUnits(): Promise<string[]> {

@@ -83,3 +83,27 @@ export async function uploadExcel(file: File) {
 
   return res.json();
 }
+
+export async function getEmployees() {
+  const res = await fetch(`${API_BASE}/api/employees`);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch employees: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function getJobs() {
+  const res = await fetch(`${API_BASE}/api/job-codes`);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch job codes: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function getForecastEntries() {
+  const res = await fetch(`${API_BASE}/api/forecast-entries`); 
+  if (!res.ok) {
+    throw new Error(`Failed to fetch capacity forecast: ${res.status}`);
+  }
+  return res.json();
+}

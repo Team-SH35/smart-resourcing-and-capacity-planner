@@ -1,3 +1,5 @@
+import type { JobCode } from "../../../backend/src/types";
+
 const API_BASE = import.meta.env.VITE_API_BASE_URL as string;
 const AI_BASE = import.meta.env.VITE_AI_API_URL as string;
 
@@ -41,4 +43,42 @@ export async function rejectChange(sessionId: string) {
   });
   if (!res.ok) throw new Error(`Rejection failed: ${res.status}`);
   return res.json() as Promise<{ response: string; sessionId: string; proposed_changes: any[] }>;
+}
+
+export async function getBusinessUnits(): Promise<string[]> {
+  console.log("API_BASE:", API_BASE);
+  const res = await fetch(`${API_BASE}/api/job-codes`);
+  console.log("Fetching:", `${API_BASE}/api/job-codes`);
+
+  if (!res.ok) {
+    throw new Error(`Failed to fetch job codes: ${res.status}`);
+  }
+
+  const data: JobCode[] = await res.json();
+
+  const units = Array.from(
+    new Set(
+      data
+        .map((job) => job.businessUnit)
+        .filter((unit): unit is string => Boolean(unit))
+    )
+  );
+
+  return units;
+}
+
+export async function uploadExcel(file: File) {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const res = await fetch(`${API_BASE}/api/upload`, {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!res.ok) {
+    throw new Error(`Upload failed: ${res.status}`);
+  }
+
+  return res.json();
 }

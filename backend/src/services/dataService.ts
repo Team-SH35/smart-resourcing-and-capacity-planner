@@ -9,6 +9,7 @@ import type {
 
 type EmployeeRow = {
   name: string;
+  specialism: string,
   excludeFromAI: number | boolean | null;
 };
 
@@ -236,21 +237,36 @@ export function getEmployees(): Employee[] {
     ? "Exclude_from_AI"
     : "0";
 
+  // Fetch all employee-specialism pairs
   const rows = db
     .prepare(`
       SELECT
         Name AS name,
+        Specialism AS specialism,
         ${excludeExpr} AS excludeFromAI
       FROM Employee
+      INNER JOIN EmployeeSpecialism ON Employee.EmployeeID = EmployeeSpecialism.EmployeeID
       ORDER BY Name ASC
     `)
     .all() as EmployeeRow[];
 
-  return rows.map((row) => ({
-    name: safeString(row.name),
-    specialisms: [],
-    excludedFromAI: Boolean(row.excludeFromAI),
-  }));
+  // Group by employee
+  const employeesMap = new Map<string, Employee>();
+
+  for (const row of rows) {
+    const key = row.name;
+    if (!employeesMap.has(key)) {
+      employeesMap.set(key, {
+        name: safeString(row.name),
+        specialisms: [],
+        excludedFromAI: Boolean(row.excludeFromAI),
+      });
+    }
+    employeesMap.get(key)!.specialisms.push(row.specialism);
+  }
+
+  // Convert map to array
+  return Array.from(employeesMap.values());
 }
 
 export function getJobCodes(): JobCode[] {

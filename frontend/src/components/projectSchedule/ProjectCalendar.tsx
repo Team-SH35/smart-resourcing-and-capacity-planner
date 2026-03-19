@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import CalendarHeader from "./CalendarHeader";
 import CalendarRows from "./CalendarRows";
 import {
@@ -7,7 +7,8 @@ import {
   startOfWeekMonday,
   parseDateUTC,
 } from "./utils";
-import { jobCodes } from "../data/jobCodes";
+import { getJobs } from "../../api/client";
+import type { JobCode } from "../data/types";
 
 type CalendarView = "week" | "fortnight" | "month";
 
@@ -25,6 +26,23 @@ export default function ProjectCalendar({
   teamFilter,
 }: Props) {
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [jobs, setJobs] = useState<JobCode[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadJobs() {
+      try {
+        const data = await getJobs();
+        setJobs(data);
+      } catch (err) {
+        console.error("Failed to load jobs", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadJobs();
+  }, []);
 
   const calendarStart =
     view === "month"
@@ -49,7 +67,7 @@ export default function ProjectCalendar({
   });
 
   function goPrev() {
-    setCurrentDate(d => {
+    setCurrentDate((d) => {
       const next = new Date(d);
 
       if (view === "week") next.setUTCDate(d.getUTCDate() - 7);
@@ -61,7 +79,7 @@ export default function ProjectCalendar({
   }
 
   function goNext() {
-    setCurrentDate(d => {
+    setCurrentDate((d) => {
       const next = new Date(d);
 
       if (view === "week") next.setUTCDate(d.getUTCDate() + 7);
@@ -77,17 +95,17 @@ export default function ProjectCalendar({
   }
 
   const rows = useMemo(() => {
-    let mapped = mapJobCodesToCalendar(jobCodes);
+    let mapped = mapJobCodesToCalendar(jobs);
 
     const today = startOfDay(new Date());
 
     if (teamFilter.length) {
-      mapped = mapped.filter(r => teamFilter.includes(r.team));
+      mapped = mapped.filter((r) => teamFilter.includes(r.team));
     }
 
-    mapped = mapped.map(r => ({
+    mapped = mapped.map((r) => ({
       ...r,
-      projects: r.projects.filter(p => {
+      projects: r.projects.filter((p) => {
         if (
           clientFilter &&
           !p.client.toLowerCase().includes(clientFilter.toLowerCase())
@@ -106,7 +124,7 @@ export default function ProjectCalendar({
     }));
 
     return mapped;
-  }, [clientFilter, activeOnly, teamFilter]);
+  }, [jobs, clientFilter, activeOnly, teamFilter]);
 
   return (
     <div className="bg-white border rounded-xl overflow-hidden">
@@ -121,8 +139,10 @@ export default function ProjectCalendar({
         </h2>
 
         <div className="flex items-center gap-2">
-
-          <button onClick={goToday} className="text-slate-400 border rounded px-3 py-1">
+          <button
+            onClick={goToday}
+            className="text-slate-400 border rounded px-3 py-1"
+          >
             Today
           </button>
           <button onClick={goPrev} className="border rounded px-3 py-1">
@@ -134,12 +154,22 @@ export default function ProjectCalendar({
         </div>
       </div>
 
-      <CalendarHeader days={days} />
-      <CalendarRows
-        rows={rows}
-        calendarStart={calendarStart}
-        daysVisible={daysVisible}
-      />
+      {loading ? (
+        <div className="p-4 text-sm text-slate-400">Loading calendar...</div>
+      ) : rows.length === 0 ? (
+        <div className="p-4 text-sm text-slate-400">
+          No projects available
+        </div>
+      ) : (
+        <>
+          <CalendarHeader days={days} />
+          <CalendarRows
+            rows={rows}
+            calendarStart={calendarStart}
+            daysVisible={daysVisible}
+          />
+        </>
+      )}
     </div>
   );
 }

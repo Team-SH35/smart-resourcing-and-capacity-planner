@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import ProjectCalendar from "../components/projectSchedule/ProjectCalendar";
+import { getBusinessUnits } from "../api/client";
 
 type CalendarView = "week" | "fortnight" | "month";
 
 export default function ProjectSchedule() {
   const [view, setView] = useState<CalendarView>("fortnight");
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [businessUnits, setBusinessUnits] = useState<string[]>([]);
+  const [businessUnitsLoading, setBusinessUnitsLoading] = useState(true);
 
   const [searchParams] = useSearchParams();
 
@@ -16,8 +19,6 @@ export default function ProjectSchedule() {
   const [clientFilter, setClientFilter] = useState(clientFromUrl);
   const [activeOnly, setActiveOnly] = useState(false);
   const [teamFilter, setTeamFilter] = useState<string[]>([]);
-
-  const businessUnits = ["Developers", "Analytics"];
 
   const viewOptions: { value: CalendarView; label: string }[] = [
     { value: "week", label: "Week" },
@@ -37,6 +38,23 @@ export default function ProjectSchedule() {
 
     document.addEventListener("mousedown", onClick);
     return () => document.removeEventListener("mousedown", onClick);
+  }, []);
+
+  useEffect(() => {
+    async function loadBusinessUnits() {
+      try {
+        setBusinessUnitsLoading(true);
+        const units = await getBusinessUnits();
+        setBusinessUnits(units);
+      } catch (err: unknown) {
+        console.error("Failed to load business units", err);
+        setBusinessUnits([]);
+      } finally {
+        setBusinessUnitsLoading(false);
+      }
+    }
+
+    loadBusinessUnits();
   }, []);
 
   return (
@@ -93,18 +111,15 @@ export default function ProjectSchedule() {
         teamFilter={teamFilter}
       />
 
-      {/* Filters overlay */}
       {filtersOpen && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
-
           <div className="bg-white rounded-xl p-6 w-96 space-y-4">
-
             <h2 className="font-semibold text-lg">Filters</h2>
 
             <input
               placeholder="Client name"
               value={clientFilter}
-              onChange={e => setClientFilter(e.target.value)}
+              onChange={(e) => setClientFilter(e.target.value)}
               className="border rounded w-full px-3 py-2"
             />
 
@@ -112,7 +127,7 @@ export default function ProjectSchedule() {
               <input
                 type="checkbox"
                 checked={activeOnly}
-                onChange={e => setActiveOnly(e.target.checked)}
+                onChange={(e) => setActiveOnly(e.target.checked)}
               />
               Only active projects
             </label>
@@ -120,23 +135,30 @@ export default function ProjectSchedule() {
             <div className="space-y-2">
               <div className="font-medium text-sm">Business units</div>
 
-              {businessUnits.map(unit => (
-                <label key={unit} className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={teamFilter.includes(unit)}
-                    onChange={e =>
-                      setTeamFilter(t =>
-                        e.target.checked
-                          ? [...t, unit]
-                          : t.filter(x => x !== unit)
-                      )
-                    }
-                  />
-                  {unit}
-                </label>
-              ))}
-
+              {businessUnitsLoading ? (
+                <div className="text-sm text-slate-400">Loading business units...</div>
+              ) : businessUnits.length === 0 ? (
+                <div className="text-sm text-slate-400">
+                  No business units available
+                </div>
+              ) : (
+                businessUnits.map((unit) => (
+                  <label key={unit} className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={teamFilter.includes(unit)}
+                      onChange={(e) =>
+                        setTeamFilter((t) =>
+                          e.target.checked
+                            ? [...t, unit]
+                            : t.filter((x) => x !== unit)
+                        )
+                      }
+                    />
+                    {unit}
+                  </label>
+                ))
+              )}
             </div>
 
             <div className="flex justify-end gap-2 pt-4">
@@ -147,13 +169,9 @@ export default function ProjectSchedule() {
                 Close
               </button>
             </div>
-
           </div>
-
         </div>
       )}
-
     </div>
   );
 }
-

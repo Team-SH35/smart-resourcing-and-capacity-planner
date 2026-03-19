@@ -69,7 +69,6 @@ async def get_jobs(
     """
     params = {"workspaceID": _workspace_id()}
 
-
     async with httpx.AsyncClient() as client:
         response = await client.get(f"{_backend_url}/api/job-codes", params=params)
         if not response.is_success:
@@ -85,7 +84,6 @@ async def get_jobs(
 
     return json.dumps(jobs)
 
-
 @tool
 async def get_employee_availability(
     specialism: Optional[str] = None,
@@ -97,29 +95,41 @@ async def get_employee_availability(
 
     Args:
         specialism: Filter by specialism (e.g. "Developer")
-        month: Month to check in format YYYY-MM-DD (e.g. "2026-03-01")
+        month: Month name (e.g. "March", "Jan")
 
     Returns:
         JSON string with employees and their allocated days
     """
     workspace_id = _workspace_id()
-    forecast_params = {"workspaceID": workspace_id}
-    if month:
-        forecast_params["month"] = month
 
     async with httpx.AsyncClient() as client:
-        emp_resp, forecast_resp = await asyncio.gather(
-            client.get(f"{_backend_url}/api/employees", params={"workspaceID": workspace_id}),
-            client.get(f"{_backend_url}/api/forecast-entries", params=forecast_params),
-        )
+        url_emp = f"{_backend_url}/api/employees"
+        url_fc = f"{_backend_url}/api/forecast-entries"
+        print(f"[get_employee_availability] Fetching {url_emp} and {url_fc} with workspace_id {workspace_id}", flush=True)
+        try:
+            emp_resp, forecast_resp = await asyncio.gather(
+                client.get(url_emp, params={"workspaceID": workspace_id}),
+                client.get(url_fc, params={"workspaceID": workspace_id}),
+            )
+            print(f"[get_employee_availability] emp status: {emp_resp.status_code}, forecast status: {forecast_resp.status_code}", flush=True)
+        except Exception as e:
+            print(f"[get_employee_availability] HTTPX EXCEPTION: {str(e)}", flush=True)
+            return json.dumps({"error": f"Exception: {str(e)}"})
 
         if not emp_resp.is_success:
+            print(f"[get_employee_availability] emp failed: {emp_resp.text}", flush=True)
             return json.dumps({"error": "Failed to fetch employees"})
         if not forecast_resp.is_success:
+            print(f"[get_employee_availability] forecast failed: {forecast_resp.text}", flush=True)
             return json.dumps({"error": "Failed to fetch forecast"})
 
         employees = emp_resp.json()
         forecast = forecast_resp.json()
+        print(f"[get_employee_availability] Fetched {len(employees)} employees and {len(forecast)} forecast entries", flush=True)
+
+    if month:
+        m_prefix = month.lower()[:3]
+        forecast = [f for f in forecast if f.get("month", "").lower().startswith(m_prefix)]
 
     # Sum allocated days per employee (keyed by name since backend has no employeeID)
     allocation_map = {}
@@ -157,14 +167,12 @@ async def get_project_staffing(
 
     Args:
         job_code: Specific job code to query (e.g. "P001")
-        month: Month in format YYYY-MM-DD (e.g. "2026-03-01")
+        month: Month name (e.g. "March", "Jan")
 
     Returns:
         JSON string with project staffing details
     """
     params = {"workspaceID": _workspace_id()}
-    if month:
-        params["month"] = month
 
     async with httpx.AsyncClient() as client:
         response = await client.get(f"{_backend_url}/api/forecast-entries", params=params)
@@ -172,6 +180,10 @@ async def get_project_staffing(
             return json.dumps({"error": f"Backend error: {response.status_code}"})
 
         rows = response.json()
+
+    if month:
+        m_prefix = month.lower()[:3]
+        rows = [r for r in rows if r.get("month", "").lower().startswith(m_prefix)]
 
     if job_code:
         rows = [r for r in rows if r.get("jobCode") == job_code]
@@ -186,20 +198,17 @@ async def get_understaffed_projects(
     Identify projects where total allocated days are below their time budget.
 
     Args:
-        month: Month to check in format YYYY-MM-DD (e.g. "2026-03-01")
+        month: Month name (e.g. "March", "Jan")
 
     Returns:
         JSON string with understaffed projects and their gaps
     """
     workspace_id = _workspace_id()
-    forecast_params = {"workspaceID": workspace_id}
-    if month:
-        forecast_params["month"] = month
 
     async with httpx.AsyncClient() as client:
         jobs_resp, forecast_resp = await asyncio.gather(
             client.get(f"{_backend_url}/api/job-codes", params={"workspaceID": workspace_id}),
-            client.get(f"{_backend_url}/api/forecast-entries", params=forecast_params),
+            client.get(f"{_backend_url}/api/forecast-entries", params={"workspaceID": workspace_id}),
         )
 
         if not jobs_resp.is_success:
@@ -209,6 +218,10 @@ async def get_understaffed_projects(
 
         jobs = jobs_resp.json()
         forecast = forecast_resp.json()
+
+    if month:
+        m_prefix = month.lower()[:3]
+        forecast = [f for f in forecast if f.get("month", "").lower().startswith(m_prefix)]
 
     # Sum allocated days per job
     allocated_map = {}
@@ -234,74 +247,43 @@ async def get_understaffed_projects(
 
     return json.dumps(understaffed)
 
-
-
-@tool
-async def propose_allocation_change(
-    employee_id: str,
-    job_code: str,
-    days: float,
-    month: str,
-    cost: Optional[float] = None,
-) -> str:
-    """
-    Propose a new resource allocation change.
-    This creates a pending change that requires user approval before it is applied.
-
-    Args:
-        employee_id: Employee ID to allocate
-        job_code: Job code to assign the employee to
-        days: Number of days to allocate
-        month: Month in format YYYY-MM-DD (e.g. "2026-03-01")
-        cost: Optional cost for the allocation
-
-    Returns:
-        JSON string with proposed change details
-    """
-    # TODO: Wire up once backend delivers POST /changes endpoint
-    return json.dumps({
-        "status": "pending_backend",
-        "message": "Change proposal endpoint not yet available. Inform the user that changes cannot be applied yet and that the backend team is working on it.",
-        "proposed": {
-            "employeeId": employee_id,
-            "jobCode": job_code,
-            "days": days,
-            "month": month,
-            "cost": cost,
-        },
-    })
-
-
 @tool
 async def get_capacity_forecast(
     month: Optional[str] = None,
-    employee_id: Optional[int] = None,
+    employee_name: Optional[str] = None,
     job_code: Optional[str] = None,
 ) -> str:
     """
     Get forecast data showing days and cost allocated per employee per job per month.
 
     Args:
-        month: Month in format YYYY-MM-DD (e.g. "2026-03-01")
-        employee_id: Filter by specific employee ID
+        month: Month name (e.g. "March", "Jan")
+        employee_name: Filter by specific employee name
         job_code: Filter by specific job code
 
     Returns:
         JSON string with forecast entries
     """
     params = {"workspaceID": _workspace_id()}
-    if month:
-        params["month"] = month
-    if employee_id:
-        params["employeeID"] = employee_id
-    if job_code:
-        params["jobCode"] = job_code
 
     async with httpx.AsyncClient() as client:
         response = await client.get(f"{_backend_url}/api/forecast-entries", params=params)
         if not response.is_success:
             return json.dumps({"error": f"Backend error: {response.status_code}"})
-        return response.text
+        
+        rows = response.json()
+
+    if month:
+        m_prefix = month.lower()[:3]
+        rows = [r for r in rows if r.get("month", "").lower().startswith(m_prefix)]
+        
+    if employee_name:
+        rows = [r for r in rows if r.get("employeeName", "").lower() == employee_name.lower()]
+
+    if job_code:
+        rows = [r for r in rows if r.get("jobCode") == job_code]
+        
+    return json.dumps(rows)
 
 @tool
 async def get_schedule(
@@ -311,20 +293,125 @@ async def get_schedule(
     Get the full schedule showing employees, their assigned jobs, days and cost for a month.
 
     Args:
-        month: Month in format YYYY-MM-DD (e.g. "2026-03-01")
+        month: Month name (e.g. "March", "Jan")
 
     Returns:
         JSON string with full schedule
     """
     params = {"workspaceID": _workspace_id()}
-    if month:
-        params["month"] = month
 
     async with httpx.AsyncClient() as client:
         response = await client.get(f"{_backend_url}/api/forecast-entries", params=params)
         if not response.is_success:
             return json.dumps({"error": f"Backend error: {response.status_code}"})
-        return response.text
+        
+        rows = response.json()
+
+    if month:
+        m_prefix = month.lower()[:3]
+        rows = [r for r in rows if r.get("month", "").lower().startswith(m_prefix)]
+        
+    return json.dumps(rows)
+
+@tool
+async def create_forecast_entry(
+    employee_name: str,
+    job_code: str,
+    days: float,
+    month: str,
+) -> str:
+    """
+    Create a new forecast entry for an employee on a job for a specific month.
+    
+    Args:
+        employee_name: Employee name to allocate (e.g. "John Doe")
+        job_code: Job code to assign the employee to
+        days: Number of days to allocate
+        month: Month name (e.g. "March", "Jan")
+
+    Returns:
+        JSON string with creation result or error
+    """
+    payload = {
+        "employeeName": employee_name,
+        "jobCode": job_code,
+        "days": days,
+        "month": month,
+        "workspaceID": _workspace_id(),
+    }
+
+    async with httpx.AsyncClient() as client:
+        response = await client.post(f"{_backend_url}/api/forecast-entries", json=payload)
+        try:
+            return json.dumps(response.json())
+        except Exception:
+            return json.dumps({"error": f"Failed with status {response.status_code}", "text": response.text})
+
+@tool
+async def update_forecast_entry(
+    employee_name: str,
+    job_code: str,
+    month: str,
+    days: float,
+) -> str:
+    """
+    Update the days for an existing forecast entry.
+    
+    Args:
+        employee_name: Employee name to update
+        job_code: Job code for the update
+        month: Month name (e.g. "March", "Jan")
+        days: New number of days to allocate
+
+    Returns:
+        JSON string with update result or error
+    """
+    payload = {
+        "employeeName": employee_name,
+        "jobCode": job_code,
+        "month": month,
+        "days": days,
+        "workspaceID": _workspace_id(),
+    }
+
+    async with httpx.AsyncClient() as client:
+        response = await client.patch(f"{_backend_url}/api/forecast-entries", json=payload)
+        try:
+            return json.dumps(response.json())
+        except Exception:
+            return json.dumps({"error": f"Failed with status {response.status_code}", "text": response.text})
+
+@tool
+async def delete_forecast_entry(
+    employee_name: str,
+    job_code: str,
+    month: str,
+) -> str:
+    """
+    Delete a forecast entry for an employee on a job in a specific month.
+    
+    Args:
+        employee_name: Employee name to delete allocation for
+        job_code: Job code
+        month: Month name (e.g. "March", "Jan")
+
+    Returns:
+        JSON string with deletion result or error
+    """
+    payload = {
+        "employeeName": employee_name,
+        "jobCode": job_code,
+        "month": month,
+        "workspaceID": _workspace_id(),
+    }
+
+    async with httpx.AsyncClient() as client:
+        response = await client.request("DELETE", f"{_backend_url}/api/forecast-entries", json=payload)
+        try:
+            return json.dumps(response.json())
+        except Exception:
+            return json.dumps({"error": f"Failed with status {response.status_code}", "text": response.text})
+
 
 def get_resource_tools(backend_url: str) -> List:
     """Get list of resource management tools for LangGraph."""
@@ -338,5 +425,7 @@ def get_resource_tools(backend_url: str) -> List:
         get_understaffed_projects,
         get_capacity_forecast,
         get_schedule,
-        propose_allocation_change,
+        create_forecast_entry,
+        update_forecast_entry,
+        delete_forecast_entry,
     ]

@@ -1,4 +1,8 @@
 import { Router } from "express";
+import multer from "multer";
+import path from "node:path";
+import { Readable } from "stream"
+
 import {
   getEmployees,
   getJobCodes,
@@ -8,8 +12,17 @@ import {
   updateForecastEntryDays,
   deleteForecastEntry,
 } from "../services/dataService";
+import parseExcelInfo from "../excel-utils/parse_excel";
+import { writeExcelToDB } from "../db/write_to_db";
 
 const router = Router();
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024,
+  },
+});
 
 router.get("/health", (_req, res) => {
   res.json({ status: "ok" });
@@ -150,4 +163,77 @@ router.get("/calendar", (_req, res) => {
   }
 });
 
+router.post("/import-excel", upload.single("file"), async (req, res) => {
+  try {
+    const uploadedFile = req.file;
+    const workspaceIdRaw = req.body.workspaceId;
+
+    if (!uploadedFile) {
+      return res.status(400).json({ error: "Excel file is required" });
+    }
+
+    if (!workspaceIdRaw) {
+      return res.status(400).json({ error: "workspaceId is required" });
+    }
+
+    const workspaceId = Number(workspaceIdRaw);
+
+    if (!Number.isInteger(workspaceId)) {
+      return res.status(400).json({ error: "workspaceId must be an integer" });
+    }
+
+    if (!isExcelFile(uploadedFile.originalname, uploadedFile.mimetype)) {
+      return res.status(400).json({
+        error: "Uploaded file must be a valid Excel .xlsx file",
+      });
+    }
+
+    const parsedExcelData = await parseExcelInfo(Readable.from(uploadedFile.buffer));
+    writeExcelToDB(String(workspaceId), parsedExcelData);
+
+    return res.status(201).json({
+      message: "Excel file imported successfully",
+      workspaceId,
+      imported: {
+        employees: parsedExcelData.employees.length,
+        jobs: parsedExcelData.jobs.length,
+        forecastEntries: parsedExcelData.forecast_entries.length,
+      },
+    });
+  } catch (error) {
+    console.error("POST /api/import-excel failed:", error);
+
+    const message =
+      error instanceof Error ? error.message : "Failed to import Excel file";
+
+    if (
+      message.includes("UNIQUE constraint failed") ||
+      message.includes("constraint failed")
+    ) {
+      return res.status(409).json({
+        error:
+          "Import failed because this workspace or some imported records already exist",
+      });
+    }
+
+    if (message.includes("File too large")) {
+      return res.status(413).json({ error: "Uploaded file is too large" });
+    }
+
+    return res.status(500).json({ error: "Failed to import Excel file" });
+  }
+});
+
 export default router;
+
+function isExcelFile(filename: string, mimetype: string): boolean {
+  const extension = path.extname(filename).toLowerCase();
+
+  const allowedExtensions = new Set([".xlsx"]);
+  const allowedMimeTypes = new Set([
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "application/octet-stream",
+  ]);
+
+  return allowedExtensions.has(extension) && allowedMimeTypes.has(mimetype);
+}

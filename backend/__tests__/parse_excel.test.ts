@@ -14,14 +14,15 @@ describe("Checks that all employee names are read correctly", () => {
   it("should read employee names correctly", () => {
     const employees = excelData.employees;
     expect(employees[0].name).toBe("BARKER, Reece");
-    expect(employees[4].name).toBe("SLOAN, Elaine");
-    expect(employees[34].name).toBe("BARNES, Alex");
+    expect(employees[4].name).toBe("FOSTER, Amelia");
+    expect(employees[13].name).toBe("BARNES, Alex");
   });
 
   it("should read forecast entries correctly", () => {
     const forecast_entries = excelData.forecast_entries;
 
     //Row 0 
+    expect(forecast_entries[0].employeeID).toBe(1);
     expect(forecast_entries[0].name).toBe("BARKER, Reece");
     expect(forecast_entries[0].job_code).toBe("C364-CWPUK-24-2-21");
     expect(forecast_entries[0].resource_allocation[0]).toBe("0");
@@ -39,6 +40,7 @@ describe("Checks that all employee names are read correctly", () => {
 
 
     // Row 72
+    expect(forecast_entries[38].employeeID).toBe(15)
     expect(forecast_entries[38].name).toBe("PATTERSON, Darren");
     expect(forecast_entries[38].job_code).toBe("C364-CWPUK-23-4-9");
     expect(forecast_entries[38].resource_allocation[0]).toBe("0.5");

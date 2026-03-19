@@ -3,12 +3,8 @@ import ProjectCard from "./ProjectCard";
 import AddUnitCard from "./AddUnitCard";
 import EmptyStateCard from "./EmptyStateCard";
 import { useNavigate } from "react-router-dom";
-
-import {
-  getJobs,
-  getEmployees,
-  getForecastEntries,
-} from "../../api/client";
+import {getJobs,getEmployees,getForecastEntries,} from "../../api/client";
+import type { Employee, JobCode, ForecastEntry } from "../data/types";
 
 interface Project {
   jobCode: string;
@@ -36,8 +32,8 @@ export default function ProjectsSection() {
         ]);
 
         // Group forecast by jobCode
-        const forecastByJob: Record<string, any[]> = {};
-        forecast.forEach((entry: any) => {
+        const forecastByJob: Record<string, ForecastEntry[]> = {};
+        forecast.forEach((entry: ForecastEntry) => {
           if (!forecastByJob[entry.jobCode]) {
             forecastByJob[entry.jobCode] = [];
           }
@@ -46,7 +42,7 @@ export default function ProjectsSection() {
 
         const today = new Date();
 
-        const mappedProjects: Project[] = jobs.map((job: any) => {
+        const mappedProjects: Project[] = jobs.map((job: JobCode) => {
           const entries = forecastByJob[job.jobCode] || [];
 
           // Dates
@@ -97,11 +93,11 @@ export default function ProjectsSection() {
           );
 
           // Employees assigned via forecast
-          const jobEmployees = entries
+          const jobEmployees: Employee[] = entries
             .map((entry) =>
-              employees.find((e: any) => e.name === entry.employeeName)
+              employees.find((e: Employee) => e.name === entry.employeeName)
             )
-            .filter(Boolean);
+            .filter((e): e is Employee => Boolean(e));
 
           return {
             jobCode: job.jobCode,
@@ -167,7 +163,7 @@ export default function ProjectsSection() {
 }
 
 // 🔹 Avatar generator
-function generateAvatars(employees: any[]) {
+function generateAvatars(employees: Employee[]) {
   return employees.slice(0, 4).map((emp) => ({
     initials: emp.name
       .split(" ")

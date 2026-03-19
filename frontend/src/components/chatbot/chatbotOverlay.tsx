@@ -3,14 +3,7 @@ import type { KeyboardEvent } from "react";
 import { askChatbot, approveChange, rejectChange } from "../../api/client";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-
-type ProposedChange = {
-  id: string;
-  type: string;
-  description: string;
-  data: any;
-  status: string;
-};
+import type { ProposedChange } from "../data/types";
 
 type MessageType = {
   text: string;

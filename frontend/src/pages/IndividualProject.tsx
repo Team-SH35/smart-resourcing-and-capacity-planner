@@ -1,25 +1,60 @@
 import { useParams } from "react-router-dom";
-import { useState } from "react";
-import { employees } from "../components/data/employees";
-import { forecastEntries as initialForecastEntries } from "../components/data/forecastEntries";
-import { jobCodes } from "../components/data/jobCodes";
+import { useState, useEffect } from "react";
 import EmployeeSchedule from "../components/IndividualProject/EmployeeSchedule";
 import type { ForecastEntry } from "../components/data/types";
+import {
+  getEmployees,
+  getJobs,
+  getForecastEntries,
+} from "../api/client";
 
 type SortOption = "name-asc" | "name-desc" | "days-asc" | "days-desc";
 
 export default function IndividualProject() {
   const { jobCode } = useParams();
-  const job = jobCodes.find(j => j.jobCode === jobCode);
 
+  const [employees, setEmployees] = useState<any[]>([]);
+  const [jobs, setJobs] = useState<any[]>([]);
+  const [forecastEntries, setForecastEntries] = useState<ForecastEntry[]>([]);
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [forecastEntries, setForecastEntries] = useState<ForecastEntry[]>(initialForecastEntries);
   const [sortBy, setSortBy] = useState<SortOption>("name-asc");
   const [filtersOpen, setFiltersOpen] = useState(false);
 
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const [emp, jobsData, forecast] = await Promise.all([
+          getEmployees(),
+          getJobs(),
+          getForecastEntries(),
+        ]);
+
+        const mappedEmployees = emp.map((e: any) => ({
+          name: e.name,
+          specialisms: e.specialisms,
+        }));
+
+        setEmployees(mappedEmployees);
+        setJobs(jobsData);
+        setForecastEntries(forecast);
+
+      } catch (err) {
+        console.error("Failed to load data", err);
+      }
+    }
+
+    loadData();
+  }, []);
+
   if (!jobCode) return null;
 
+  const job = jobs.find((j: any) => String(j.jobCode) === String(jobCode));
+
   const monthKey = currentDate.toLocaleString("default", {
+    month: "long",
+  });
+
+  const displayMonth = currentDate.toLocaleString("default", {
     month: "long",
     year: "numeric",
   });
@@ -28,7 +63,7 @@ export default function IndividualProject() {
     setForecastEntries(prev =>
       prev.map(entry =>
         entry.employeeName === employeeName &&
-        entry.jobCode === jobCode &&
+        String(entry.jobCode) === String(jobCode) &&
         entry.month === monthKey
           ? { ...entry, days: newDays }
           : entry
@@ -42,7 +77,7 @@ export default function IndividualProject() {
         entry =>
           !(
             entry.employeeName === employeeName &&
-            entry.jobCode === jobCode &&
+            String(entry.jobCode) === String(jobCode) &&
             entry.month === monthKey
           )
       )
@@ -51,7 +86,6 @@ export default function IndividualProject() {
 
   return (
     <div className="space-y-6 p-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold">{job?.description}</h1>
@@ -81,40 +115,46 @@ export default function IndividualProject() {
         </div>
       </div>
 
-      {/* Month Nav */}
       <div className="bg-white border rounded-xl overflow-hidden">
         <div className="flex items-center justify-between bg-white border rounded-xl p-4">
-          <div className="font-semibold">{monthKey}</div>
-          <div className="flex gap-2">
-            <button onClick={() => setCurrentDate(new Date())} className="border rounded px-3 py-1">Today</button>
-<button
-  onClick={() =>
-    setCurrentDate(prev => {
-      const d = new Date(prev);
-      d.setMonth(d.getMonth() - 1); 
-      return d;
-    })
-  }
-  className="border rounded px-3 py-1"
->
-  ←
-</button>
+          <div className="font-semibold">{displayMonth}</div>
 
-<button
-  onClick={() =>
-    setCurrentDate(prev => {
-      const d = new Date(prev); 
-      d.setMonth(d.getMonth() + 1); 
-      return d;
-    })
-  }
-  className="border rounded px-3 py-1"
->
-  →
-</button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setCurrentDate(new Date())}
+              className="border rounded px-3 py-1"
+            >
+              Today
+            </button>
+
+            <button
+              onClick={() =>
+                setCurrentDate(prev => {
+                  const d = new Date(prev);
+                  d.setMonth(d.getMonth() - 1);
+                  return d;
+                })
+              }
+              className="border rounded px-3 py-1"
+            >
+              ←
+            </button>
+
+            <button
+              onClick={() =>
+                setCurrentDate(prev => {
+                  const d = new Date(prev);
+                  d.setMonth(d.getMonth() + 1);
+                  return d;
+                })
+              }
+              className="border rounded px-3 py-1"
+            >
+              →
+            </button>
           </div>
         </div>
-         {/* Schedule */}
+
         <div className="bg-white border rounded-xl p-4">
           <EmployeeSchedule
             employees={employees}
@@ -129,9 +169,6 @@ export default function IndividualProject() {
           />
         </div>
       </div>
-      
-
-     
     </div>
   );
 }

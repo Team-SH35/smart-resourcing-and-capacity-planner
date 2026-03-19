@@ -25,11 +25,10 @@ export default function EmployeeSchedule({
   onUpdateAllocation,
   onDeleteAllocation
 }: Props) {
+
+  // ✅ FIX: match backend format ("jan", "feb", etc.)
   const monthKey = useMemo(() => {
-    return currentDate.toLocaleString("default", {
-      month: "long",
-      year: "numeric",
-    });
+    return currentDate.toLocaleString("default", { month: "long" });
   }, [currentDate]);
 
   const daysInMonth = useMemo(() => {
@@ -43,15 +42,14 @@ export default function EmployeeSchedule({
   const [searchName, setSearchName] = useState("");
   const [specialismFilter, setSpecialismFilter] = useState("");
 
-  // Employees with allocations for this month
   const employeesForMonth = useMemo(() => {
     return employees
       .map(employee => {
         const entry = forecastEntries.find(
           f =>
             f.employeeName === employee.name &&
-            f.jobCode === jobCode &&
-            f.month === monthKey
+            String(f.jobCode).toLowerCase() === String(jobCode).toLowerCase() &&
+            f.month?.trim().toLowerCase() === monthKey.toLowerCase()
         );
 
         if (!entry) return null;
@@ -72,12 +70,12 @@ export default function EmployeeSchedule({
   const displayedEmployees = useMemo(() => {
     let filtered = employeesForMonth;
 
-    // Apply search by name
     if (searchName) {
       filtered = filtered.filter(f =>
         f.employee.name.toLowerCase().includes(searchName.toLowerCase())
       );
     }
+
     if (specialismFilter) {
       filtered = filtered.filter(f =>
         f.employee.specialisms.includes(specialismFilter)
@@ -95,9 +93,16 @@ export default function EmployeeSchedule({
     return filtered;
   }, [employeesForMonth, sortBy, searchName, specialismFilter]);
 
+  console.log("monthKey:", monthKey);
+  console.log("jobCode:", jobCode);
+  console.log("forecastEntries:", forecastEntries);
+  console.log("employeesForMonth:", employeesForMonth);
+
   if (employeesForMonth.length === 0) {
     return (
-      <div className="p-4 text-slate-400">No allocations this month</div>
+      <div className="p-4 text-slate-400">
+        No allocations this month
+      </div>
     );
   }
 
@@ -114,13 +119,11 @@ export default function EmployeeSchedule({
         />
       ))}
 
-      {/* Filters Overlay */}
       {filtersOpen && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 w-96 space-y-4">
             <h2 className="font-semibold text-lg">Filters</h2>
 
-            {/* Search by name */}
             <input
               placeholder="Search employee"
               value={searchName}
@@ -128,7 +131,6 @@ export default function EmployeeSchedule({
               className="border rounded w-full px-3 py-2"
             />
 
-            {/* Filter by specialism */}
             <select
               value={specialismFilter}
               onChange={e => setSpecialismFilter(e.target.value)}
@@ -156,3 +158,4 @@ export default function EmployeeSchedule({
     </div>
   );
 }
+

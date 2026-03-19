@@ -50,3 +50,19 @@ export async function getBusinessUnits(): Promise<string[]> {
 
   return units;
 }
+
+export async function uploadExcel(file: File) {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const res = await fetch(`${API_BASE}/api/upload`, {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!res.ok) {
+    throw new Error(`Upload failed: ${res.status}`);
+  }
+
+  return res.json();
+}

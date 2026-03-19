@@ -1,5 +1,14 @@
-import ProjectCard from './ProjectCard';
-import AddUnitCard from './AddUnitCard';
+import { useState, useEffect } from "react";
+import ProjectCard from "./ProjectCard";
+import AddUnitCard from "./AddUnitCard";
+import EmptyStateCard from "./EmptyStateCard";
+import { useNavigate } from "react-router-dom";
+
+import {
+  getJobs,
+  getEmployees,
+  getForecastEntries,
+} from "../../api/client";
 
 interface Project {
   jobCode: string;
@@ -12,85 +21,159 @@ interface Project {
   avatars: { initials: string; color: string }[];
 }
 
-const projects: Project[] = [ // Example jobCodes for demonstration; replace with real jobCodes if available
-  {
-    jobCode: 'C341-CWPUK-28-7-4',
-    name: 'Comwrap Website Project',
-    department: 'Developers',
-    client: 'Comwrap Reply',
-    daysLeft: 30,
-    budget: '£1',
-    progress: 85,
-    avatars: [
-      { initials: 'KA', color: 'bg-amber-400' },
-      { initials: 'RR', color: 'bg-purple-500' },
-      { initials: '+3', color: 'bg-slate-100 dark:bg-slate-700 text-slate-400' },
-    ],
-  },
-  {
-    jobCode: 'A102-ANALYTICS-01',
-    name: 'Marketing Push',
-    department: 'Analytics',
-    client: 'Client Name',
-    daysLeft: 1,
-    budget: '£1',
-    progress: 75,
-    avatars: [{ initials: 'RR', color: 'bg-purple-500' }],
-  },
-  {
-    jobCode: 'A109-ANALYTICS-03',
-    name: 'System Audit',
-    department: 'Developers',
-    client: 'Client Name',
-    daysLeft: 8,
-    budget: '£1',
-    progress: 65,
-    avatars: [{ initials: 'T', color: 'bg-pink-400' }],
-  },
-  {
-    jobCode: 'A111-ANALYTICS-02',
-    name: 'API Integrations',
-    department: 'Analytics',
-    client: 'Client Name',
-    daysLeft: 10,
-    budget: '£1',
-    progress: 30,
-    avatars: [],
-  },
-  {
-    jobCode: 'A112-ANALYTICS-04',
-    name: 'Cloud Migration',
-    department: 'Analytics',
-    client: 'Client Name',
-    daysLeft: 14,
-    budget: '£1',
-    progress: 20,
-    avatars: [],
-  },
-];
-
-import { useNavigate } from 'react-router-dom';
-
 export default function ProjectsSection() {
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    async function loadProjects() {
+      try {
+        const [jobs, employees, forecast] = await Promise.all([
+          getJobs(),
+          getEmployees(),
+          getForecastEntries(),
+        ]);
+
+        // Group forecast by jobCode
+        const forecastByJob: Record<string, any[]> = {};
+        forecast.forEach((entry: any) => {
+          if (!forecastByJob[entry.jobCode]) {
+            forecastByJob[entry.jobCode] = [];
+          }
+          forecastByJob[entry.jobCode].push(entry);
+        });
+
+        const today = new Date();
+
+        const mappedProjects: Project[] = jobs.map((job: any) => {
+          const entries = forecastByJob[job.jobCode] || [];
+
+          // Dates
+          const startDate = new Date(job.startDate);
+          const finishDate = job.finishDate
+            ? new Date(job.finishDate)
+            : null;
+
+          // Total duration
+          const totalDuration =
+            finishDate && startDate
+              ? Math.max(
+                  1,
+                  Math.ceil(
+                    (finishDate.getTime() - startDate.getTime()) /
+                      (1000 * 60 * 60 * 24)
+                  )
+                )
+              : 1;
+
+          // Days left
+          const daysLeft =
+            finishDate
+              ? Math.max(
+                  0,
+                  Math.ceil(
+                    (finishDate.getTime() - today.getTime()) /
+                      (1000 * 60 * 60 * 24)
+                  )
+                )
+              : 0;
+
+          // Time-based progress
+          const elapsed =
+            finishDate && startDate
+              ? Math.max(
+                  0,
+                  Math.ceil(
+                    (today.getTime() - startDate.getTime()) /
+                      (1000 * 60 * 60 * 24)
+                  )
+                )
+              : 0;
+
+          const progress = Math.min(
+            100,
+            Math.round((elapsed / totalDuration) * 100)
+          );
+
+          // Employees assigned via forecast
+          const jobEmployees = entries
+            .map((entry) =>
+              employees.find((e: any) => e.name === entry.employeeName)
+            )
+            .filter(Boolean);
+
+          return {
+            jobCode: job.jobCode,
+            name: job.description,
+            department: job.businessUnit,
+            client: job.customerName,
+            daysLeft,
+            budget: `£${job.budgetCost ?? 0}`,
+            progress,
+            avatars: generateAvatars(jobEmployees),
+          };
+        });
+
+        setProjects(mappedProjects);
+      } catch (err) {
+        console.error("Failed to load projects", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadProjects();
+  }, []);
+
   return (
     <section>
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-lg font-semibold text-slate-600 dark:text-slate-400">Projects</h2>
-        <button className="text-slate-400 hover:text-slate-600">
-          <span className="material-icons-outlined">more_horiz</span>
-        </button>
+        <h2 className="text-lg font-semibold text-slate-600 dark:text-slate-400">
+          Projects
+        </h2>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {projects.map((project, index) => (
-          <ProjectCard
-            key={index}
-            {...project}
-            onClick={() => navigate(`/project/${project.jobCode}`)}
-          />
-        ))}
-        <AddUnitCard onClick={() => console.log('Add project')} />
-      </div>
+
+      {loading ? (
+        <p className="text-sm text-slate-400">Loading projects...</p>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {projects.length === 0 ? (
+            <EmptyStateCard />
+          ) : (
+            projects.map((project) => (
+              <ProjectCard
+                key={project.jobCode}
+                {...project}
+                onClick={() => navigate(`/project/${project.jobCode}`)}
+                onSave={(updated) => {
+                  setProjects((prev) =>
+                    prev.map((p) =>
+                      p.jobCode === project.jobCode
+                        ? { ...p, ...updated }
+                        : p
+                    )
+                  );
+                }}
+              />
+            ))
+          )}
+
+          <AddUnitCard onClick={() => console.log("Add project")} />
+        </div>
+      )}
     </section>
   );
+}
+
+// 🔹 Avatar generator
+function generateAvatars(employees: any[]) {
+  return employees.slice(0, 4).map((emp) => ({
+    initials: emp.name
+      .split(" ")
+      .map((w: string) => w[0])
+      .join("")
+      .toUpperCase(),
+    color: "bg-indigo-400",
+  }));
 }

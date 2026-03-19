@@ -1,9 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import BusinessUnitCard from "./BusinessUnitCard";
 import AddUnitCard from "./AddUnitCard";
-import type { Employee } from "../data/types";
+import EmptyStateCard from "./EmptyStateCard";
 
-// Define your business unit type with employees
+import type { Employee, JobCode, ForecastEntry } from "../data/types";
+
+import {
+  getBusinessUnits,
+  getEmployees,
+  getJobs,
+  getForecastEntries,
+} from "../../api/client";
+
 interface BusinessUnit {
   id: string;
   name: string;
@@ -14,44 +22,76 @@ interface BusinessUnit {
   employees: Employee[];
 }
 
-// Dummy data using your existing files
-const INITIAL_UNITS: BusinessUnit[] = [
-  {
-    id: "developers",
-    name: "Developers",
-    icon: "category",
-    iconBgColor: "bg-indigo-50 dark:bg-indigo-900/30",
-    iconColor: "text-indigo-500",
-    avatars: [
-      { initials: "KA", color: "bg-amber-400" },
-      { initials: "RR", color: "bg-purple-500" },
-      { initials: "EL", color: "bg-green-500" },
-      { initials: "+3", color: "bg-slate-100 dark:bg-slate-700 text-slate-400" },
-    ],
-    employees: [
-      { name: "Declan", specialisms: ["Frontend Developer"], excludedFromAI: false },
-      { name: "Dorcas", specialisms: ["Backend Developer"], excludedFromAI: false },
-    ],
-  },
-  {
-    id: "analytics",
-    name: "Analytics",
-    icon: "analytics",
-    iconBgColor: "bg-pink-50 dark:bg-pink-900/30",
-    iconColor: "text-pink-500",
-    avatars: [
-      { initials: "AF", color: "bg-sky-400" },
-      { initials: "KA", color: "bg-amber-400" },
-    ],
-    employees: [
-      { name: "Charlotte", specialisms: ["Analytics Integrator"], excludedFromAI: false },
-      { name: "Aidan", specialisms: ["Analytics Integrator"], excludedFromAI: false },
-    ],
-  },
-];
-
 export default function BusinessUnitSection() {
-  const [units, setUnits] = useState(INITIAL_UNITS);
+  const [units, setUnits] = useState<BusinessUnit[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadUnits() {
+      try {
+        const [businessUnits, employees, jobs, forecast] = await Promise.all([
+          getBusinessUnits(),
+          getEmployees(),
+          getJobs(),
+          getForecastEntries(),
+        ]);
+
+        // Map jobCode → businessUnit
+        const jobToUnit: Record<string, string> = {};
+        jobs.forEach((job: JobCode) => {
+          if (job.jobCode && job.businessUnit) {
+            jobToUnit[job.jobCode] = job.businessUnit;
+          }
+        });
+
+        // Map businessUnit → employees
+        const unitEmployeeMap: Record<string, Employee[]> = {};
+
+        forecast.forEach((entry: ForecastEntry) => {
+          const unit = jobToUnit[entry.jobCode];
+          if (!unit) return;
+
+          if (!unitEmployeeMap[unit]) {
+            unitEmployeeMap[unit] = [];
+          }
+
+          const employee = employees.find(
+            (e: Employee) => e.name === entry.employeeName
+          );
+
+          if (
+            employee &&
+            !unitEmployeeMap[unit].some((e) => e.name === employee.name)
+          ) {
+            unitEmployeeMap[unit].push(employee);
+          }
+        });
+
+        // Build final units
+        const mappedUnits: BusinessUnit[] = businessUnits.map((name: string) => {
+          const unitEmployees = unitEmployeeMap[name] || [];
+
+          return {
+            id: name.toLowerCase().replace(/\s+/g, "-"),
+            name,
+            icon: "category",
+            iconBgColor: "bg-indigo-50 dark:bg-indigo-900/30",
+            iconColor: "text-indigo-500",
+            avatars: generateAvatars(unitEmployees),
+            employees: unitEmployees,
+          };
+        });
+
+        setUnits(mappedUnits);
+      } catch (err) {
+        console.error("Failed to load business units", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadUnits();
+  }, []);
 
   return (
     <section className="mb-12">
@@ -61,21 +101,43 @@ export default function BusinessUnitSection() {
         </h2>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {units.map((unit) => (
-          <BusinessUnitCard
-            key={unit.id}
-            {...unit}
-            onSave={(updatedUnit) => {
-              setUnits((prev) =>
-                prev.map((u) => (u.id === unit.id ? { ...u, ...updatedUnit } : u))
-              );
-            }}
-          />
-        ))}
+      {loading ? (
+        <p className="text-sm text-slate-400">Loading business units...</p>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {units.length === 0 ? (
+            <EmptyStateCard />
+          ) : (
+            units.map((unit) => (
+              <BusinessUnitCard
+                key={unit.id}
+                {...unit}
+                onSave={(updatedUnit) => {
+                  setUnits((prev) =>
+                    prev.map((u) =>
+                      u.id === unit.id ? { ...u, ...updatedUnit } : u
+                    )
+                  );
+                }}
+              />
+            ))
+          )}
 
-        <AddUnitCard />
-      </div>
+          <AddUnitCard />
+        </div>
+      )}
     </section>
   );
+}
+
+// 🔹 Generate avatars from employees
+function generateAvatars(employees: Employee[]) {
+  return employees.slice(0, 4).map((emp) => ({
+    initials: emp.name
+      .split(" ")
+      .map((w) => w[0])
+      .join("")
+      .toUpperCase(),
+    color: "bg-indigo-400",
+  }));
 }

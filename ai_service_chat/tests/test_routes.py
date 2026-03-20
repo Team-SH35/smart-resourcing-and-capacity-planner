@@ -133,3 +133,87 @@ async def test_chat_endpoint_generates_session_id_when_not_provided():
 
     data = response.json()
     assert data["sessionId"] is not None
+
+
+@pytest.mark.asyncio
+async def test_approve_change_returns_200():
+    mock_agent = AsyncMock()
+    mock_agent.approve_change = AsyncMock(return_value={
+        "response": "Change applied.",
+        "proposed_changes": None,
+    })
+
+    from httpx import AsyncClient, ASGITransport
+
+    with patch("app_backend.api.routes.get_agent", return_value=mock_agent) as mock_get:
+        mock_get.return_value = mock_agent
+        mock_get.side_effect = None
+
+        async def async_get_agent():
+            return mock_agent
+
+        with patch("app_backend.api.routes.get_agent", new=async_get_agent):
+            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+                response = await ac.post("/api/v1/approve-change/sess-abc")
+
+    assert response.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_approve_change_returns_response_text():
+    mock_agent = AsyncMock()
+    mock_agent.approve_change = AsyncMock(return_value={
+        "response": "Change applied.",
+        "proposed_changes": None,
+    })
+
+    from httpx import AsyncClient, ASGITransport
+
+    async def async_get_agent():
+        return mock_agent
+
+    with patch("app_backend.api.routes.get_agent", new=async_get_agent):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+            response = await ac.post("/api/v1/approve-change/sess-abc")
+
+    assert response.json()["response"] == "Change applied."
+
+
+@pytest.mark.asyncio
+async def test_reject_change_returns_200():
+    mock_agent = AsyncMock()
+    mock_agent.reject_change = AsyncMock(return_value={
+        "response": "Change rejected.",
+        "proposed_changes": None,
+    })
+
+    from httpx import AsyncClient, ASGITransport
+
+    async def async_get_agent():
+        return mock_agent
+
+    with patch("app_backend.api.routes.get_agent", new=async_get_agent):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+            response = await ac.post("/api/v1/reject-change/sess-abc")
+
+    assert response.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_reject_change_returns_response_text():
+    mock_agent = AsyncMock()
+    mock_agent.reject_change = AsyncMock(return_value={
+        "response": "Change rejected.",
+        "proposed_changes": None,
+    })
+
+    from httpx import AsyncClient, ASGITransport
+
+    async def async_get_agent():
+        return mock_agent
+
+    with patch("app_backend.api.routes.get_agent", new=async_get_agent):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+            response = await ac.post("/api/v1/reject-change/sess-abc")
+
+    assert response.json()["response"] == "Change rejected."

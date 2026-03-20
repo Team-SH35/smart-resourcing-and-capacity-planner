@@ -11,11 +11,11 @@ export interface JobCode {
   businessUnit: string;
 
   budgetTime?: number | null;
-  budgetCost?: number | null;
+  cost?: number | null;
   budgetCostCurrency?: string | null;
 
   startDate: string;
-  finishDate?: string | null;
+  endDate?: string | null;
 }
 
 export interface CalendarProject {

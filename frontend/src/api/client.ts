@@ -162,3 +162,70 @@ export async function createForecastEntry({
 
   return res.json();
 }
+
+export async function updateCost({
+  cost,
+  jobCode,
+  workspaceID,
+}: {
+  cost: number;
+  jobCode: string;
+  workspaceID: number;
+}) {
+  const res = await fetch(`${API_BASE}/api/update-cost`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ cost, jobCode, workspaceID }),
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to update cost");
+  }
+
+  return res.json();
+}
+
+export async function updateStartTime({
+  startDate,
+  jobCode,
+  workspaceID,
+}: {
+  startDate: string;
+  jobCode: string;
+  workspaceID: number;
+}) {
+  const res = await fetch(`${API_BASE}/api/update-start-date`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ startDate, jobCode, workspaceID }),
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to update start date");
+  }
+
+  return res.json();
+}
+
+export async function updateEndTime({
+  endDate,
+  jobCode,
+  workspaceID,
+}: {
+  endDate: string;
+  jobCode: string;
+  workspaceID: number;
+}) {
+  const res = await fetch(`${API_BASE}/api/update-end-date`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ endDate, jobCode, workspaceID }),
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to update end date");
+  }
+
+  return res.json();
+
+}

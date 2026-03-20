@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 interface Employee {
   name: string;
@@ -34,6 +35,8 @@ export default function BusinessUnitCard({
   employees: initialEmployees,
   onSave,
 }: BusinessUnitCardProps) {
+  const navigate = useNavigate(); // ✅ NEW
+
   const [editOpen, setEditOpen] = useState(false);
   const [unitName, setUnitName] = useState(name);
   const [employees, setEmployees] = useState<Employee[]>([...initialEmployees]);
@@ -61,8 +64,16 @@ export default function BusinessUnitCard({
     setEditOpen(false);
   };
 
+  // ✅ Navigate to business unit page
+  const handleNavigate = () => {
+    navigate(`/businessunit/${name}`);
+  };
+
   return (
-    <div className="bg-card-light dark:bg-card-dark p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col justify-between relative">
+    <div
+      onClick={handleNavigate} // ✅ whole card clickable
+      className="bg-card-light dark:bg-card-dark p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col justify-between relative cursor-pointer hover:shadow-md transition"
+    >
       <div className="flex justify-between items-start mb-6">
         <div className="flex items-center gap-4">
           <div
@@ -75,7 +86,10 @@ export default function BusinessUnitCard({
 
         <button
           className="text-slate-400"
-          onClick={() => setEditOpen(true)}
+          onClick={(e) => {
+            e.stopPropagation(); // ✅ prevent navigation when clicking edit
+            setEditOpen(true);
+          }}
         >
           <span className="material-icons-outlined text-xl">more_horiz</span>
         </button>
@@ -95,11 +109,16 @@ export default function BusinessUnitCard({
 
       {/* Edit Overlay */}
       {editOpen && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-96 space-y-4 max-h-[90vh] overflow-y-auto">
+        <div
+          className="fixed inset-0 bg-black/30 flex items-center justify-center z-50"
+          onClick={() => setEditOpen(false)}
+        >
+          <div
+            className="bg-white rounded-xl p-6 w-96 space-y-4 max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()} // ✅ prevent closing when clicking inside
+          >
             <h3 className="text-lg font-bold">Edit Business Unit</h3>
 
-            {/* Name and Icon */}
             <label className="flex flex-col">
               <h4 className="font-semibold mt-4 mb-2">Name</h4>
               <input
@@ -109,7 +128,7 @@ export default function BusinessUnitCard({
                 className="border rounded px-2 py-1 mt-1"
               />
             </label>
-            {/* Employee List */}
+
             <div>
               <h4 className="font-semibold mt-4 mb-2">Employees</h4>
               <ul className="space-y-2">
@@ -128,6 +147,7 @@ export default function BusinessUnitCard({
                   </li>
                 ))}
               </ul>
+
               <div className="flex gap-2 mt-2">
                 <input
                   type="text"
@@ -145,7 +165,6 @@ export default function BusinessUnitCard({
               </div>
             </div>
 
-            {/* Buttons */}
             <div className="flex justify-end gap-2 pt-4">
               <button
                 onClick={() => setEditOpen(false)}

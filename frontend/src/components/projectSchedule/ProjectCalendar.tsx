@@ -14,14 +14,12 @@ type CalendarView = "week" | "fortnight" | "month";
 
 interface Props {
   view: CalendarView;
-  clientFilter: string;
   activeOnly: boolean;
   teamFilter: string[];
 }
 
 export default function ProjectCalendar({
   view,
-  clientFilter,
   activeOnly,
   teamFilter,
 }: Props) {
@@ -106,11 +104,6 @@ export default function ProjectCalendar({
     mapped = mapped.map((r) => ({
       ...r,
       projects: r.projects.filter((p) => {
-        if (
-          clientFilter &&
-          !p.client.toLowerCase().includes(clientFilter.toLowerCase())
-        )
-          return false;
 
         if (activeOnly) {
           const start = startOfDay(parseDateUTC(p.startDate));
@@ -124,7 +117,7 @@ export default function ProjectCalendar({
     }));
 
     return mapped;
-  }, [jobs, clientFilter, activeOnly, teamFilter]);
+  }, [jobs, activeOnly, teamFilter]);
 
   return (
     <div className="bg-white border rounded-xl overflow-hidden">

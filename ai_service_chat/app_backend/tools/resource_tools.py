@@ -558,6 +558,34 @@ async def update_job_end_date(
             return json.dumps({"error": f"Failed with status {response.status_code}", "text": response.text})
 
 
+@tool
+async def add_employee_specialisms(
+    employee_id: int,
+    specialisms: List[str],
+) -> str:
+    """
+    Add specialisms to an employee. Use get_employees first to obtain the employee's ID.
+
+    Args:
+        employee_id: The employee's numeric ID (from get_employees)
+        specialisms: List of specialism strings to add (e.g. ["Developer", "React"])
+
+    Returns:
+        JSON string with update result or error
+    """
+    payload = {
+        "specialisms": specialisms,
+        "employeeID": employee_id,
+    }
+
+    async with httpx.AsyncClient() as client:
+        response = await client.post(f"{_backend_url}/api/add-specialisms", json=payload)
+        try:
+            return json.dumps(response.json())
+        except Exception:
+            return json.dumps({"error": f"Failed with status {response.status_code}", "text": response.text})
+
+
 def get_resource_tools(backend_url: str) -> List:
     """Get list of resource management tools for LangGraph."""
     set_backend_url(backend_url)
@@ -578,4 +606,5 @@ def get_resource_tools(backend_url: str) -> List:
         update_job_time_budget,
         update_job_start_date,
         update_job_end_date,
+        add_employee_specialisms,
     ]

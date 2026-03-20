@@ -262,7 +262,9 @@ export function getEmployees(): Employee[] {
         excludedFromAI: Boolean(row.excludeFromAI),
       });
     }
-    employeesMap.get(key)!.specialisms.push(row.specialism);
+    if (row.specialism != null) {
+      employeesMap.get(key)!.specialisms.push(row.specialism);
+    }
   }
 
   // Convert map to array

@@ -82,11 +82,15 @@ describe("EmployeeProjectSchedule", () => {
       />
     );
 
-    const firstCall = (EmployeeProjectRow as any).mock.calls[0][0];
-    const secondCall = (EmployeeProjectRow as any).mock.calls[1][0];
+    expect(EmployeeProjectRow).toHaveBeenCalled();
 
-    expect(firstCall.maxAllocatedDays).toBe(10);
-    expect(secondCall.maxAllocatedDays).toBe(10);
+    const calls = vi.mocked(EmployeeProjectRow).mock.calls;
+
+    const firstCallProps = calls[0][0];
+    const secondCallProps = calls[1][0];
+
+    expect(firstCallProps.maxAllocatedDays).toBe(10);
+    expect(secondCallProps.maxAllocatedDays).toBe(10);
   });
 
   it("uses job description when available", () => {
@@ -106,7 +110,8 @@ describe("EmployeeProjectSchedule", () => {
       />
     );
 
-    const propsPassed = (EmployeeProjectRow as any).mock.calls[0][0];
+    const propsPassed =
+      vi.mocked(EmployeeProjectRow).mock.calls[0][0];
 
     expect(propsPassed.jobDescription).toBe("Project A");
   });
@@ -130,9 +135,10 @@ describe("EmployeeProjectSchedule", () => {
       />
     );
 
-    const secondCall = (EmployeeProjectRow as any).mock.calls[1][0];
+    const propsPassed =
+      vi.mocked(EmployeeProjectRow).mock.calls[1][0];
 
-    expect(secondCall.jobDescription).toBe("B");
+    expect(propsPassed.jobDescription).toBe("B");
   });
 
   it("handles empty forecastEntries safely", () => {

@@ -2,7 +2,6 @@ import { render, screen, waitFor } from "@testing-library/react";
 import { vi } from "vitest";
 import EmployeeProjects from "../../pages/EmployeeProjects";
 
-
 vi.mock("react-router-dom", () => ({
   useParams: () => ({ employeeName: "John%20Doe" }),
 }));
@@ -37,6 +36,7 @@ describe("EmployeeProjects", () => {
   const mockEmployee = {
     name: "John Doe",
     specialisms: ["Developer"],
+    excludedFromAI: false, // ✅ FIX
   };
 
   const mockJobs = [
@@ -61,9 +61,9 @@ describe("EmployeeProjects", () => {
   });
 
   it("shows loading initially", async () => {
-    (getEmployees as any).mockResolvedValue([]);
-    (getJobs as any).mockResolvedValue([]);
-    (getForecastEntries as any).mockResolvedValue([]);
+    vi.mocked(getEmployees).mockResolvedValue([]);
+    vi.mocked(getJobs).mockResolvedValue([]);
+    vi.mocked(getForecastEntries).mockResolvedValue([]);
 
     render(<EmployeeProjects />);
 
@@ -71,9 +71,9 @@ describe("EmployeeProjects", () => {
   });
 
   it("renders employee name after load", async () => {
-    (getEmployees as any).mockResolvedValue([mockEmployee]);
-    (getJobs as any).mockResolvedValue(mockJobs);
-    (getForecastEntries as any).mockResolvedValue([]);
+    vi.mocked(getEmployees).mockResolvedValue([mockEmployee]);
+    vi.mocked(getJobs).mockResolvedValue(mockJobs);
+    vi.mocked(getForecastEntries).mockResolvedValue([]);
 
     render(<EmployeeProjects />);
 
@@ -84,9 +84,9 @@ describe("EmployeeProjects", () => {
   });
 
   it("shows 'No allocations this month' when empty", async () => {
-    (getEmployees as any).mockResolvedValue([mockEmployee]);
-    (getJobs as any).mockResolvedValue(mockJobs);
-    (getForecastEntries as any).mockResolvedValue([]);
+    vi.mocked(getEmployees).mockResolvedValue([mockEmployee]);
+    vi.mocked(getJobs).mockResolvedValue(mockJobs);
+    vi.mocked(getForecastEntries).mockResolvedValue([]);
 
     render(<EmployeeProjects />);
 
@@ -98,9 +98,9 @@ describe("EmployeeProjects", () => {
   });
 
   it("renders schedule when allocations exist", async () => {
-    (getEmployees as any).mockResolvedValue([mockEmployee]);
-    (getJobs as any).mockResolvedValue(mockJobs);
-    (getForecastEntries as any).mockResolvedValue([
+    vi.mocked(getEmployees).mockResolvedValue([mockEmployee]);
+    vi.mocked(getJobs).mockResolvedValue(mockJobs);
+    vi.mocked(getForecastEntries).mockResolvedValue([
       makeForecast(),
     ]);
 
@@ -112,10 +112,10 @@ describe("EmployeeProjects", () => {
   });
 
   it("shows correct allocation status (underallocated)", async () => {
-    (getEmployees as any).mockResolvedValue([mockEmployee]);
-    (getJobs as any).mockResolvedValue(mockJobs);
+    vi.mocked(getEmployees).mockResolvedValue([mockEmployee]);
+    vi.mocked(getJobs).mockResolvedValue(mockJobs);
 
-    (getForecastEntries as any).mockResolvedValue([
+    vi.mocked(getForecastEntries).mockResolvedValue([
       makeForecast({ days: 2 }),
     ]);
 
@@ -127,10 +127,10 @@ describe("EmployeeProjects", () => {
   });
 
   it("shows correct allocation status (overallocated)", async () => {
-    (getEmployees as any).mockResolvedValue([mockEmployee]);
-    (getJobs as any).mockResolvedValue(mockJobs);
+    vi.mocked(getEmployees).mockResolvedValue([mockEmployee]);
+    vi.mocked(getJobs).mockResolvedValue(mockJobs);
 
-    (getForecastEntries as any).mockResolvedValue([
+    vi.mocked(getForecastEntries).mockResolvedValue([
       makeForecast({ days: 30 }),
     ]);
 
@@ -142,9 +142,9 @@ describe("EmployeeProjects", () => {
   });
 
   it("shows employee not found if missing", async () => {
-    (getEmployees as any).mockResolvedValue([]);
-    (getJobs as any).mockResolvedValue([]);
-    (getForecastEntries as any).mockResolvedValue([]);
+    vi.mocked(getEmployees).mockResolvedValue([]);
+    vi.mocked(getJobs).mockResolvedValue([]);
+    vi.mocked(getForecastEntries).mockResolvedValue([]);
 
     render(<EmployeeProjects />);
 

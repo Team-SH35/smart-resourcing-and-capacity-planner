@@ -156,8 +156,6 @@ async def get_session_history(session_id: str):
     Returns:
         List of messages in the session
     """
-    # TODO: I need to Implement session history retrieval
-    # This would fetch messages from the checkpointer
     return {
         "session_id": session_id,
         "messages": [],

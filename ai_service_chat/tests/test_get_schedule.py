@@ -76,3 +76,33 @@ async def test_returns_error_on_backend_failure():
         result = json.loads(await get_schedule.ainvoke({}))
 
     assert "error" in result
+
+
+@pytest.mark.asyncio
+async def test_entries_contain_employee_name_field():
+    resp = make_mock_response(MOCK_FORECAST_ENTRIES)
+    with patch("app_backend.tools.resource_tools.httpx.AsyncClient", return_value=make_mock_client(resp)):
+        result = json.loads(await get_schedule.ainvoke({}))
+
+    for entry in result:
+        assert "employeeName" in entry
+
+
+@pytest.mark.asyncio
+async def test_entries_contain_job_code_field():
+    resp = make_mock_response(MOCK_FORECAST_ENTRIES)
+    with patch("app_backend.tools.resource_tools.httpx.AsyncClient", return_value=make_mock_client(resp)):
+        result = json.loads(await get_schedule.ainvoke({}))
+
+    for entry in result:
+        assert "jobCode" in entry
+
+
+@pytest.mark.asyncio
+async def test_entries_contain_days_field():
+    resp = make_mock_response(MOCK_FORECAST_ENTRIES)
+    with patch("app_backend.tools.resource_tools.httpx.AsyncClient", return_value=make_mock_client(resp)):
+        result = json.loads(await get_schedule.ainvoke({}))
+
+    for entry in result:
+        assert "days" in entry

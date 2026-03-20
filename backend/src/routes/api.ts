@@ -17,6 +17,7 @@ import {
   updateCurrencySymbol,
   updateStartTime,
   updateEndTime,
+  addSpecialism,
 } from "../services/dataService";
 import parseExcelInfo from "../excel-utils/parse_excel";
 import { writeExcelToDB } from "../db/write_to_db";
@@ -362,6 +363,40 @@ router.post("/update-end-date", async (req, res) => {
 
     return res.status(500).json({ error: "Failed to update job end date" });
   }
+})
+
+router.post("/add-specialisms", async (req, res) => {
+  try {
+    const { specialisms, employeeID } = req.body;
+
+    if (!specialisms || !employeeID) {
+      return res.status(400).json({
+          error: "specialisms, workspaceID and employeeID are required",
+      }); 
+    }
+
+    const result = addSpecialism({specialisms, employeeID});
+    return res.status(201).json(result);
+
+  } catch (error) {
+    console.error("POST /api/add-specialisms:", error);
+
+    const message =
+      error instanceof Error ? error.message : "Failed to add specalisms";
+
+    if (
+      message.includes("not found") ||
+      message.includes("already exists") ||
+      message.includes("Invalid month")
+    ) {
+      return res.status(400).json({ error: message });
+    }
+
+    return res.status(500).json({ error: "Failed to add specialisms"});
+  }
+
+
+
 })
 
 router.post("/import-excel", upload.single("file"), async (req, res) => {

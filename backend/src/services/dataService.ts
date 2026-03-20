@@ -43,6 +43,11 @@ type startDateUpdate = {
     workspaceID  : string
 }
 
+type specialisms = {
+    specialisms: string[],
+    employeeID: string
+} 
+
 type JobRow = {
   jobCode: string;
   description: string | null;
@@ -692,6 +697,19 @@ export function updateEndTime(input :startDateUpdate) {
       jobCode,
       workspaceID
     };
+}
+
+export function addSpecialism(input: specialisms) {
+    const { employeeID } = input;
+    const transaction = db.transaction (() => {
+        input.specialisms.forEach(specialism => {
+            db.prepare(`
+                INSERT INTO EmployeeSpecialisms(EmployeeID, Specialism)
+                VALUES (?,?)
+                `).run(employeeID, specialism)
+        });
+    });
+    transaction();
 }
 
 export function deleteForecastEntry(input: ForecastWriteInput) {

@@ -78,3 +78,14 @@ async def test_returns_error_on_backend_failure():
         result = json.loads(await get_project_staffing.ainvoke({}))
 
     assert "error" in result
+
+
+@pytest.mark.asyncio
+async def test_both_filters_together_returns_one_result():
+    resp = make_mock_response(MOCK_FORECAST_ENTRIES)
+    with patch("app_backend.tools.resource_tools.httpx.AsyncClient", return_value=make_mock_client(resp)):
+        result = json.loads(await get_project_staffing.ainvoke({"month": "March", "job_code": "P002"}))
+
+    assert len(result) == 1
+    assert result[0]["employeeName"] == "Alice Smith"
+    assert result[0]["jobCode"] == "P002"

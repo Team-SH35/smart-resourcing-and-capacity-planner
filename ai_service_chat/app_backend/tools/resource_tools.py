@@ -529,6 +529,35 @@ async def update_job_start_date(
             return json.dumps({"error": f"Failed with status {response.status_code}", "text": response.text})
 
 
+@tool
+async def update_job_end_date(
+    job_code: str,
+    end_date: str,
+) -> str:
+    """
+    Update the end date for a job.
+
+    Args:
+        job_code: Job code to update (e.g. "P001")
+        end_date: New end date in ISO format (e.g. "2024-06-30")
+
+    Returns:
+        JSON string with update result or error
+    """
+    payload = {
+        "endDate": end_date,
+        "jobCode": job_code,
+        "workspaceID": _workspace_id(),
+    }
+
+    async with httpx.AsyncClient() as client:
+        response = await client.post(f"{_backend_url}/api/update-end-date", json=payload)
+        try:
+            return json.dumps(response.json())
+        except Exception:
+            return json.dumps({"error": f"Failed with status {response.status_code}", "text": response.text})
+
+
 def get_resource_tools(backend_url: str) -> List:
     """Get list of resource management tools for LangGraph."""
     set_backend_url(backend_url)
@@ -548,4 +577,5 @@ def get_resource_tools(backend_url: str) -> List:
         update_job_monetary_budget,
         update_job_time_budget,
         update_job_start_date,
+        update_job_end_date,
     ]

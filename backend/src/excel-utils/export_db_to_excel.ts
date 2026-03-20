@@ -1,4 +1,4 @@
-import { db } from "../db/db";
+import db from "../db/db";
 import Excel, { Worksheet } from "exceljs";
 
 // Header constants

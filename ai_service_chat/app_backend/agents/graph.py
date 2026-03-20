@@ -1,18 +1,15 @@
-"""
-LangGraph workflow for HR Resource Management Chatbot.
-This implements an agent that can query and update resource allocations.
-"""
+"""LangGraph workflow for the HR Resource Management agent."""
 
+import os
 from datetime import datetime, timezone
-from typing import Annotated, TypedDict, Sequence
+from typing import Annotated, Sequence, TypedDict
+
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage, ToolMessage
 from langchain_openai import ChatOpenAI
-from langgraph.graph import StateGraph, END
+from langgraph.checkpoint.memory import MemorySaver
+from langgraph.graph import END, StateGraph
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode
-from langgraph.checkpoint.memory import MemorySaver
-import os
-
 
 # Write tools require user approval before execution — used for routing and interrupt logic
 WRITE_TOOL_NAMES = {
@@ -28,25 +25,14 @@ WRITE_TOOL_NAMES = {
 
 
 class AgentState(TypedDict):
-    """State of the agent workflow."""
+    """Shared state threaded through every node in the LangGraph workflow."""
     messages: Annotated[Sequence[BaseMessage], add_messages]
-    proposed_changes: list
-    user_id: str
-    session_id: str
 
 
 class ResourceManagementAgent:
-    """
-    LangGraph-based agent for resource management queries and updates.
-    """
+    """LangGraph-based agent for resource management queries and updates."""
 
     def __init__(self, tools: list):
-        """
-        Initialize the agent with tools and LLM.
-
-        Args:
-            tools: List of LangChain tools for resource management
-        """
         self.tools = tools
         self.checkpointer = MemorySaver()
 
@@ -60,7 +46,7 @@ class ResourceManagementAgent:
         self.graph = self._build_graph()
 
     def _build_graph(self) -> StateGraph:
-        """Build the LangGraph workflow."""
+        """Build the LangGraph workflow with separate read and write tool nodes."""
         workflow = StateGraph(AgentState)
 
         read_tools = [t for t in self.tools if t.name not in WRITE_TOOL_NAMES]
@@ -89,29 +75,13 @@ class ResourceManagementAgent:
         return workflow.compile(checkpointer=self.checkpointer, interrupt_before=["write_tools"])
 
     def _call_model(self, state: AgentState) -> dict:
-        """
-        Call the LLM with current state.
-
-        Args:
-            state: Current agent state
-
-        Returns:
-            Updated state with LLM response
-        """
+        """Prepend the system prompt and invoke the LLM."""
         messages = [SystemMessage(content=self.get_system_prompt())] + list(state["messages"])
         response = self.llm_with_tools.invoke(messages)
         return {"messages": [response]}
 
     def _should_continue(self, state: AgentState) -> str:
-        """
-        Determine if the agent should continue or end.
-
-        Args:
-            state: Current agent state
-
-        Returns:
-            Destination node name
-        """
+        """Route to the appropriate next node based on which tools the LLM called."""
         last_message = state["messages"][-1]
 
         if hasattr(last_message, "tool_calls") and last_message.tool_calls:
@@ -121,37 +91,15 @@ class ResourceManagementAgent:
 
         return "end"
 
-    async def process_message(
-        self,
-        message: str,
-        user_id: str,
-        session_id: str,
-    ) -> dict:
-        """
-        Process a user message through the agent workflow.
-
-        Args:
-            message: User's natural language query
-            user_id: User identifier
-            session_id: Session identifier for conversation continuity
-
-        Returns:
-            Response dictionary with message and any proposed changes
-        """
-        initial_state = {
-            "messages": [HumanMessage(content=message)],
-            "proposed_changes": [],
-            "user_id": user_id,
-            "session_id": session_id,
-        }
-
+    async def process_message(self, message: str, session_id: str) -> dict:
+        """Process a user message through the agent workflow."""
         config = {"configurable": {"thread_id": session_id}}
 
-        await self.graph.ainvoke(initial_state, config)
+        await self.graph.ainvoke({"messages": [HumanMessage(content=message)]}, config)
         return await self._format_state_response(session_id)
 
     async def _format_state_response(self, session_id: str) -> dict:
-        """Extract and format the current agent state to return to the caller."""
+        """Extract the latest agent state and surface any pending write tool calls."""
         config = {"configurable": {"thread_id": session_id}}
         state_snapshot = await self.graph.aget_state(config)
         final_state = state_snapshot.values
@@ -173,7 +121,7 @@ class ResourceManagementAgent:
                     "description": tc["name"],
                     "data": tc["args"],
                     "status": "pending",
-                    "created_at": datetime.now(timezone.utc)
+                    "created_at": datetime.now(timezone.utc),
                 })
 
         return {
@@ -183,13 +131,13 @@ class ResourceManagementAgent:
         }
 
     async def approve_change(self, session_id: str) -> dict:
-        """Resume execution applying the pending tools."""
+        """Resume execution applying the pending write tool calls."""
         config = {"configurable": {"thread_id": session_id}}
         await self.graph.ainvoke(None, config)
         return await self._format_state_response(session_id)
 
     async def reject_change(self, session_id: str) -> dict:
-        """Reject the change by forcibly failing the tool call execution and resuming."""
+        """Inject rejection tool messages and resume so the agent can inform the user."""
         config = {"configurable": {"thread_id": session_id}}
         state_snapshot = await self.graph.aget_state(config)
 
@@ -200,7 +148,7 @@ class ResourceManagementAgent:
                 tool_msgs.append(ToolMessage(
                     tool_call_id=tc["id"],
                     name=tc["name"],
-                    content="User rejected the change. Inform the user respectfully that you aborted the operation."
+                    content="User rejected the change. Inform the user respectfully that you aborted the operation.",
                 ))
 
             await self.graph.aupdate_state(config, {"messages": tool_msgs}, as_node="write_tools")
@@ -209,7 +157,7 @@ class ResourceManagementAgent:
         return await self._format_state_response(session_id)
 
     def get_system_prompt(self) -> str:
-        """Get the system prompt for the agent."""
+        """Return the system prompt that scopes and guides the agent's behaviour."""
         return """You are the HR Resource Management & Capacity Planning Lead AI. Your goal is to ensure project staffing is optimized and burnout is minimized.
 
 ### SCOPE:
@@ -252,13 +200,5 @@ If the user asks anything outside this scope (e.g. general knowledge, entertainm
 
 
 def create_agent(tools: list) -> ResourceManagementAgent:
-    """
-    Factory function to create a resource management agent.
-
-    Args:
-        tools: List of tools for the agent
-
-    Returns:
-        Configured ResourceManagementAgent
-    """
+    """Factory function to create a ResourceManagementAgent."""
     return ResourceManagementAgent(tools=tools)

@@ -3,7 +3,6 @@ FastAPI routes for the AI chatbot service.
 """
 
 from fastapi import APIRouter, HTTPException, Depends
-from typing import Optional
 import uuid
 from datetime import datetime
 

@@ -52,3 +52,21 @@ frontend:test:
     - npm ci
   script:
     - npm test
+
+ai_service_chat:lint:
+  image: python:3.11
+  stage: Lint
+  before_script:
+    - cd ai_service_chat
+    - pip install -r requirements-dev.txt
+  script:
+    - flake8 app_backend tests
+
+ai_service_chat:test:
+  image: python:3.11
+  stage: Test
+  before_script:
+    - cd ai_service_chat
+    - pip install -r requirements.txt -r requirements-dev.txt
+  script:
+    - pytest

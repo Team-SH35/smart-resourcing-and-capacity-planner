@@ -1,6 +1,4 @@
 """Tests for get_resource_tools factory function."""
-import pytest
-
 from app_backend.tools.resource_tools import get_resource_tools
 
 

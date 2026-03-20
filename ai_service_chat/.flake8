@@ -1,0 +1,5 @@
+[flake8]
+max-line-length = 130
+per-file-ignores =
+    # System prompt strings contain long lines that cannot be shortened
+    app_backend/agents/graph.py: E501

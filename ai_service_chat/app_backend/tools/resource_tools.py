@@ -105,27 +105,21 @@ async def get_employee_availability(
     async with httpx.AsyncClient() as client:
         url_emp = f"{_backend_url}/api/employees"
         url_fc = f"{_backend_url}/api/forecast-entries"
-        print(f"[get_employee_availability] Fetching {url_emp} and {url_fc} with workspace_id {workspace_id}", flush=True)
         try:
             emp_resp, forecast_resp = await asyncio.gather(
                 client.get(url_emp, params={"workspaceID": workspace_id}),
                 client.get(url_fc, params={"workspaceID": workspace_id}),
             )
-            print(f"[get_employee_availability] emp status: {emp_resp.status_code}, forecast status: {forecast_resp.status_code}", flush=True)
         except Exception as e:
-            print(f"[get_employee_availability] HTTPX EXCEPTION: {str(e)}", flush=True)
             return json.dumps({"error": f"Exception: {str(e)}"})
 
         if not emp_resp.is_success:
-            print(f"[get_employee_availability] emp failed: {emp_resp.text}", flush=True)
             return json.dumps({"error": "Failed to fetch employees"})
         if not forecast_resp.is_success:
-            print(f"[get_employee_availability] forecast failed: {forecast_resp.text}", flush=True)
             return json.dumps({"error": "Failed to fetch forecast"})
 
         employees = emp_resp.json()
         forecast = forecast_resp.json()
-        print(f"[get_employee_availability] Fetched {len(employees)} employees and {len(forecast)} forecast entries", flush=True)
 
     if month:
         m_prefix = month.lower()[:3]

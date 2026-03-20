@@ -1,8 +1,9 @@
 import db from "../db/db";
 import Excel, { Worksheet } from "exceljs";
 
-// Header constants
+// ---------------- Header / Column Constants ----------------
 const HEADER_ROW = 19;
+
 const JAN_ALLOCATION_INDEX = 11;
 const FEB_ALLOCATION_INDEX = 12;
 const MAR_ALLOCATION_INDEX = 13;
@@ -17,48 +18,35 @@ const NOV_ALLOCATION_INDEX = 21;
 const DEC_ALLOCATION_INDEX = 22;
 
 // Individual row constants
-const NAME_INDEX                = 1;
-const RESOURCE_BU_INDEX         = 2;
-const CUSTOMER_INDEX            = 3;
-const REPLY_ENTITY_INDEX        = 4;
-const BUSSINESS_UNIT_INDEX      = 5;
-const JOB_ORIGIN_INDEX          = 6;
-const T_CODE_INDEX              = 8;
-const JOB_CODE_INDEX            = 9;
-const DESCRIPTION_INDEX         = 10;
+const NAME_INDEX = 1;
+const RESOURCE_BU_INDEX = 2;
+const CUSTOMER_INDEX = 3;
+const REPLY_ENTITY_INDEX = 4;
+const BUSSINESS_UNIT_INDEX = 5;
+const JOB_ORIGIN_INDEX = 6;
+const T_CODE_INDEX = 8;
+const JOB_CODE_INDEX = 9;
+const DESCRIPTION_INDEX = 10;
 
-// Month allocations
+// ---------------- Types ----------------
 export interface MonthAllocations {
-  jan_work: number;
-  jan_hypo: number;
-  feb_work: number;
-  feb_hypo: number;
-  mar_work: number;
-  mar_hypo: number;
-  apr_work: number;
-  apr_hypo: number;
-  may_work: number;
-  may_hypo: number;
-  jun_work: number;
-  jun_hypo: number;
-  jul_work: number;
-  jul_hypo: number;
-  aug_work: number;
-  aug_hypo: number;
-  sep_work: number;
-  sep_hypo: number;
-  oct_work: number;
-  oct_hypo: number;
-  nov_work: number;
-  nov_hypo: number;
-  dec_work: number;
-  dec_hypo: number;
+  jan_work: number; jan_hypo: number;
+  feb_work: number; feb_hypo: number;
+  mar_work: number; mar_hypo: number;
+  apr_work: number; apr_hypo: number;
+  may_work: number; may_hypo: number;
+  jun_work: number; jun_hypo: number;
+  jul_work: number; jul_hypo: number;
+  aug_work: number; aug_hypo: number;
+  sep_work: number; sep_hypo: number;
+  oct_work: number; oct_hypo: number;
+  nov_work: number; nov_hypo: number;
+  dec_work: number; dec_hypo: number;
 }
 
-// Employee structure
 export interface Employee {
-  employeeID: string;
-  Name      : string;
+  EmployeeID: string;
+  Name: string;
 }
 
 export interface ForecastEntry {
@@ -72,7 +60,6 @@ export interface ForecastEntry {
   JobCode: string;
   Description: string;
 
-  // Monthly allocations
   Days_allocated_jan: number;
   Days_allocated_feb: number;
   Days_allocated_mar: number;
@@ -87,12 +74,9 @@ export interface ForecastEntry {
   Days_allocated_dec: number;
 }
 
-// Partial row type for MonthAllocations (unknown → number)
-type MonthAllocationsRow = {
-  [K in keyof MonthAllocations]: unknown;
-};
+// ---------------- Helpers ----------------
+type MonthAllocationsRow = { [K in keyof MonthAllocations]: unknown };
 
-// Normalize MonthAllocations row
 function normalizeRow(row: MonthAllocationsRow): MonthAllocations {
   const months = ["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"] as const;
   const allocations: Partial<MonthAllocations> = {};
@@ -103,22 +87,20 @@ function normalizeRow(row: MonthAllocationsRow): MonthAllocations {
   return allocations as MonthAllocations;
 }
 
-// Get month allocations
 function getMonthAllocations(workspaceID: string): MonthAllocations {
   const row = db.prepare(`
-    SELECT
-      jan_work, jan_hypo,
-      feb_work, feb_hypo,
-      mar_work, mar_hypo,
-      apr_work, apr_hypo,
-      may_work, may_hypo,
-      jun_work, jun_hypo,
-      jul_work, jul_hypo,
-      aug_work, aug_hypo,
-      sep_work, sep_hypo,
-      oct_work, oct_hypo,
-      nov_work, nov_hypo,
-      dec_work, dec_hypo
+    SELECT jan_work, jan_hypo,
+           feb_work, feb_hypo,
+           mar_work, mar_hypo,
+           apr_work, apr_hypo,
+           may_work, may_hypo,
+           jun_work, jun_hypo,
+           jul_work, jul_hypo,
+           aug_work, aug_hypo,
+           sep_work, sep_hypo,
+           oct_work, oct_hypo,
+           nov_work, nov_hypo,
+           dec_work, dec_hypo
     FROM Month_Work_Days
     WHERE WorkspaceID = ?
   `).get(workspaceID) as MonthAllocationsRow | undefined;
@@ -127,7 +109,46 @@ function getMonthAllocations(workspaceID: string): MonthAllocations {
   return normalizeRow(row);
 }
 
-// Write allocations to Excel
+function getEmployees(workspaceID: string): Employee[] {
+  return db.prepare(`
+    SELECT EmployeeID, Name
+    FROM Employee
+    WHERE WorkspaceID = ?
+  `).all(workspaceID) as Employee[];
+}
+
+function getForecastEntries(workspaceID: string, employeeID: string): ForecastEntry[] {
+  return db.prepare(`
+    SELECT 
+    Employee.Name,
+    Job.ResourceBu,
+    Job.Customer,
+    Job.ReplyEntity,
+    Job.BusinessUnit,
+    Job.JobOrigin,
+    Job.t_code,
+    ForecastEntry.JobCode,
+    Job.Description,
+    ForecastEntry.Days_allocated_jan,
+    ForecastEntry.Days_allocated_feb,
+    ForecastEntry.Days_allocated_mar,
+    ForecastEntry.Days_allocated_apr,
+    ForecastEntry.Days_allocated_may,
+    ForecastEntry.Days_allocated_jun,
+    ForecastEntry.Days_allocated_jul,
+    ForecastEntry.Days_allocated_aug,
+    ForecastEntry.Days_allocated_sep,
+    ForecastEntry.Days_allocated_oct,
+    ForecastEntry.Days_allocated_nov,
+    ForecastEntry.Days_allocated_dec
+    FROM ForecastEntry
+    INNER JOIN Job ON Job.JobCode = ForecastEntry.JobCode
+    INNER JOIN Employee ON Employee.EmployeeID = ForecastEntry.EmployeeID
+    WHERE ForecastEntry.WorkspaceID = ? AND ForecastEntry.EmployeeID = ?
+  `).all(workspaceID, employeeID) as ForecastEntry[];
+}
+
+// ---------------- Excel Helpers ----------------
 function writeMonthAllocationDaysToExcel(allocations: MonthAllocations, worksheet: Worksheet) {
   const row = worksheet.getRow(HEADER_ROW);
   const year = new Date().getFullYear() - 2000;
@@ -148,50 +169,9 @@ function writeMonthAllocationDaysToExcel(allocations: MonthAllocations, workshee
   ];
 
   months.forEach(({ index, work, hypo }, i) => {
-    const monthName = months[i].index === index ? Object.keys(allocations)[i*2].split("_")[0] : "Unknown";
+    const monthName = Object.keys(allocations)[i*2].split("_")[0];
     row.getCell(index).value = `'${monthName.charAt(0).toUpperCase() + monthName.slice(1)}-${year} ${hypo}/${work}`;
   });
-}
-
-// Get employees
-function getEmployees(workspaceID: string): Employee[] {
-  return db.prepare(`
-    SELECT employeeID, Name
-    FROM Employee
-    WHERE workspaceID = ?
-  `).all(workspaceID) as Employee[];
-}
-
-// Get forecast entries for an employee
-function getForecastEntries(workspaceID: string, employeeID: string): ForecastEntry[] {
-  return db.prepare(`
-    SELECT 
-      ForecastEntry.Name,
-      ForecastEntry.ResourceBu,
-      ForecastEntry.Customer,
-      ForecastEntry.ReplyEntity,
-      ForecastEntry.BusinessUnit,
-      ForecastEntry.JobOrigin,
-      ForecastEntry.t_code,
-      ForecastEntry.JobCode,
-      ForecastEntry.Description,
-      ForecastEntry.Days_allocated_jan,
-      ForecastEntry.Days_allocated_feb,
-      ForecastEntry.Days_allocated_mar,
-      ForecastEntry.Days_allocated_apr,
-      ForecastEntry.Days_allocated_may,
-      ForecastEntry.Days_allocated_jun,
-      ForecastEntry.Days_allocated_jul,
-      ForecastEntry.Days_allocated_aug,
-      ForecastEntry.Days_allocated_sep,
-      ForecastEntry.Days_allocated_oct,
-      ForecastEntry.Days_allocated_nov,
-      ForecastEntry.Days_allocated_dec
-    FROM ForecastEntry
-    INNER JOIN Job ON Job.JobCode = ForecastEntry.JobCode
-    INNER JOIN Employee ON Employee.EmployeeID = ForecastEntry.EmployeeID
-    WHERE ForecastEntry.workspaceID = ? AND ForecastEntry.employeeID = ?
-  `).all(workspaceID, employeeID) as ForecastEntry[];
 }
 
 function totalDaysForEmployee(
@@ -203,27 +183,19 @@ function totalDaysForEmployee(
   current_row: number,
   column_letter: string
 ) {
-  // Set the formula with the pre-calculated sum_total as result
-  cell.value = {
-    formula: `SUM(${column_letter}${employee_start_index}:${column_letter}${current_row - 1})`,
-    result: sum_total
-  };
+  cell.value = { formula: `SUM(${column_letter}${employee_start_index}:${column_letter}${current_row-1})`, result: sum_total };
 
-  // Color the cell based on allocation
   if (sum_total === work_days) {
-    // Correctly allocated
     cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF92d050" } };
   } else if (sum_total < hypo_days) {
-    // Under allocated work days
     cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFC000" } };
   } else if (sum_total < work_days) {
-    // Under allocated hypo days
     cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFF0000" } };
   }
 }
 
-// Write forecast entries to Excel
-function writeForecastEntries(
+// ---------------- Forecast Entries ----------------
+export function writeForecastEntries(
   workspaceID: string,
   worksheet: Worksheet,
   monthAllocations: MonthAllocations
@@ -231,7 +203,6 @@ function writeForecastEntries(
   let current_row = 20;
   const employees = getEmployees(workspaceID);
 
-  // Map column index to month allocation field
   const monthColumns: { index: number; field: keyof MonthAllocations; letter: string }[] = [
     { index: JAN_ALLOCATION_INDEX, field: "jan_work", letter: "K" },
     { index: FEB_ALLOCATION_INDEX, field: "feb_work", letter: "L" },
@@ -248,13 +219,14 @@ function writeForecastEntries(
   ];
 
   employees.forEach(employee => {
-    const forecasts = getForecastEntries(workspaceID, employee.employeeID);
+    const forecasts = getForecastEntries(workspaceID, employee.EmployeeID);
     const employee_start_index = current_row;
+    console.log(employee.Name + " " + employee.EmployeeID +" " + forecasts.length)
+
 
     forecasts.forEach(forecast => {
       const row = worksheet.getRow(current_row);
 
-      // Set employee forecast fields
       row.getCell(NAME_INDEX).value = forecast.Name;
       row.getCell(RESOURCE_BU_INDEX).value = forecast.ResourceBu;
       row.getCell(CUSTOMER_INDEX).value = forecast.Customer;
@@ -265,7 +237,6 @@ function writeForecastEntries(
       row.getCell(JOB_CODE_INDEX).value = forecast.JobCode;
       row.getCell(DESCRIPTION_INDEX).value = forecast.Description;
 
-      // Set monthly allocation
       row.getCell(JAN_ALLOCATION_INDEX).value = forecast.Days_allocated_jan;
       row.getCell(FEB_ALLOCATION_INDEX).value = forecast.Days_allocated_feb;
       row.getCell(MAR_ALLOCATION_INDEX).value = forecast.Days_allocated_mar;
@@ -282,13 +253,13 @@ function writeForecastEntries(
       current_row++;
     });
 
-    // Insert TOTAL row for the employee
     const totalRow = worksheet.getRow(current_row);
-    worksheet.mergeCells(`B${current_row}:J${current_row}`);
-    totalRow.getCell(2).value = `TOTAL - ${employee.employeeID}`;
-    totalRow.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF508cd4" } };
+    const mergeRange = `B${current_row}:J${current_row}`;
 
-    // Calculate sum for each month and color
+    totalRow.getCell(2).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF508cd4" } };
+    worksheet.mergeCells(mergeRange);
+    totalRow.getCell(2).value = `TOTAL - ${employee.Name}`;
+
     monthColumns.forEach(({ index, field, letter }) => {
       let sum_total = 0;
       for (let r = employee_start_index; r < current_row; r++) {
@@ -299,8 +270,8 @@ function writeForecastEntries(
       totalDaysForEmployee(
         totalRow.getCell(index),
         sum_total,
-        monthAllocations[field], // work_days
-        monthAllocations[field.replace("_work", "_hypo") as keyof MonthAllocations], // hypo_days
+        monthAllocations[field],
+        monthAllocations[field.replace("_work", "_hypo") as keyof MonthAllocations],
         employee_start_index,
         current_row,
         letter
@@ -311,15 +282,15 @@ function writeForecastEntries(
   });
 }
 
-// Export workbook
+// ---------------- Export Function (returns workbook) ----------------
 export async function exportDbExcel(workspaceID: string): Promise<Excel.Workbook> {
   const workbook = new Excel.Workbook();
-  await workbook.xlsx.readFile('./out_excel_sheet_template.xlsx');
+  await workbook.xlsx.readFile('./src/excel-utils/out_excel_sheet_template.xlsx');
   const worksheet = workbook.worksheets[0];
 
   const monthAllocations = getMonthAllocations(workspaceID);
   writeMonthAllocationDaysToExcel(monthAllocations, worksheet);
   writeForecastEntries(workspaceID, worksheet, monthAllocations);
 
-  return workbook;
+  return workbook; // return workbook instead of saving
 }

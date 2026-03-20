@@ -2,6 +2,13 @@ import { render, screen } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import BusinessUnitSection from "../../components/dashboard/BusinessUnitSection";
 
+// ✅ import types
+import type {
+  Employee,
+  JobCode,
+  ForecastEntry,
+} from "../../components/data/types";
+
 // mock children
 vi.mock("../../components/dashboard/BusinessUnitCard", () => ({
   default: () => <div>MockCard</div>,
@@ -30,34 +37,66 @@ import {
   getForecastEntries,
 } from "../../api/client";
 
+// ✅ helper factories (typed)
+const makeEmployee = (overrides: Partial<Employee> = {}): Employee => ({
+  name: "John",
+  specialisms: [],
+  excludedFromAI: false,
+  ...overrides,
+});
+
+const makeJob = (overrides: Partial<JobCode> = {}): JobCode => ({
+  jobCode: "A",
+  description: "Test Project",
+  customerName: "Client",
+  businessUnit: "Dev",
+  startDate: "2024-01-01",
+  finishDate: null,
+  budgetCost: 0,
+  ...overrides,
+});
+
+const makeForecast = (
+  overrides: Partial<ForecastEntry> = {}
+): ForecastEntry => ({
+  employeeName: "John",
+  customer: "Client",
+  jobCode: "A",
+  description: "Test Project",
+  days: 5,
+  cost: null,
+  month: "January",
+  ...overrides,
+});
+
 describe("BusinessUnitSection", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("shows loading", async () => {
+  it("shows loading", () => {
     vi.mocked(getBusinessUnits).mockImplementation(
-        () => new Promise(() => {}) 
+      () => new Promise(() => {}) // never resolves
     );
 
     render(<BusinessUnitSection />);
 
     expect(
-        screen.getByText(/Loading business units/)
+      screen.getByText(/Loading business units/)
     ).toBeInTheDocument();
-    });
+  });
 
   it("renders units", async () => {
     vi.mocked(getBusinessUnits).mockResolvedValue(["Dev"]);
     vi.mocked(getEmployees).mockResolvedValue([
-      { name: "John", specialisms: [], excludedFromAI: false },
+      makeEmployee({ name: "John" }),
     ]);
     vi.mocked(getJobs).mockResolvedValue([
-      { jobCode: "A", businessUnit: "Dev" },
-    ] as any);
+      makeJob({ jobCode: "A", businessUnit: "Dev" }),
+    ]);
     vi.mocked(getForecastEntries).mockResolvedValue([
-      { jobCode: "A", employeeName: "John" },
-    ] as any);
+      makeForecast({ jobCode: "A", employeeName: "John" }),
+    ]);
 
     render(<BusinessUnitSection />);
 

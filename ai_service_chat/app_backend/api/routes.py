@@ -10,30 +10,20 @@ from datetime import datetime
 from app_backend.models import ChatMessage, ChatResponse
 from app_backend.agents import create_agent
 from app_backend.tools import get_resource_tools
-from app_backend.mcp_integration import setup_mcp_servers
 import os
 
 router = APIRouter()
 
 _agent = None
-_mcp_integration = None
 
 
 async def get_agent():
-    """Get or create the agent instance."""
-    global _agent, _mcp_integration
+    """Get or initialise the agent instance (lazy singleton)."""
+    global _agent
 
     if _agent is None:
-        # Get backend URL from environment
         backend_url = os.getenv("BACKEND_URL", "http://localhost:3001")
-
-        # Get resource management tools
         tools = get_resource_tools(backend_url)
-
-        # Set up MCP integration (optional)
-        _mcp_integration = await setup_mcp_servers()
-
-        # Create agent with tools
         _agent = create_agent(tools=tools)
 
     return _agent
@@ -55,18 +45,15 @@ async def chat(
         Chat response with AI message and any proposed changes
     """
     try:
-        # Generate session ID if not provided
         session_id = message.session_id or str(uuid.uuid4())
 
-        # Process message through agent
         result = await agent.process_message(
             message=message.message,
             user_id=message.user_id,
             session_id=session_id,
         )
 
-        # Create response
-        response = ChatResponse(
+        return ChatResponse(
             id=str(uuid.uuid4()),
             message=message.message,
             response=result["response"],
@@ -74,8 +61,6 @@ async def chat(
             session_id=session_id,
             proposed_changes=result.get("proposed_changes"),
         )
-
-        return response
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing message: {str(e)}")
@@ -100,12 +85,12 @@ async def approve_change(session_id: str):
         session_id: The session string identifier containing the paused state
 
     Returns:
-        Chat response summarizing the execution outcome
+        Chat response summarising the execution outcome
     """
     try:
         agent = await get_agent()
         result = await agent.approve_change(session_id)
-        
+
         return ChatResponse(
             id=str(uuid.uuid4()),
             message="Change Approved",
@@ -127,12 +112,12 @@ async def reject_change(session_id: str):
         session_id: The session string identifier
 
     Returns:
-        Chat response summarizing the rejection
+        Chat response summarising the rejection
     """
     try:
         agent = await get_agent()
         result = await agent.reject_change(session_id)
-        
+
         return ChatResponse(
             id=str(uuid.uuid4()),
             message="Change Rejected",

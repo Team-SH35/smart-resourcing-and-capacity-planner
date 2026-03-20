@@ -97,3 +97,15 @@ def test_get_system_prompt_mentions_month_name_format():
     agent = make_agent()
     prompt = agent.get_system_prompt()
     assert "month names" in prompt.lower() or "march" in prompt.lower()
+
+
+def test_get_system_prompt_restricts_scope():
+    agent = make_agent()
+    prompt = agent.get_system_prompt()
+    assert "SCOPE" in prompt
+
+
+def test_get_system_prompt_instructs_refusal_of_off_topic():
+    agent = make_agent()
+    prompt = agent.get_system_prompt()
+    assert "outside this scope" in prompt or "refuse" in prompt.lower()

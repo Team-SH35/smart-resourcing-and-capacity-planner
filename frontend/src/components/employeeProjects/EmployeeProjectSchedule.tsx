@@ -11,7 +11,6 @@ interface Props {
 }
 
 export default function EmployeeProjectSchedule({
-  employeeName,
   forecastEntries,
   jobCodes,
   currentDate,

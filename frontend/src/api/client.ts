@@ -70,6 +70,7 @@ export async function getBusinessUnits(): Promise<string[]> {
 export async function uploadExcel(file: File) {
   const formData = new FormData();
   formData.append("file", file);
+  formData.append("workspaceId", "1");
 
   const res = await fetch(`${API_BASE}/api/import-excel`, {
     method: "POST",

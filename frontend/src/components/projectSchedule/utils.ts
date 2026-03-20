@@ -1,7 +1,7 @@
 import type { JobCode, CalendarRow } from "../data/types";
 
 export function parseDateUTC(dateString: string) {
-  return new Date(dateString + "T00:00:00Z");
+  return new Date(dateString);
 }
 
 export function startOfDay(date: Date) {

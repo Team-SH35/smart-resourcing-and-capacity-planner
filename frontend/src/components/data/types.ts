@@ -5,6 +5,7 @@ export interface Employee {
 }
 
 export interface JobCode {
+  finishDate: string;
   jobCode: string;
   description: string;
   customerName: string;

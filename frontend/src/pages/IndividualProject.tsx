@@ -1,11 +1,15 @@
 import { useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
 import EmployeeSchedule from "../components/IndividualProject/EmployeeSchedule";
-import type { ForecastEntry } from "../components/data/types";
+import type { ForecastEntry, Employee } from "../components/data/types";
+import { createForecastEntry } from "../api/client";
+
 import {
   getEmployees,
   getJobs,
   getForecastEntries,
+  updateForecast,
+  deleteForecast,
 } from "../api/client";
 
 type SortOption = "name-asc" | "name-desc" | "days-asc" | "days-desc";
@@ -13,34 +17,28 @@ type SortOption = "name-asc" | "name-desc" | "days-asc" | "days-desc";
 export default function IndividualProject() {
   const { jobCode } = useParams();
 
-  const [employees, setEmployees] = useState<any[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
   const [jobs, setJobs] = useState<any[]>([]);
   const [forecastEntries, setForecastEntries] = useState<ForecastEntry[]>([]);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [sortBy, setSortBy] = useState<SortOption>("name-asc");
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState("");
+  const [newDays, setNewDays] = useState(0);
+  
 
   useEffect(() => {
     async function loadData() {
-      try {
-        const [emp, jobsData, forecast] = await Promise.all([
-          getEmployees(),
-          getJobs(),
-          getForecastEntries(),
-        ]);
+      const [emp, jobsData, forecast] = await Promise.all([
+        getEmployees(),
+        getJobs(),
+        getForecastEntries(),
+      ]);
 
-        const mappedEmployees = emp.map((e: any) => ({
-          name: e.name,
-          specialisms: e.specialisms,
-        }));
-
-        setEmployees(mappedEmployees);
-        setJobs(jobsData);
-        setForecastEntries(forecast);
-
-      } catch (err) {
-        console.error("Failed to load data", err);
-      }
+      setEmployees(emp);
+      setJobs(jobsData);
+      setForecastEntries(forecast);
     }
 
     loadData();
@@ -50,43 +48,48 @@ export default function IndividualProject() {
 
   const job = jobs.find((j: any) => String(j.jobCode) === String(jobCode));
 
-  const monthKey = currentDate.toLocaleString("default", {
-    month: "long",
-  });
+  const monthKey = currentDate.toLocaleString("default", { month: "long" });
 
-  const displayMonth = currentDate.toLocaleString("default", {
-    month: "long",
-    year: "numeric",
-  });
-
-  const updateAllocation = (employeeName: string, newDays: number) => {
-    setForecastEntries(prev =>
-      prev.map(entry =>
-        entry.employeeName === employeeName &&
-        String(entry.jobCode) === String(jobCode) &&
-        entry.month === monthKey
-          ? { ...entry, days: newDays }
-          : entry
-      )
-    );
+  const updateAllocation = async (employeeName: string, newDays: number) => {
+    await updateForecast({ employeeName, jobCode, month: monthKey, days: newDays });
+    setForecastEntries(await getForecastEntries());
   };
 
-  const deleteAllocation = (employeeName: string) => {
-    setForecastEntries(prev =>
-      prev.filter(
-        entry =>
-          !(
-            entry.employeeName === employeeName &&
-            String(entry.jobCode) === String(jobCode) &&
-            entry.month === monthKey
-          )
+  const deleteAllocation = async (employeeName: string) => {
+    await deleteForecast({ employeeName, jobCode, month: monthKey });
+    setForecastEntries(await getForecastEntries());
+  };
+
+    const availableEmployees = employees.filter(
+    e =>
+      !forecastEntries.some(
+        f =>
+          f.employeeName === e.name &&
+          f.jobCode === jobCode &&
+          f.month === monthKey
       )
-    );
+  );
+
+  const createAllocation = async () => {
+    if (!selectedEmployee) return;
+
+    await createForecastEntry({
+      employeeName: selectedEmployee,
+      jobCode,
+      month: monthKey,
+      days: newDays,
+    });
+
+    setForecastEntries(await getForecastEntries());
+
+    setAddOpen(false);
+    setSelectedEmployee("");
+    setNewDays(0);
   };
 
   return (
     <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
+      <div className="flex justify-between">
         <div>
           <h1 className="text-xl font-semibold">{job?.description}</h1>
           <p className="text-slate-400">
@@ -94,19 +97,19 @@ export default function IndividualProject() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex gap-2">
           <button
-            onClick={() => setFiltersOpen(true)}
-            className="border rounded px-3 py-1 text-sm"
+            onClick={() => setAddOpen(true)}
+            className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
           >
+            + Add Allocation
+          </button>
+
+          <button onClick={() => setFiltersOpen(true)} className="border px-3 py-1">
             Filters
           </button>
 
-          <select
-            value={sortBy}
-            onChange={e => setSortBy(e.target.value as SortOption)}
-            className="border rounded px-2 py-1 text-sm"
-          >
+          <select value={sortBy} onChange={e => setSortBy(e.target.value as SortOption)}>
             <option value="name-asc">Name A–Z</option>
             <option value="name-desc">Name Z–A</option>
             <option value="days-asc">Days Low–High</option>
@@ -114,61 +117,136 @@ export default function IndividualProject() {
           </select>
         </div>
       </div>
-
       <div className="bg-white border rounded-xl overflow-hidden">
-        <div className="flex items-center justify-between bg-white border rounded-xl p-4">
-          <div className="font-semibold">{displayMonth}</div>
 
-          <div className="flex gap-2">
-            <button
-              onClick={() => setCurrentDate(new Date())}
-              className="border rounded px-3 py-1"
-            >
-              Today
-            </button>
-
-            <button
-              onClick={() =>
-                setCurrentDate(prev => {
-                  const d = new Date(prev);
-                  d.setMonth(d.getMonth() - 1);
-                  return d;
-                })
-              }
-              className="border rounded px-3 py-1"
-            >
-              ←
-            </button>
-
-            <button
-              onClick={() =>
-                setCurrentDate(prev => {
-                  const d = new Date(prev);
-                  d.setMonth(d.getMonth() + 1);
-                  return d;
-                })
-              }
-              className="border rounded px-3 py-1"
-            >
-              →
-            </button>
-          </div>
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 border-b">
+        <div className="font-semibold">
+          {currentDate.toLocaleDateString("en-GB", {
+            month: "long",
+            year: "numeric",
+          })}
         </div>
 
-        <div className="bg-white border rounded-xl p-4">
-          <EmployeeSchedule
-            employees={employees}
-            forecastEntries={forecastEntries}
-            currentDate={currentDate}
-            jobCode={jobCode}
-            sortBy={sortBy}
-            filtersOpen={filtersOpen}
-            setFiltersOpen={setFiltersOpen}
-            onUpdateAllocation={updateAllocation}
-            onDeleteAllocation={deleteAllocation}
-          />
+        <div className="flex gap-2">
+          <button
+            onClick={() => setCurrentDate(new Date())}
+            className="text-slate-400 border rounded px-3 py-1"
+          >
+            Today
+          </button>
+
+          <button
+            onClick={() =>
+              setCurrentDate(prev => {
+                const d = new Date(prev);
+                d.setMonth(d.getMonth() - 1);
+                return d;
+              })
+            }
+            className="border rounded px-3 py-1"
+          >
+            ←
+          </button>
+
+          <button
+            onClick={() =>
+              setCurrentDate(prev => {
+                const d = new Date(prev);
+                d.setMonth(d.getMonth() + 1);
+                return d;
+              })
+            }
+            className="border rounded px-3 py-1"
+          >
+            →
+          </button>
         </div>
       </div>
+
+      {/* Schedule */}
+      <div className="p-4">
+        <EmployeeSchedule
+          employees={employees}
+          forecastEntries={forecastEntries}
+          currentDate={currentDate}
+          jobCode={jobCode}
+          sortBy={sortBy}
+          filtersOpen={filtersOpen}
+          setFiltersOpen={setFiltersOpen}
+          onUpdateAllocation={updateAllocation}
+          onDeleteAllocation={deleteAllocation}
+        />
+      </div>
+      
+    </div>
+    {addOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
+          onClick={() => setAddOpen(false)}
+        >
+          <div
+            className="bg-white rounded-xl shadow-xl w-full max-w-md p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-lg font-semibold mb-6">
+              Add Allocation
+            </h2>
+
+            {/* Employee select */}
+            <div className="mb-4">
+              <label className="text-sm text-slate-400 block mb-1">
+                Employee
+              </label>
+
+              <select
+                value={selectedEmployee}
+                onChange={(e) => setSelectedEmployee(e.target.value)}
+                className="w-full border rounded px-3 py-2"
+              >
+                <option value="">Select employee</option>
+                {employees.map((e: any) => (
+                  <option key={e.name} value={e.name}>
+                    {e.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Days */}
+            <div className="mb-6">
+              <label className="text-sm text-slate-400 block mb-1">
+                Days
+              </label>
+
+              <input
+                type="number"
+                min={1}
+                value={newDays}
+                onChange={(e) => setNewDays(Number(e.target.value))}
+                className="w-full border rounded px-3 py-2"
+              />
+            </div>
+
+            {/* Actions */}
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setAddOpen(false)}
+                className="border rounded px-3 py-1"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={createAllocation}
+                className="bg-blue-600 text-white rounded px-3 py-1 hover:bg-blue-700"
+              >
+                Add
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

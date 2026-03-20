@@ -2,18 +2,6 @@ import { useMemo, useState } from "react";
 import type { Employee, ForecastEntry } from "../data/types";
 import EmployeeRow from "./EmployeeRow";
 
-interface Props {
-  employees: Employee[];
-  forecastEntries: ForecastEntry[];
-  currentDate: Date;
-  jobCode: string;
-  sortBy: "name-asc" | "name-desc" | "days-asc" | "days-desc";
-  filtersOpen: boolean;
-  setFiltersOpen: (open: boolean) => void;
-  onUpdateAllocation: (employeeName: string, newDays: number) => void;
-  onDeleteAllocation: (employeeName: string) => void;
-}
-
 export default function EmployeeSchedule({
   employees,
   forecastEntries,
@@ -24,32 +12,29 @@ export default function EmployeeSchedule({
   setFiltersOpen,
   onUpdateAllocation,
   onDeleteAllocation
-}: Props) {
+}: any) {
 
-  // ✅ FIX: match backend format ("jan", "feb", etc.)
-  const monthKey = useMemo(() => {
-    return currentDate.toLocaleString("default", { month: "long" });
-  }, [currentDate]);
+  const monthKey = currentDate.toLocaleString("default", {
+    month: "long",
+  });
 
-  const daysInMonth = useMemo(() => {
-    return new Date(
-      currentDate.getFullYear(),
-      currentDate.getMonth() + 1,
-      0
-    ).getDate();
-  }, [currentDate]);
+  const daysInMonth = new Date(
+    currentDate.getFullYear(),
+    currentDate.getMonth() + 1,
+    0
+  ).getDate();
 
   const [searchName, setSearchName] = useState("");
   const [specialismFilter, setSpecialismFilter] = useState("");
 
   const employeesForMonth = useMemo(() => {
     return employees
-      .map(employee => {
+      .map((employee: Employee) => {
         const entry = forecastEntries.find(
-          f =>
-            f.employeeName === employee.name &&
-            String(f.jobCode).toLowerCase() === String(jobCode).toLowerCase() &&
-            f.month?.trim().toLowerCase() === monthKey.toLowerCase()
+          (f: ForecastEntry) =>
+            f.employeeName?.toLowerCase() === employee.name.toLowerCase() &&
+            f.jobCode === jobCode &&
+            f.month?.toLowerCase() === monthKey.toLowerCase()
         );
 
         if (!entry) return null;
@@ -59,56 +44,24 @@ export default function EmployeeSchedule({
           daysAllocated: entry.days,
         };
       })
-      .filter(Boolean) as { employee: Employee; daysAllocated: number }[];
+      .filter(Boolean);
   }, [employees, forecastEntries, jobCode, monthKey]);
 
-  const specialisms = useMemo(
-    () => Array.from(new Set(employees.flatMap(e => e.specialisms))),
-    [employees]
-  );
+ const specialisms = [
+  ...new Set(employees.flatMap((e: Employee) => e.specialisms)),
+] as string[];
 
-  const displayedEmployees = useMemo(() => {
-    let filtered = employeesForMonth;
-
-    if (searchName) {
-      filtered = filtered.filter(f =>
-        f.employee.name.toLowerCase().includes(searchName.toLowerCase())
-      );
-    }
-
-    if (specialismFilter) {
-      filtered = filtered.filter(f =>
-        f.employee.specialisms.includes(specialismFilter)
-      );
-    }
-
-    filtered = [...filtered].sort((a, b) => {
-      if (sortBy === "name-asc") return a.employee.name.localeCompare(b.employee.name);
-      if (sortBy === "name-desc") return b.employee.name.localeCompare(a.employee.name);
-      if (sortBy === "days-asc") return a.daysAllocated - b.daysAllocated;
-      if (sortBy === "days-desc") return b.daysAllocated - a.daysAllocated;
-      return 0;
-    });
-
-    return filtered;
-  }, [employeesForMonth, sortBy, searchName, specialismFilter]);
-
-  console.log("monthKey:", monthKey);
-  console.log("jobCode:", jobCode);
-  console.log("forecastEntries:", forecastEntries);
-  console.log("employeesForMonth:", employeesForMonth);
-
-  if (employeesForMonth.length === 0) {
-    return (
-      <div className="p-4 text-slate-400">
-        No allocations this month
-      </div>
+  const displayedEmployees = employeesForMonth
+    .filter((f: any) =>
+      f.employee.name.toLowerCase().includes(searchName.toLowerCase())
+    )
+    .filter((f: any) =>
+      !specialismFilter || f.employee.specialisms.includes(specialismFilter)
     );
-  }
 
   return (
     <div className="space-y-4 relative">
-      {displayedEmployees.map(({ employee, daysAllocated }) => (
+      {displayedEmployees.map(({ employee, daysAllocated }: any) => (
         <EmployeeRow
           key={employee.name}
           employee={employee}
@@ -119,6 +72,7 @@ export default function EmployeeSchedule({
         />
       ))}
 
+      {/* FILTER OVERLAY */}
       {filtersOpen && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 w-96 space-y-4">
@@ -127,24 +81,22 @@ export default function EmployeeSchedule({
             <input
               placeholder="Search employee"
               value={searchName}
-              onChange={e => setSearchName(e.target.value)}
+              onChange={(e) => setSearchName(e.target.value)}
               className="border rounded w-full px-3 py-2"
             />
 
             <select
               value={specialismFilter}
-              onChange={e => setSpecialismFilter(e.target.value)}
+              onChange={(e) => setSpecialismFilter(e.target.value)}
               className="border rounded w-full px-3 py-2"
             >
               <option value="">All Specialisms</option>
-              {specialisms.map(s => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
+              {specialisms.map((s: string) => (
+                <option key={s}>{s}</option>
               ))}
             </select>
 
-            <div className="flex justify-end gap-2 pt-4">
+            <div className="flex justify-end pt-4">
               <button
                 onClick={() => setFiltersOpen(false)}
                 className="border rounded px-3 py-1"
@@ -158,4 +110,3 @@ export default function EmployeeSchedule({
     </div>
   );
 }
-

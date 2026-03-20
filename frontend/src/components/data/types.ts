@@ -57,3 +57,16 @@ export type ForecastEntry = {
   cost: number | null;
   month: string;
 };
+
+export type ForecastUpdateInput = {
+  employeeName: string;
+  jobCode: string;
+  month: string;
+  days: number;
+};
+
+export type ForecastDeleteInput = {
+  employeeName: string;
+  jobCode: string;
+  month: string;
+};

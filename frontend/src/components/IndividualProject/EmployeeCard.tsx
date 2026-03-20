@@ -17,6 +17,7 @@ export default function EmployeeCard({
   onDeleteAllocation,
 }: Props) {
   const widthPercent = (daysAllocated / daysInMonth) * 100;
+
   const [editOpen, setEditOpen] = useState(false);
   const [editedDays, setEditedDays] = useState(daysAllocated);
 
@@ -31,36 +32,12 @@ export default function EmployeeCard({
 
   return (
     <>
-      {/* CARD */}
       <div
-        className="
-          relative
-          h-16
-          rounded-xl
-          bg-white
-          border
-          border-slate-300
-          flex
-          items-center
-          justify-between
-          px-3
-          cursor-pointer
-          transition-all
-          duration-300
-          ease-in-out
-          group
-          hover:min-w-[260px]
-          hover:shadow-lg
-          z-10
-        "
+        className="relative h-16 rounded-xl bg-white border border-slate-300 flex items-center justify-between px-3 cursor-pointer transition-all duration-300 ease-in-out group hover:min-w-[260px] hover:shadow-lg z-10"
         style={{ width: `${widthPercent}%` }}
       >
-        {/* Coloured left border */}
-        <div
-          className={`absolute top-0 left-0 h-full w-1 ${leftBorderColor} rounded-l-xl`}
-        />
+        <div className={`absolute top-0 left-0 h-full w-1 ${leftBorderColor} rounded-l-xl`} />
 
-        {/* Name + Specialism */}
         <div className="flex flex-col overflow-hidden ml-2">
           <div className="font-medium text-sm truncate group-hover:whitespace-normal group-hover:overflow-visible">
             {employee.name}
@@ -70,7 +47,6 @@ export default function EmployeeCard({
           </div>
         </div>
 
-        {/* Days + More */}
         <div className="flex items-center gap-2 flex-shrink-0 ml-2">
           <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-200 text-gray-600 rounded-full text-xs font-medium whitespace-nowrap">
             <span className="material-icons-outlined text-[14px]">
@@ -90,7 +66,7 @@ export default function EmployeeCard({
         </div>
       </div>
 
-      {/* MODAL OVERLAY */}
+      {/* MODAL */}
       {editOpen && (
         <div
           className="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
@@ -113,16 +89,16 @@ export default function EmployeeCard({
               <label className="text-sm text-slate-400 block mb-1">
                 Days Allocated
               </label>
+
               <input
                 type="number"
                 min={0}
                 max={daysInMonth}
                 value={editedDays}
-                onChange={(e) =>
-                  setEditedDays(Number(e.target.value))
-                }
+                onChange={(e) => setEditedDays(Number(e.target.value))}
                 className="w-full border rounded px-3 py-2"
               />
+
               <label className="text-xs text-slate-300 block mb-1">
                 Maximum {daysInMonth} days
               </label>
@@ -130,19 +106,19 @@ export default function EmployeeCard({
 
             <div className="flex justify-between items-center">
               <button
-                  onClick={() => {
-                    const confirmed = window.confirm(
-                      `Are you sure you want to delete ${employee.name}'s allocation for this month?`
-                    );
-                    if (confirmed) {
-                      onDeleteAllocation(employee.name);
-                      setEditOpen(false);
-                    }
-                  }}
-                  className="text-red-600 text-sm hover:underline"
-                >
-                  Delete Allocation
-                </button>
+                onClick={() => {
+                  const confirmed = window.confirm(
+                    `Delete ${employee.name}'s allocation?`
+                  );
+                  if (confirmed) {
+                    onDeleteAllocation(employee.name);
+                    setEditOpen(false);
+                  }
+                }}
+                className="text-red-600 text-sm hover:underline"
+              >
+                Delete Allocation
+              </button>
 
               <div className="flex gap-2">
                 <button
@@ -151,6 +127,7 @@ export default function EmployeeCard({
                 >
                   Cancel
                 </button>
+
                 <button
                   onClick={() => {
                     onUpdateAllocation(employee.name, editedDays);

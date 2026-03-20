@@ -5,6 +5,7 @@ interface Props {
   employee: Employee;
   daysAllocated: number;
   daysInMonth: number;
+  maxDays: number;
   onUpdateAllocation: (employeeName: string, newDays: number) => void;
   onDeleteAllocation: (employeeName: string) => void;
 }
@@ -13,10 +14,13 @@ export default function EmployeeCard({
   employee,
   daysAllocated,
   daysInMonth,
+  maxDays,
   onUpdateAllocation,
   onDeleteAllocation,
 }: Props) {
-  const widthPercent = (daysAllocated / daysInMonth) * 100;
+  const min_width = 20; // tweak this (10–25 feels good)
+
+  const widthPercent = min_width + (daysAllocated / maxDays) * (100 - min_width);
 
   const [editOpen, setEditOpen] = useState(false);
   const [editedDays, setEditedDays] = useState(daysAllocated);

@@ -14,6 +14,8 @@ export default function EmployeeSchedule({
   onDeleteAllocation
 }: any) {
 
+
+  
   const monthKey = currentDate.toLocaleString("default", {
     month: "long",
   });
@@ -57,6 +59,29 @@ export default function EmployeeSchedule({
     )
     .filter((f: any) =>
       !specialismFilter || f.employee.specialisms.includes(specialismFilter)
+    )
+    .sort((a: any, b: any) => {
+      switch (sortBy) {
+        case "name-asc":
+          return a.employee.name.localeCompare(b.employee.name);
+
+        case "name-desc":
+          return b.employee.name.localeCompare(a.employee.name);
+
+        case "days-asc":
+          return a.daysAllocated - b.daysAllocated;
+
+        case "days-desc":
+          return b.daysAllocated - a.daysAllocated;
+
+        default:
+          return 0;
+      }
+    });
+
+    const maxDays = Math.max(
+      ...employeesForMonth.map((e: any) => e.daysAllocated),
+      1 
     );
 
   return (
@@ -67,6 +92,7 @@ export default function EmployeeSchedule({
           employee={employee}
           daysAllocated={daysAllocated}
           daysInMonth={daysInMonth}
+          maxDays={maxDays}
           onUpdateAllocation={onUpdateAllocation}
           onDeleteAllocation={onDeleteAllocation}
         />

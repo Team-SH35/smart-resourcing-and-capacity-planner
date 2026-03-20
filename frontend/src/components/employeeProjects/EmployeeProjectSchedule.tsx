@@ -18,28 +18,16 @@ export default function EmployeeProjectSchedule({
   onUpdateAllocation,
   onDeleteAllocation,
 }: Props) {
-  const monthKey = currentDate.toLocaleString("default", {
-    month: "long",
-    year: "numeric",
-  });
 
-  const employeeEntries = forecastEntries.filter(
-    entry =>
-      entry.employeeName === employeeName &&
-      entry.month === monthKey
-  );
 
-  const allocations = forecastEntries; // or whatever array you map over
-
-  // Calculate the largest allocation for this set
-  const maxAllocatedDays = allocations.length > 0
-    ? Math.max(...allocations.map(a => a.days))
-    : 0;
-
+  const maxAllocatedDays =
+    forecastEntries.length > 0
+      ? Math.max(...forecastEntries.map(a => a.days))
+      : 0;
 
   return (
     <div className="space-y-4">
-      {employeeEntries.map(entry => {
+      {forecastEntries.map(entry => {
         const job = jobCodes.find(j => j.jobCode === entry.jobCode);
 
         return (

@@ -2,8 +2,16 @@ import { useState, useEffect } from "react";
 import ProjectCard from "./ProjectCard";
 import AddUnitCard from "./AddUnitCard";
 import EmptyStateCard from "./EmptyStateCard";
-import {getJobs,getEmployees,getForecastEntries,} from "../../api/client";
-import type { Employee, JobCode, ForecastEntry } from "../data/types";
+import {
+  getJobs,
+  getEmployees,
+  getForecastEntries,
+} from "../../api/client";
+import type {
+  Employee,
+  JobCode,
+  ForecastEntry,
+} from "../data/types";
 
 interface Project {
   jobCode: string;
@@ -16,17 +24,22 @@ interface Project {
   avatars: { initials: string; color: string; name: string }[];
 }
 
-  function generateAvatars(employees: Employee[]) {
-    return employees.slice(0, 4).map((emp) => ({
-      initials: emp.name
-        .split(" ")
-        .map((w: string) => w[0])
-        .join("")
-        .toUpperCase(),
-      color: "bg-indigo-400",
-      name: emp.name,
-    }));
-  }
+function generateAvatars(employees: Employee[]) {
+  return employees.slice(0, 4).map((emp) => ({
+    initials: emp.name
+      .split(" ")
+      .map((w: string) => w[0])
+      .join("")
+      .toUpperCase(),
+    color: "bg-indigo-400",
+    name: emp.name,
+  }));
+}
+
+// ✅ Local type fix (only for this file)
+type JobWithBudget = JobCode & {
+  budgetCost?: number | null;
+};
 
 export default function ProjectsSection() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -52,16 +65,14 @@ export default function ProjectsSection() {
 
         const today = new Date();
 
-        const mappedProjects: Project[] = jobs.map((job: JobCode) => {
+        const mappedProjects: Project[] = jobs.map((job: JobWithBudget) => {
           const entries = forecastByJob[job.jobCode] || [];
 
-          // Dates
           const startDate = new Date(job.startDate);
           const finishDate = job.finishDate
             ? new Date(job.finishDate)
             : null;
 
-          // Total duration
           const totalDuration =
             finishDate && startDate
               ? Math.max(
@@ -73,19 +84,16 @@ export default function ProjectsSection() {
                 )
               : 1;
 
-          // Days left
-          const daysLeft =
-            finishDate
-              ? Math.max(
-                  0,
-                  Math.ceil(
-                    (finishDate.getTime() - today.getTime()) /
-                      (1000 * 60 * 60 * 24)
-                  )
+          const daysLeft = finishDate
+            ? Math.max(
+                0,
+                Math.ceil(
+                  (finishDate.getTime() - today.getTime()) /
+                    (1000 * 60 * 60 * 24)
                 )
-              : 0;
+              )
+            : 0;
 
-          // Time-based progress
           const elapsed =
             finishDate && startDate
               ? Math.max(
@@ -106,10 +114,12 @@ export default function ProjectsSection() {
             new Map(
               entries
                 .map((entry) =>
-                  employees.find((e: Employee) => e.name === entry.employeeName)
+                  employees.find(
+                    (e: Employee) => e.name === entry.employeeName
+                  )
                 )
                 .filter((e): e is Employee => Boolean(e))
-                .map((e) => [e.name, e]) 
+                .map((e) => [e.name, e])
             ).values()
           );
 
@@ -119,7 +129,7 @@ export default function ProjectsSection() {
             department: job.businessUnit,
             client: job.customerName,
             daysLeft,
-            budget: `£${job.budgetCost ?? 0}`,
+            budget: `£${job.budgetCost ?? 0}`, // ✅ now valid
             progress,
             avatars: generateAvatars(jobEmployees),
           };

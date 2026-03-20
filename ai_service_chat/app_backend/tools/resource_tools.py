@@ -413,6 +413,35 @@ async def delete_forecast_entry(
             return json.dumps({"error": f"Failed with status {response.status_code}", "text": response.text})
 
 
+@tool
+async def update_job_cost(
+    job_code: str,
+    cost: float,
+) -> str:
+    """
+    Update the daily cost/rate for a job.
+
+    Args:
+        job_code: Job code to update (e.g. "P001")
+        cost: New cost/rate value for the job
+
+    Returns:
+        JSON string with update result or error
+    """
+    payload = {
+        "cost": cost,
+        "jobCode": job_code,
+        "workspaceID": _workspace_id(),
+    }
+
+    async with httpx.AsyncClient() as client:
+        response = await client.post(f"{_backend_url}/api/update-cost", json=payload)
+        try:
+            return json.dumps(response.json())
+        except Exception:
+            return json.dumps({"error": f"Failed with status {response.status_code}", "text": response.text})
+
+
 def get_resource_tools(backend_url: str) -> List:
     """Get list of resource management tools for LangGraph."""
     set_backend_url(backend_url)
@@ -428,4 +457,5 @@ def get_resource_tools(backend_url: str) -> List:
         create_forecast_entry,
         update_forecast_entry,
         delete_forecast_entry,
+        update_job_cost,
     ]

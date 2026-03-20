@@ -13,6 +13,12 @@ type EmployeeRow = {
   excludeFromAI: number | boolean | null;
 };
 
+type CostUpdate = {
+    cost : number,
+    jobCode : string,
+    workspaceID: string
+}
+
 type JobRow = {
   jobCode: string;
   description: string | null;
@@ -566,6 +572,22 @@ export function updateForecastEntryDays(input: ForecastWriteInput) {
     days,
     month,
   };
+}
+
+export function updateCost(input :CostUpdate) {
+    const { cost, jobCode, workspaceID} = input
+    db.prepare(
+        `UPDATE Job
+        SET COST = ?
+        WHERE Job.JobCode = ? AND workspaceID = ?`
+    ).run({ cost, jobCode, workspaceID});
+
+    return {
+      message: "Job cost updated",
+      cost,
+      jobCode,
+      workspaceID
+    };
 }
 
 export function deleteForecastEntry(input: ForecastWriteInput) {

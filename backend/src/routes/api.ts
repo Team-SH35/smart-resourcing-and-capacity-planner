@@ -11,6 +11,7 @@ import {
   createForecastEntry,
   updateForecastEntryDays,
   deleteForecastEntry,
+  updateCost,
 } from "../services/dataService";
 import parseExcelInfo from "../excel-utils/parse_excel";
 import { writeExcelToDB } from "../db/write_to_db";
@@ -91,6 +92,7 @@ router.post("/forecast-entries", (req, res) => {
   }
 });
 
+
 router.patch("/forecast-entries", (req, res) => {
   try {
     const { employeeName, jobCode, month, days } = req.body;
@@ -162,6 +164,37 @@ router.get("/calendar", (_req, res) => {
     res.status(500).json({ error: "Failed to fetch calendar data" });
   }
 });
+
+router.post("/update-cost", async (req, res) => {
+  try {
+    const { cost, jobCode, workspaceID } = req.body;
+
+    if (!cost || !jobCode || workspaceID) {
+      return res.status(400).json({
+        error: "cost, workspaceID and jobCode are required",
+      });
+    }
+
+    const result = updateCost({ cost, jobCode, workspaceID });
+
+    return res.status(201).json(result);
+  } catch (error) {
+    console.error("POST /api/forecast-entries failed:", error);
+
+    const message =
+      error instanceof Error ? error.message : "Failed to create forecast entry";
+
+    if (
+      message.includes("not found") ||
+      message.includes("already exists") ||
+      message.includes("Invalid month")
+    ) {
+      return res.status(400).json({ error: message });
+    }
+
+    return res.status(500).json({ error: "Failed to update job cost" });
+  }
+})
 
 router.post("/import-excel", upload.single("file"), async (req, res) => {
   try {

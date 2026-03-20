@@ -229,7 +229,7 @@ router.post("/update-monetary-budget", async (req, res) => {
   }
 })
 
-router.post("/time-budget", async (req, res) => {
+router.post("/update-time-budget", async (req, res) => {
   try {
     const { timeBudget, jobCode, workspaceID } = req.body;
 

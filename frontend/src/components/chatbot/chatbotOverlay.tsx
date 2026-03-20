@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import type { KeyboardEvent } from "react";
-import { askChatbot, approveChange, rejectChange } from "../../api/client";
+import { askChatbot, approveChange, rejectChange, undoChange } from "../../api/client";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { ProposedChange } from "../data/types";
@@ -17,6 +17,8 @@ export default function ChatbotOverlay() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [sessionId, setSessionId] = useState<string | undefined>(undefined);
+  const [canUndo, setCanUndo] = useState(false);
+  const [hasPendingChanges, setHasPendingChanges] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   //Auto-scroll to latest message
@@ -32,10 +34,12 @@ export default function ChatbotOverlay() {
     setMessages((prev) => [...prev, { text: userText, isUser: true }]);
     setInput("");
     setLoading(true);
+    setCanUndo(false);
 
     try {
       const data = await askChatbot(userText, "guest", sessionId);
       if (data.sessionId) setSessionId(data.sessionId);
+      if (data.proposed_changes && data.proposed_changes.length > 0) setHasPendingChanges(true);
       setMessages((prev) => [
         ...prev,
         { text: data.response, isUser: false, proposed_changes: data.proposed_changes }
@@ -68,6 +72,9 @@ export default function ChatbotOverlay() {
         ? await approveChange(sessionId)
         : await rejectChange(sessionId);
 
+      setHasPendingChanges(false);
+      if (actionType === "approve") setCanUndo(true);
+      if (data.proposed_changes && data.proposed_changes.length > 0) setHasPendingChanges(true);
       setMessages((prev) => [
         ...prev,
         { text: data.response, isUser: false, proposed_changes: data.proposed_changes }
@@ -76,6 +83,26 @@ export default function ChatbotOverlay() {
       setMessages((prev) => [
         ...prev,
         { text: "Failed to process the requested action. Please try again.", isUser: false },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUndo = async () => {
+    if (!sessionId || loading) return;
+    setCanUndo(false);
+    setLoading(true);
+    try {
+      const data = await undoChange(sessionId);
+      setMessages((prev) => [
+        ...prev,
+        { text: data.response, isUser: false }
+      ]);
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        { text: "Failed to undo the change. Please try again.", isUser: false },
       ]);
     } finally {
       setLoading(false);
@@ -136,16 +163,32 @@ export default function ChatbotOverlay() {
           <div ref={messagesEndRef} />
         </div>
 
+        {/* Undo last action strip */}
+        {canUndo && (
+          <div className="px-4 py-2 bg-amber-50 border-t border-amber-200 flex items-center justify-between">
+            <span className="text-xs text-amber-700">Last AI change can be undone</span>
+            <button
+              onClick={handleUndo}
+              disabled={loading}
+              className={`flex items-center gap-1 text-xs font-medium text-amber-700 border border-amber-400 rounded-full px-3 py-1 bg-white hover:bg-amber-100 transition-colors ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
+            >
+              ↩ Undo last action
+            </button>
+          </div>
+        )}
+
         {/* Input */}
         <div className="p-4 bg-white rounded-b-2xl border-t">
           <input
             type="text"
-            placeholder="Type a message..."
+            placeholder={hasPendingChanges ? "Approve or reject the pending action first..." : "Type a message..."}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            className="w-full px-4 py-3 bg-slate-100 rounded-full text-sm placeholder-slate-400
-              focus:outline-none focus:ring-2 focus:ring-[#0062FF]"
+            disabled={hasPendingChanges || loading}
+            className={`w-full px-4 py-3 bg-slate-100 rounded-full text-sm placeholder-slate-400
+              focus:outline-none focus:ring-2 focus:ring-[#0062FF]
+              ${hasPendingChanges ? "opacity-50 cursor-not-allowed" : ""}`}
           />
         </div>
       </div>
@@ -159,7 +202,7 @@ function Message({
   isUser = false,
   proposedChanges,
   onAction,
-  isDisabled
+  isDisabled,
 }: {
   children: React.ReactNode;
   isUser?: boolean;

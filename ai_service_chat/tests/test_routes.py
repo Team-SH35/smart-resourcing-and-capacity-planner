@@ -196,3 +196,78 @@ async def test_reject_change_returns_response_text():
             response = await ac.post("/api/v1/reject-change/sess-abc")
 
     assert response.json()["response"] == "Change rejected."
+
+
+@pytest.mark.asyncio
+async def test_undo_change_returns_200():
+    mock_agent = AsyncMock()
+    mock_agent.undo_change = AsyncMock(return_value={
+        "response": "✅ Undo complete:\n- Restored allocation to 12 days",
+    })
+
+    from httpx import AsyncClient, ASGITransport
+
+    async def async_get_agent():
+        return mock_agent
+
+    with patch("app_backend.api.routes.get_agent", new=async_get_agent):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+            response = await ac.post("/api/v1/undo-change/sess-abc")
+
+    assert response.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_undo_change_returns_response_text():
+    mock_agent = AsyncMock()
+    mock_agent.undo_change = AsyncMock(return_value={
+        "response": "✅ Undo complete:\n- Restored allocation to 12 days",
+    })
+
+    from httpx import AsyncClient, ASGITransport
+
+    async def async_get_agent():
+        return mock_agent
+
+    with patch("app_backend.api.routes.get_agent", new=async_get_agent):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+            response = await ac.post("/api/v1/undo-change/sess-abc")
+
+    assert "Undo complete" in response.json()["response"]
+
+
+@pytest.mark.asyncio
+async def test_undo_change_calls_agent_with_correct_session_id():
+    mock_agent = AsyncMock()
+    mock_agent.undo_change = AsyncMock(return_value={"response": "done"})
+
+    from httpx import AsyncClient, ASGITransport
+
+    async def async_get_agent():
+        return mock_agent
+
+    with patch("app_backend.api.routes.get_agent", new=async_get_agent):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+            await ac.post("/api/v1/undo-change/my-session-123")
+
+    mock_agent.undo_change.assert_called_once_with("my-session-123")
+
+
+@pytest.mark.asyncio
+async def test_undo_change_returns_nothing_to_undo_message():
+    mock_agent = AsyncMock()
+    mock_agent.undo_change = AsyncMock(return_value={
+        "response": "There is nothing to undo for this session.",
+    })
+
+    from httpx import AsyncClient, ASGITransport
+
+    async def async_get_agent():
+        return mock_agent
+
+    with patch("app_backend.api.routes.get_agent", new=async_get_agent):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+            response = await ac.post("/api/v1/undo-change/sess-abc")
+
+    assert response.status_code == 200
+    assert response.json()["response"] == "There is nothing to undo for this session."

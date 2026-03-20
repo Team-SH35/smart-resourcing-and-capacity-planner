@@ -38,10 +38,10 @@ cur.execute("""CREATE TABLE Month_Work_Days (
             );""")
 
 cur.execute("""CREATE TABLE EmployeeSpecialisms (
-               ID INT AUTO_INCREMENT, 
+               ID INT AUTO_INCREMENT,
                EmployeeID INT ,
                Specialism VARCHAR(20),
-               PRIMARY KEY (ID, EmployeeID)
+               PRIMARY KEY (ID, EmployeeID),
                FOREIGN KEY (EmployeeID) REFERENCES Employee(EmployeeID)
             );""")
 

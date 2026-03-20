@@ -46,6 +46,14 @@ export async function rejectChange(sessionId: string) {
   return res.json() as Promise<ChatResponse>;
 }
 
+export async function undoChange(sessionId: string) {
+  const res = await fetch(`${AI_BASE}/api/v1/undo-change/${sessionId}`, {
+    method: "POST",
+  });
+  if (!res.ok) throw new Error(`Undo failed: ${res.status}`);
+  return res.json() as Promise<ChatResponse>;
+}
+
 export async function getBusinessUnits(): Promise<string[]> {
   const res = await fetch(`${API_BASE}/api/job-codes`);
 

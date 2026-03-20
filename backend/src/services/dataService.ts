@@ -7,6 +7,7 @@ import type {
   CalendarProject,
 } from "../types";
 
+// Raw row shape used when reading employees + specialisms from SQL.
 type EmployeeRow = {
   employeeId: number;
   name: string;
@@ -14,6 +15,7 @@ type EmployeeRow = {
   excludeFromAI: number | boolean | null;
 };
 
+// Input for updating forecast cost.
 type CostUpdate = {
   cost: number;
   employeeID: number | string;
@@ -21,35 +23,41 @@ type CostUpdate = {
   workspaceID: number | string;
 };
 
+// Input for updating job monetary budget.
 type BudgetUpdate = {
   newBudget: number;
   jobCode: string;
   workspaceID: number | string;
 };
 
+// Input for updating job time budget.
 type TimeUpdate = {
   timeBudget: number;
   jobCode: string;
   workspaceID: number | string;
 };
 
+// Input for updating job currency symbol.
 type CurrencySymbolUpdate = {
   currencySymbol: string;
   jobCode: string;
   workspaceID: number | string;
 };
 
+// Input for updating job dates.
 type StartDateUpdate = {
   startDateISO: string;
   jobCode: string;
   workspaceID: number | string;
 };
 
+// Input for adding employee specialisms.
 type SpecialismsInput = {
   specialisms: string[];
   employeeID: number | string;
 };
 
+// SQL result shape for jobs.
 type JobRow = {
   jobCode: string;
   description: string | null;
@@ -62,6 +70,7 @@ type JobRow = {
   finishDate: string | null;
 };
 
+// SQL result shape for forecast-entry read queries.
 type ForecastDbRow = {
   employeeName: string | null;
   jobCode: string;
@@ -82,6 +91,7 @@ type ForecastDbRow = {
   dec: number | null;
 };
 
+// Input used for creating/updating/deleting forecast entries.
 type ForecastWriteInput = {
   employeeName: string;
   jobCode: string;
@@ -89,6 +99,7 @@ type ForecastWriteInput = {
   month?: string;
 };
 
+// Helper lookup shapes.
 type EmployeeLookupRow = {
   employeeId: number;
   workspaceId: number;
@@ -108,10 +119,16 @@ type ForecastMonthValueRow = {
   value: number | null;
 };
 
+/**
+ * Returns a fallback string when a DB field is null or undefined.
+ */
 function safeString(value: string | null | undefined, fallback = ""): string {
   return value ?? fallback;
 }
 
+/**
+ * Checks whether a given table exists in the database.
+ */
 function tableExists(tableName: string): boolean {
   const row = db
     .prepare(
@@ -126,6 +143,10 @@ function tableExists(tableName: string): boolean {
   return Boolean(row);
 }
 
+/**
+ * Checks whether a table contains a specific column.
+ * Useful because some schemas differ slightly between environments.
+ */
 function tableHasColumn(tableName: string, columnName: string): boolean {
   if (!tableExists(tableName)) return false;
 
@@ -136,10 +157,16 @@ function tableHasColumn(tableName: string, columnName: string): boolean {
   return columns.some((column) => column.name === columnName);
 }
 
+/**
+ * Converts a business-unit label into a stable frontend row ID.
+ */
 function businessUnitToRowId(businessUnit: string): string {
   return `team-${businessUnit.toLowerCase().replace(/\s+/g, "-")}`;
 }
 
+/**
+ * Picks a display color for a given business unit.
+ */
 function businessUnitToColor(businessUnit: string): string {
   const key = businessUnit.toLowerCase();
 
@@ -151,6 +178,10 @@ function businessUnitToColor(businessUnit: string): string {
   return "#6B7280";
 }
 
+/**
+ * Normalises many possible month strings into a short key.
+ * Example: "September" -> "sep"
+ */
 function normalizeMonthKey(month?: string): string | null {
   if (!month) return null;
 
@@ -186,11 +217,17 @@ function normalizeMonthKey(month?: string): string | null {
   return monthMap[value] ?? null;
 }
 
+/**
+ * Converts a month name into the corresponding forecast-entry column name.
+ */
 function monthColumnFromInput(month?: string): string | null {
   const key = normalizeMonthKey(month);
   return key ? `Days_allocated_${key}` : null;
 }
 
+/**
+ * Converts a short month key into a human-readable display name.
+ */
 function monthDisplayNameFromKey(key: string): string {
   const displayMap: Record<string, string> = {
     jan: "January",
@@ -210,6 +247,9 @@ function monthDisplayNameFromKey(key: string): string {
   return displayMap[key] ?? key;
 }
 
+/**
+ * Looks up an employee by name and returns their ID + workspace.
+ */
 function getEmployeeByName(employeeName: string): EmployeeLookupRow | undefined {
   return db
     .prepare(`
@@ -222,6 +262,9 @@ function getEmployeeByName(employeeName: string): EmployeeLookupRow | undefined 
     .get(employeeName) as EmployeeLookupRow | undefined;
 }
 
+/**
+ * Looks up a job by code and returns its code + workspace.
+ */
 function getJobByCode(jobCode: string): JobLookupRow | undefined {
   return db
     .prepare(`
@@ -234,6 +277,9 @@ function getJobByCode(jobCode: string): JobLookupRow | undefined {
     .get(jobCode) as JobLookupRow | undefined;
 }
 
+/**
+ * Checks whether a forecast entry already exists for an employee/job pair.
+ */
 function getExistingForecastEntry(
   employeeId: number,
   jobCode: string
@@ -249,6 +295,9 @@ function getExistingForecastEntry(
     .get(employeeId, jobCode) as ForecastExistingRow | undefined;
 }
 
+/**
+ * Reads the current value of a single month column on an existing forecast entry.
+ */
 function getExistingForecastMonthValue(
   employeeId: number,
   jobCode: string,
@@ -265,9 +314,13 @@ function getExistingForecastMonthValue(
   return row?.value ?? null;
 }
 
+/**
+ * Returns employees grouped with all their specialisms.
+ */
 export function getEmployees(): Employee[] {
   if (!tableExists("Employee")) return [];
 
+  // Different schemas may use different casing/naming for the AI exclusion column.
   const excludeExpr = tableHasColumn("Employee", "ExcludeFromAI")
     ? "e.ExcludeFromAI"
     : tableHasColumn("Employee", "Exclude_from_AI")
@@ -287,6 +340,7 @@ export function getEmployees(): Employee[] {
     `)
     .all() as EmployeeRow[];
 
+  // Group rows by employee ID so each employee appears once with an array of specialisms.
   const employeesMap = new Map<number, Employee>();
 
   for (const row of rows) {
@@ -308,9 +362,13 @@ export function getEmployees(): Employee[] {
   return Array.from(employeesMap.values());
 }
 
+/**
+ * Returns all jobs formatted for the frontend.
+ */
 export function getJobCodes(): JobCode[] {
   if (!tableExists("Job")) return [];
 
+  // Support both "customer" and "Customer" column names.
   const hasCustomer = tableHasColumn("Job", "customer");
   const hasCustomerCapitalized = tableHasColumn("Job", "Customer");
 
@@ -350,6 +408,9 @@ export function getJobCodes(): JobCode[] {
   }));
 }
 
+/**
+ * Returns forecast entries flattened by month so the frontend can render each month allocation as its own row.
+ */
 export function getForecastEntries(): ForecastEntry[] {
   if (!tableExists("ForecastEntry") || !tableExists("Employee") || !tableExists("Job")) {
     return [];
@@ -427,6 +488,9 @@ export function getForecastEntries(): ForecastEntry[] {
   return entries;
 }
 
+/**
+ * Returns job rows transformed for a calendar-style UI.
+ */
 export function getCalendarRows(): CalendarRow[] {
   const jobs = getJobCodes();
   const rowsByTeam = new Map<string, CalendarRow>();
@@ -461,6 +525,9 @@ export function getCalendarRows(): CalendarRow[] {
   return Array.from(rowsByTeam.values());
 }
 
+/**
+ * Creates a new forecast entry, or fills in a single month on an existing entry.
+ */
 export function createForecastEntry(input: ForecastWriteInput) {
   const { employeeName, jobCode, days = 0, month } = input;
 
@@ -515,6 +582,7 @@ export function createForecastEntry(input: ForecastWriteInput) {
     };
   }
 
+  // Create a brand new entry with only the requested month populated.
   db.prepare(`
     INSERT INTO ForecastEntry (
       EmployeeID,
@@ -565,6 +633,9 @@ export function createForecastEntry(input: ForecastWriteInput) {
   };
 }
 
+/**
+ * Updates the value for one month on an existing forecast entry.
+ */
 export function updateForecastEntryDays(input: ForecastWriteInput) {
   const { employeeName, jobCode, days = 0, month } = input;
 
@@ -605,6 +676,9 @@ export function updateForecastEntryDays(input: ForecastWriteInput) {
   };
 }
 
+/**
+ * Updates the cost field on a specific forecast entry.
+ */
 export function updateCost(input: CostUpdate) {
   const { cost, employeeID, jobCode, workspaceID } = input;
 
@@ -631,6 +705,9 @@ export function updateCost(input: CostUpdate) {
   };
 }
 
+/**
+ * Updates the monetary budget on a job.
+ */
 export function updateBudget(input: BudgetUpdate) {
   const { newBudget, jobCode, workspaceID } = input;
 
@@ -654,6 +731,9 @@ export function updateBudget(input: BudgetUpdate) {
   };
 }
 
+/**
+ * Updates the time budget on a job.
+ */
 export function updateTimeBudget(input: TimeUpdate) {
   const { timeBudget, jobCode, workspaceID } = input;
 
@@ -677,6 +757,9 @@ export function updateTimeBudget(input: TimeUpdate) {
   };
 }
 
+/**
+ * Updates the currency symbol on a job.
+ */
 export function updateCurrencySymbol(input: CurrencySymbolUpdate) {
   const { currencySymbol, jobCode, workspaceID } = input;
 
@@ -700,6 +783,9 @@ export function updateCurrencySymbol(input: CurrencySymbolUpdate) {
   };
 }
 
+/**
+ * Updates the start date on a job.
+ */
 export function updateStartTime(input: StartDateUpdate) {
   const { startDateISO, jobCode, workspaceID } = input;
 
@@ -723,6 +809,9 @@ export function updateStartTime(input: StartDateUpdate) {
   };
 }
 
+/**
+ * Updates the end date on a job.
+ */
 export function updateEndTime(input: StartDateUpdate) {
   const { startDateISO, jobCode, workspaceID } = input;
 
@@ -746,6 +835,9 @@ export function updateEndTime(input: StartDateUpdate) {
   };
 }
 
+/**
+ * Adds one or more specialisms to an employee in a transaction.
+ */
 export function addSpecialism(input: SpecialismsInput) {
   const { employeeID, specialisms } = input;
 
@@ -767,6 +859,11 @@ export function addSpecialism(input: SpecialismsInput) {
   };
 }
 
+/**
+ * Deletes either:
+ * - a single month allocation from a forecast entry, or
+ * - the whole forecast entry if no month is provided.
+ */
 export function deleteForecastEntry(input: ForecastWriteInput) {
   const { employeeName, jobCode, month } = input;
 

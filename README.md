@@ -142,6 +142,7 @@ Provides all data access and mutation endpoints. The database is a SQLite file s
 | `POST` | `/api/update-cost` | Update job cost |
 | `POST` | `/api/update-monetary-budget` | Update job monetary budget |
 | `POST` | `/api/update-time-budget` | Update job time budget |
+| `POST` | `/api/update-currency-symbol` | Update job currency symbol |
 | `POST` | `/api/update-start-date` | Update job start date |
 | `POST` | `/api/update-end-date` | Update job end date |
 | `POST` | `/api/add-specialisms` | Add employee specialisms |

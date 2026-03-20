@@ -1,7 +1,7 @@
 
 import BusinessUnitSection from '../components/dashboard/BusinessUnitSection';
 import ProjectsSection from '../components/dashboard/ProjectsSection';
-import DarkModeToggle from '../components/dashboard/DarkModeToggle';
+
 
 export default function Dashboard() {
   return (
@@ -26,7 +26,6 @@ export default function Dashboard() {
         <ProjectsSection />
       </div>
 
-      <DarkModeToggle />
     </>
   );
 }

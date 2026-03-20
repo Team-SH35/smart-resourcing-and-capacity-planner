@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 interface Props {
   jobCode: string;
@@ -21,6 +22,7 @@ export default function EmployeeProjectCard({
 }: Props) {
   const [editOpen, setEditOpen] = useState(false);
   const [editedDays, setEditedDays] = useState(daysAllocated);
+  const navigate = useNavigate();
 
   useEffect(() => {
     setEditedDays(daysAllocated);
@@ -34,26 +36,10 @@ export default function EmployeeProjectCard({
   return (
     <div className="relative h-16 bg-slate-100 rounded-lg overflow-hidden">
       <div
-        className="
-          relative
-          h-16
-          rounded-xl
-          bg-white
-          border
-          border-slate-300
-          flex
-          items-center
-          justify-between
-          px-3
-          cursor-pointer
-          transition-all
-          duration-300
-          ease-in-out
-          group
-          min-w-[260px]    /* ensures min width */
-          hover:shadow-lg
-          z-10
-        "
+        onClick={() =>
+          navigate(`/project/${encodeURIComponent(jobCode)}`)
+        }
+        className="relative h-16 rounded-xl bg-white border border-slate-300 flex items-center justify-between px-3 cursor-pointer transition-all duration-300 ease-in-out group min-w-[260px] hover:shadow-lg z-10"
         style={{ width: `${widthPercent}%` }}
       >
         {/* Job info */}
@@ -76,7 +62,10 @@ export default function EmployeeProjectCard({
           </span>
 
           <button
-            onClick={() => setEditOpen(true)}
+            onClick={(e) => {
+              e.stopPropagation(); 
+              setEditOpen(true);
+            }}
             className="text-slate-400 hover:text-slate-600"
           >
             <span className="material-icons-outlined">

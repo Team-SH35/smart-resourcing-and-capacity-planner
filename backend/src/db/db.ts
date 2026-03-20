@@ -4,12 +4,6 @@ let db: DatabaseType;
 
 if (process.env.NODE_ENV !== 'test') {
     db = new Database("/database/hr.db");
-
-    // Migration: add Cost column to Job table if it doesn't exist
-    const jobColumns = db.prepare("PRAGMA table_info(Job)").all() as { name: string }[];
-    if (!jobColumns.some(col => col.name === "Cost")) {
-        db.exec("ALTER TABLE Job ADD COLUMN Cost DECIMAL;");
-    }
 } else {
     db = new Database(':memory:');
 

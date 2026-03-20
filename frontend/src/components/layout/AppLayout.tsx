@@ -238,6 +238,30 @@ export default function AppLayout({ children }: AppLayoutProps) {
                   <span className="text-xs text-gray-500">project</span>
                 </div>
               ))}
+
+              {/* Clients */}
+              {clientResults.map((client) => (
+                <div
+                  key={client}
+                  onClick={() => goToResult("client", client)}
+                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex justify-between"
+                >
+                  <span>{client}</span>
+                  <span className="text-xs text-gray-500">client</span>
+                </div>
+              ))}
+
+              {/* Client Projects */}
+              {clientProjectResults.map((job) => (
+                <div
+                  key={job.jobCode}
+                  onClick={() => goToResult("project", job.jobCode)}
+                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex justify-between"
+                >
+                  <span>{job.description}</span>
+                  <span className="text-xs text-gray-500">project (client)</span>
+                </div>
+              ))}
             </div>
           )}
         </div>
@@ -247,4 +271,3 @@ export default function AppLayout({ children }: AppLayoutProps) {
     </div>
   );
 }
-

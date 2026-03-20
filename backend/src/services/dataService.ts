@@ -609,7 +609,7 @@ export function updateCost(input :CostUpdate) {
         `UPDATE Job
         SET Cost = ?
         WHERE Job.JobCode = ? AND workspaceID = ?`
-    ).run({ cost, jobCode, workspaceID});
+    ).run( cost, jobCode, workspaceID);
 
     return {
       message: "Job cost updated",
@@ -625,7 +625,7 @@ const { newBudget, jobCode, workspaceID} = input
         `UPDATE Job
         SET MonetaryBudget = ?
         WHERE Job.JobCode = ? AND workspaceID = ?`
-    ).run({ newBudget, jobCode, workspaceID});
+    ).run(newBudget, jobCode, workspaceID);
 
     return {
       message: "Job budget updated",
@@ -641,7 +641,7 @@ export function updateTimeBudget(input :TimeUpdate) {
         `UPDATE Job
         SET TimeBudget = ?
         WHERE Job.JobCode = ? AND workspaceID = ?`
-    ).run({ timeBudget, jobCode, workspaceID});
+    ).run(timeBudget, jobCode, workspaceID);
 
     return {
       message: "Job budget updated",
@@ -657,7 +657,7 @@ export function updateCurrencySymbol(input :CurrencySymbolUpdate) {
         `UPDATE Job
         SET CurrencySymbol = ?
         WHERE Job.JobCode = ? AND workspaceID = ?`
-    ).run({ currencySymbol, jobCode, workspaceID});
+    ).run(currencySymbol, jobCode, workspaceID);
 
     return {
       message: "Job budget updated",
@@ -689,7 +689,7 @@ export function updateEndTime(input :startDateUpdate) {
         `UPDATE Job
         SET EndDate = ?
         WHERE Job.JobCode = ? AND workspaceID = ?`
-    ).run({ startDateISO, jobCode, workspaceID});
+    ).run(startDateISO, jobCode, workspaceID);
 
     return {
       message: "Job budget updated",

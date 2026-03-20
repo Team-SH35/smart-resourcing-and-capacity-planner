@@ -20,7 +20,7 @@ async def get_agent():
     global _agent
 
     if _agent is None:
-        backend_url = os.getenv("BACKEND_URL", "http://localhost:3001")
+        backend_url = os.getenv("BACKEND_URL", "http://localhost:4000")
         tools = get_resource_tools(backend_url)
         _agent = create_agent(tools=tools, backend_url=backend_url)
 

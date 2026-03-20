@@ -12,6 +12,7 @@ import {
   updateForecastEntryDays,
   deleteForecastEntry,
   updateCost,
+  updateBudget,
 } from "../services/dataService";
 import parseExcelInfo from "../excel-utils/parse_excel";
 import { writeExcelToDB } from "../db/write_to_db";
@@ -193,6 +194,37 @@ router.post("/update-cost", async (req, res) => {
     }
 
     return res.status(500).json({ error: "Failed to update job cost" });
+  }
+})
+
+router.post("/update-monetary-budget", async (req, res) => {
+  try {
+    const { newBudget, jobCode, workspaceID } = req.body;
+
+    if (!newBudget || !jobCode || workspaceID) {
+      return res.status(400).json({
+        error: "newBudget, workspaceID and jobCode are required",
+      });
+    }
+
+    const result = updateBudget({ newBudget, jobCode, workspaceID });
+
+    return res.status(201).json(result);
+  } catch (error) {
+    console.error("POST /api/forecast-entries failed:", error);
+
+    const message =
+      error instanceof Error ? error.message : "Failed to update budget";
+
+    if (
+      message.includes("not found") ||
+      message.includes("already exists") ||
+      message.includes("Invalid month")
+    ) {
+      return res.status(400).json({ error: message });
+    }
+
+    return res.status(500).json({ error: "Failed to update job budget" });
   }
 })
 

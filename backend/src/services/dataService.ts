@@ -19,6 +19,12 @@ type CostUpdate = {
     workspaceID: string
 }
 
+type BudgetUpdate = {
+    newBudget: number,
+    jobCode : string,
+    workspaceID : string
+}
+
 type JobRow = {
   jobCode: string;
   description: string | null;
@@ -578,13 +584,29 @@ export function updateCost(input :CostUpdate) {
     const { cost, jobCode, workspaceID} = input
     db.prepare(
         `UPDATE Job
-        SET COST = ?
+        SET Cost = ?
         WHERE Job.JobCode = ? AND workspaceID = ?`
     ).run({ cost, jobCode, workspaceID});
 
     return {
       message: "Job cost updated",
       cost,
+      jobCode,
+      workspaceID
+    };
+}
+
+export function updateBudget(input :BudgetUpdate) {
+const { newBudget, jobCode, workspaceID} = input
+    db.prepare(
+        `UPDATE Job
+        SET MonetaryBudget = ?
+        WHERE Job.JobCode = ? AND workspaceID = ?`
+    ).run({ newBudget, jobCode, workspaceID});
+
+    return {
+      message: "Job budget updated",
+      newBudget,
       jobCode,
       workspaceID
     };

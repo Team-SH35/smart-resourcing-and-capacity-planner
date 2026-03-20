@@ -54,7 +54,7 @@ class ResourceManagementAgent:
         # Create the graph
         workflow = StateGraph(AgentState)
 
-        write_tool_names = {"create_forecast_entry", "update_forecast_entry", "delete_forecast_entry", "update_job_cost", "update_job_monetary_budget", "update_job_time_budget", "update_job_start_date", "update_job_end_date", "add_employee_specialisms"}
+        write_tool_names = {"create_forecast_entry", "update_forecast_entry", "delete_forecast_entry", "update_job_cost", "update_job_monetary_budget", "update_job_time_budget", "update_job_start_date", "update_job_end_date"}
         read_tools = [t for t in self.tools if t.name not in write_tool_names]
         write_tools = [t for t in self.tools if t.name in write_tool_names]
 
@@ -113,7 +113,7 @@ class ResourceManagementAgent:
 
         # If there are tool calls, route them properly
         if hasattr(last_message, "tool_calls") and last_message.tool_calls:
-            write_tool_names = {"create_forecast_entry", "update_forecast_entry", "delete_forecast_entry", "update_job_cost", "update_job_monetary_budget", "update_job_time_budget", "update_job_start_date", "update_job_end_date", "add_employee_specialisms"}
+            write_tool_names = {"create_forecast_entry", "update_forecast_entry", "delete_forecast_entry", "update_job_cost", "update_job_monetary_budget", "update_job_time_budget", "update_job_start_date", "update_job_end_date"}
             if any(tc["name"] in write_tool_names for tc in last_message.tool_calls):
                 return "write_tools"
             return "tools"
@@ -229,7 +229,6 @@ If the user asks anything outside this scope (e.g. general knowledge, entertainm
 - update_job_time_budget: Update the time budget in days for a job (job_code, time_budget).
 - update_job_start_date: Update the start date for a job (job_code, start_date in ISO format e.g. "2024-03-01").
 - update_job_end_date: Update the end date for a job (job_code, end_date in ISO format e.g. "2024-06-30").
-- add_employee_specialisms: Add specialisms to an employee (employee_id, specialisms list). Use get_employees first to get the employee's ID.
 
 ### OPERATIONAL RULES:
 1. DATA INTEGRITY: Use ONLY the data returned from tools. Do not invent employee names, job codes, or availability figures.

@@ -85,3 +85,15 @@ def test_get_system_prompt_mentions_guardrails():
     agent = make_agent()
     prompt = agent.get_system_prompt()
     assert "20 working days" in prompt
+
+
+def test_get_system_prompt_mentions_over_allocation():
+    agent = make_agent()
+    prompt = agent.get_system_prompt()
+    assert "Over-allocation" in prompt
+
+
+def test_get_system_prompt_mentions_month_name_format():
+    agent = make_agent()
+    prompt = agent.get_system_prompt()
+    assert "month names" in prompt.lower() or "march" in prompt.lower()

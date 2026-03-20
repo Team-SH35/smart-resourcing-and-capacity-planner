@@ -89,7 +89,7 @@ export default function IndividualProject() {
 
   return (
     <div className="space-y-6 p-6">
-      <div className="flex justify-between">
+      <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold">{job?.description}</h1>
           <p className="text-slate-400">
@@ -97,7 +97,7 @@ export default function IndividualProject() {
           </p>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
           <button
             onClick={() => setAddOpen(true)}
             className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
@@ -105,11 +105,13 @@ export default function IndividualProject() {
             + Add Allocation
           </button>
 
-          <button onClick={() => setFiltersOpen(true)} className="border px-3 py-1">
+          <button onClick={() => setFiltersOpen(true)} className="bg-white border rounded px-3 py-1 hover:bg-gray-100">
             Filters
           </button>
 
-          <select value={sortBy} onChange={e => setSortBy(e.target.value as SortOption)}>
+          <select value={sortBy} 
+          onChange={e => setSortBy(e.target.value as SortOption)}
+          className="border rounded px-3 py-1 hover:bg-gray-100">
             <option value="name-asc">Name A–Z</option>
             <option value="name-desc">Name Z–A</option>
             <option value="days-asc">Days Low–High</option>

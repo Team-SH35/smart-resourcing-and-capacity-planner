@@ -37,7 +37,7 @@ export default function EmployeeSchedule({
             f.month?.toLowerCase() === monthKey.toLowerCase()
         );
 
-        if (!entry) return null;
+        if (!entry || entry.days === 0) return null;
 
         return {
           employee,
@@ -47,9 +47,9 @@ export default function EmployeeSchedule({
       .filter(Boolean);
   }, [employees, forecastEntries, jobCode, monthKey]);
 
- const specialisms = [
-  ...new Set(employees.flatMap((e: Employee) => e.specialisms)),
-] as string[];
+  const specialisms = [
+    ...new Set(employees.flatMap((e: Employee) => e.specialisms)),
+  ] as string[];
 
   const displayedEmployees = employeesForMonth
     .filter((f: any) =>

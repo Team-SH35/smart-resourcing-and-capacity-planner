@@ -5,7 +5,6 @@ export interface Employee {
 }
 
 export interface JobCode {
-  finishDate: string;
   jobCode: string;
   description: string;
   customerName: string;
@@ -16,7 +15,7 @@ export interface JobCode {
   budgetCostCurrency?: string | null;
 
   startDate: string;
-  endDate?: string | null;
+  finishDate?: string | null;
 }
 
 export interface CalendarProject {

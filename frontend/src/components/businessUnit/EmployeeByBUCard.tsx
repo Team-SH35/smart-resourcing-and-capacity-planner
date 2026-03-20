@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import type { Employee, ForecastEntry } from "../data/types";
+import { useNavigate } from "react-router-dom";
 
 type SortOption = "name-asc" | "name-desc" | "alloc-asc" | "alloc-desc";
 type AllocationFilter = "under" | "correct" | "over" | "";
@@ -35,9 +36,10 @@ export default function EmployeeByBUCard({
   filterAllocation = "",
   sortBy = "name-asc",
 }: Props) {
+  const navigate = useNavigate(); // ✅ correct place
+
   const today = new Date();
 
-  // ✅ FIX: only use month name (matches your data)
   const currentMonth = today.toLocaleString("default", {
     month: "long",
   });
@@ -94,16 +96,27 @@ export default function EmployeeByBUCard({
 
     result.sort((a, b) => {
       switch (sortBy) {
-        case "name-asc": return a.name.localeCompare(b.name);
-        case "name-desc": return b.name.localeCompare(a.name);
-        case "alloc-asc": return a.allocation - b.allocation;
-        case "alloc-desc": return b.allocation - a.allocation;
-        default: return 0;
+        case "name-asc":
+          return a.name.localeCompare(b.name);
+        case "name-desc":
+          return b.name.localeCompare(a.name);
+        case "alloc-asc":
+          return a.allocation - b.allocation;
+        case "alloc-desc":
+          return b.allocation - a.allocation;
+        default:
+          return 0;
       }
     });
 
     return result;
-  }, [employeesWithAllocation, filterName, filterSpecialism, filterAllocation, sortBy]);
+  }, [
+    employeesWithAllocation,
+    filterName,
+    filterSpecialism,
+    filterAllocation,
+    sortBy,
+  ]);
 
   const getColor = (val: number) => {
     if (val < 80) return "text-orange-500";
@@ -123,15 +136,24 @@ export default function EmployeeByBUCard({
     <div className="bg-white rounded-2xl border shadow-sm">
       {filteredAndSorted.map((e, i) => (
         <div key={e.name}>
-          <div className="flex justify-between px-6 py-4 hover:bg-slate-50">
+          <div
+            onClick={() =>
+              navigate(`/Employee/${encodeURIComponent(e.name)}`)
+            }
+            className="flex justify-between px-6 py-4 hover:bg-slate-50 cursor-pointer transition"
+          >
             <div>
               <div className="font-medium">{e.name}</div>
-              <div className="text-slate-500">{e.specialisms?.[0]}</div>
+              <div className="text-slate-500">
+                {e.specialisms?.[0]}
+              </div>
             </div>
+
             <div className={`font-semibold ${getColor(e.allocation)}`}>
               {e.allocation}%
             </div>
           </div>
+
           {i !== filteredAndSorted.length - 1 && (
             <div className="border-t mx-6" />
           )}

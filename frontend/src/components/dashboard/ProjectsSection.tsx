@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import ProjectCard from "./ProjectCard";
 import AddUnitCard from "./AddUnitCard";
 import EmptyStateCard from "./EmptyStateCard";
-import { useNavigate } from "react-router-dom";
 import {getJobs,getEmployees,getForecastEntries,} from "../../api/client";
 import type { Employee, JobCode, ForecastEntry } from "../data/types";
 
@@ -14,13 +13,24 @@ interface Project {
   daysLeft: number;
   budget: string;
   progress: number;
-  avatars: { initials: string; color: string }[];
+  avatars: { initials: string; color: string; name: string }[];
 }
+
+  function generateAvatars(employees: Employee[]) {
+    return employees.slice(0, 4).map((emp) => ({
+      initials: emp.name
+        .split(" ")
+        .map((w: string) => w[0])
+        .join("")
+        .toUpperCase(),
+      color: "bg-indigo-400",
+      name: emp.name,
+    }));
+  }
 
 export default function ProjectsSection() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
 
   useEffect(() => {
     async function loadProjects() {
@@ -92,12 +102,16 @@ export default function ProjectsSection() {
             Math.round((elapsed / totalDuration) * 100)
           );
 
-          // Employees assigned via forecast
-          const jobEmployees: Employee[] = entries
-            .map((entry) =>
-              employees.find((e: Employee) => e.name === entry.employeeName)
-            )
-            .filter((e): e is Employee => Boolean(e));
+          const jobEmployees: Employee[] = Array.from(
+            new Map(
+              entries
+                .map((entry) =>
+                  employees.find((e: Employee) => e.name === entry.employeeName)
+                )
+                .filter((e): e is Employee => Boolean(e))
+                .map((e) => [e.name, e]) 
+            ).values()
+          );
 
           return {
             jobCode: job.jobCode,
@@ -141,7 +155,6 @@ export default function ProjectsSection() {
               <ProjectCard
                 key={project.jobCode}
                 {...project}
-                onClick={() => navigate(`/project/${project.jobCode}`)}
                 onSave={(updated) => {
                   setProjects((prev) =>
                     prev.map((p) =>
@@ -162,14 +175,3 @@ export default function ProjectsSection() {
   );
 }
 
-// 🔹 Avatar generator
-function generateAvatars(employees: Employee[]) {
-  return employees.slice(0, 4).map((emp) => ({
-    initials: emp.name
-      .split(" ")
-      .map((w: string) => w[0])
-      .join("")
-      .toUpperCase(),
-    color: "bg-indigo-400",
-  }));
-}

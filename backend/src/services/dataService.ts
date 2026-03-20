@@ -606,9 +606,9 @@ export function updateForecastEntryDays(input: ForecastWriteInput) {
 export function updateCost(input :CostUpdate) {
     const { cost, jobCode, workspaceID} = input
     db.prepare(
-        `UPDATE Job
+        `UPDATE ForecastEntry
         SET Cost = ?
-        WHERE Job.JobCode = ? AND workspaceID = ?`
+        WHERE ForecastEntry.JobCode = ? AND ForecastEntry.EmployeeID = ? AND workspaceID = ?`
     ).run( cost, jobCode, workspaceID);
 
     return {

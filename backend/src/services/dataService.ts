@@ -678,6 +678,22 @@ export function updateStartTime(input :startDateUpdate) {
     };
 }
 
+export function updateEndTime(input :startDateUpdate) {
+    const { startDateISO, jobCode, workspaceID } = input
+    db.prepare(
+        `UPDATE Job
+        SET EndDate = ?
+        WHERE Job.JobCode = ? AND workspaceID = ?`
+    ).run({ startDateISO, jobCode, workspaceID});
+
+    return {
+      message: "Job budget updated",
+      startDateISO,
+      jobCode,
+      workspaceID
+    };
+}
+
 export function deleteForecastEntry(input: ForecastWriteInput) {
   const { employeeName, jobCode, month } = input;
 

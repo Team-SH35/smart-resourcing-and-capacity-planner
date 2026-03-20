@@ -332,22 +332,22 @@ function JobModal({ onClose }: { onClose: () => void }) {
 function EmployeeModal({ onClose }: { onClose: () => void }) {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [rows, setRows] = useState<Record<number, RowState>>({});
- 
-  useEffect(() => {
-    loadEmployees();
-  }, []);
- 
+
   const loadEmployees = async () => {
     const data = await getEmployees();
     setEmployees(data);
- 
+
     const map: Record<number, RowState> = {};
     data.forEach((e: Employee) => {
       map[e.id] = { input: "", pending: [] };
     });
- 
+
     setRows(map);
   };
+ 
+  useEffect(() => {
+    loadEmployees();
+  }, []);
  
   const updateInput = (id: number, value: string) => {
     setRows((prev) => ({

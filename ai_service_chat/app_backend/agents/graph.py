@@ -4,6 +4,7 @@ import os
 from datetime import datetime, timezone
 from typing import Annotated, Sequence, TypedDict
 
+import httpx
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage, ToolMessage
 from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import MemorySaver
@@ -32,8 +33,10 @@ class AgentState(TypedDict):
 class ResourceManagementAgent:
     """LangGraph-based agent for resource management queries and updates."""
 
-    def __init__(self, tools: list):
+    def __init__(self, tools: list, backend_url: str = "http://localhost:4000"):
         self.tools = tools
+        self.backend_url = backend_url
+        self.undo_snapshots: dict = {}
         self.checkpointer = MemorySaver()
 
         self.llm = ChatOpenAI(
@@ -130,11 +133,106 @@ class ResourceManagementAgent:
             "messages": final_state["messages"],
         }
 
+    async def _capture_undo_snapshot(self, tool_calls: list) -> list:
+        """Fetch the before-state for write operations so they can be reversed."""
+        snapshot = []
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.get(f"{self.backend_url}/api/forecast-entries")
+                all_entries = resp.json() if resp.status_code == 200 else []
+        except Exception:
+            all_entries = []
+
+        for tc in tool_calls:
+            tool_name = tc["name"]
+            args = tc["args"]
+
+            if tool_name == "create_forecast_entry":
+                snapshot.append({"tool_name": tool_name, "args": args, "before_value": None})
+
+            elif tool_name in ("update_forecast_entry", "delete_forecast_entry"):
+                emp = args.get("employee_name")
+                job = args.get("job_code")
+                month_prefix = args.get("month", "")[:3].lower()
+                current_days = None
+                for entry in all_entries:
+                    if (entry.get("employeeName") == emp
+                            and entry.get("jobCode") == job
+                            and entry.get("month", "")[:3].lower() == month_prefix):
+                        current_days = entry.get("days")
+                        break
+                snapshot.append({"tool_name": tool_name, "args": args, "before_value": {"days": current_days}})
+
+        return snapshot
+
     async def approve_change(self, session_id: str) -> dict:
-        """Resume execution applying the pending write tool calls."""
+        """Resume execution applying the pending write tool calls, capturing undo state first."""
         config = {"configurable": {"thread_id": session_id}}
+
+        state_snapshot = await self.graph.aget_state(config)
+        last_message = state_snapshot.values["messages"][-1]
+        tool_calls = getattr(last_message, "tool_calls", [])
+        if tool_calls:
+            self.undo_snapshots[session_id] = await self._capture_undo_snapshot(tool_calls)
+
         await self.graph.ainvoke(None, config)
         return await self._format_state_response(session_id)
+
+    async def undo_change(self, session_id: str) -> dict:
+        """Reverse the last approved change for this session."""
+        snapshot = self.undo_snapshots.pop(session_id, None)
+        if not snapshot:
+            return {"response": "There is nothing to undo for this session."}
+
+        results = []
+        async with httpx.AsyncClient() as client:
+            for change in reversed(snapshot):
+                tool_name = change["tool_name"]
+                args = change["args"]
+                before = change.get("before_value")
+                try:
+                    if tool_name == "create_forecast_entry":
+                        resp = await client.request(
+                            "DELETE", f"{self.backend_url}/api/forecast-entries",
+                            json={"employeeName": args.get("employee_name"),
+                                  "jobCode": args.get("job_code"),
+                                  "month": args.get("month")}
+                        )
+                        if resp.status_code < 300:
+                            results.append(f"Removed allocation for **{args.get('employee_name')}** on {args.get('job_code')}")
+
+                    elif tool_name == "update_forecast_entry":
+                        if before and before.get("days") is not None:
+                            resp = await client.patch(
+                                f"{self.backend_url}/api/forecast-entries",
+                                json={"employeeName": args.get("employee_name"),
+                                      "jobCode": args.get("job_code"),
+                                      "month": args.get("month"),
+                                      "days": before["days"]}
+                            )
+                            if resp.status_code < 300:
+                                results.append(f"Restored **{args.get('employee_name')}**'s {args.get('month')} allocation on {args.get('job_code')} to {before['days']} days")
+                        else:
+                            results.append(f"⚠️ Could not undo update for **{args.get('employee_name')}** — original value was not captured")
+
+                    elif tool_name == "delete_forecast_entry":
+                        if before and before.get("days") is not None:
+                            resp = await client.post(
+                                f"{self.backend_url}/api/forecast-entries",
+                                json={"employeeName": args.get("employee_name"),
+                                      "jobCode": args.get("job_code"),
+                                      "month": args.get("month"),
+                                      "days": before["days"]}
+                            )
+                            if resp.status_code < 300:
+                                results.append(f"Restored **{args.get('employee_name')}**'s allocation on {args.get('job_code')} for {args.get('month')}")
+                        else:
+                            results.append(f"⚠️ Could not restore deletion for **{args.get('employee_name')}** — original data not captured")
+                except Exception as e:
+                    results.append(f"Error undoing {tool_name}: {str(e)}")
+
+        response = "✅ Undo complete:\n" + "\n".join(f"- {r}" for r in results) if results else "Nothing was undone."
+        return {"response": response}
 
     async def reject_change(self, session_id: str) -> dict:
         """Inject rejection tool messages and resume so the agent can inform the user."""
@@ -199,6 +297,6 @@ If the user asks anything outside this scope (e.g. general knowledge, entertainm
 - Be concise but proactive (e.g., "Project Alpha is understaffed by 10 days; would you like me to see who is available?")."""
 
 
-def create_agent(tools: list) -> ResourceManagementAgent:
+def create_agent(tools: list, backend_url: str = "http://localhost:4000") -> ResourceManagementAgent:
     """Factory function to create a ResourceManagementAgent."""
-    return ResourceManagementAgent(tools=tools)
+    return ResourceManagementAgent(tools=tools, backend_url=backend_url)

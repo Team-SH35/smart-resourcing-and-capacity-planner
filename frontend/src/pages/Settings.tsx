@@ -95,7 +95,7 @@ export default function Settings() {
 
         {loading && <p>Uploading...</p>}
 
-        {/* ✅ Show file name */}
+        {/*  Show file name */}
         {fileName && (
           <p className="text-sm text-slate-600">
             Loaded file: <span className="font-medium">{fileName}</span>
@@ -139,9 +139,6 @@ function JobModal({ onClose }: { onClose: () => void }) {
   const [jobs, setJobs] = useState<JobRow[]>([]);
   const workspaceID = 1;
  
-  useEffect(() => {
-    loadJobs();
-  }, []);
  
   const loadJobs = async () => {
     const data = (await getJobs()) as JobApi[];
@@ -171,6 +168,10 @@ function JobModal({ onClose }: { onClose: () => void }) {
  
     setJobs(mapped);
   };
+  
+    useEffect(() => {
+    loadJobs();
+  }, []);
  
   const updateField = (
     row: number,

@@ -45,9 +45,6 @@ export async function rejectChange(sessionId: string) {
   if (!res.ok) throw new Error(`Rejection failed: ${res.status}`);
   return res.json() as Promise<ChatResponse>;
 }
-<<<<<<< HEAD
- 
-=======
 
 export async function undoChange(sessionId: string) {
   const res = await fetch(`${AI_BASE}/api/v1/undo-change/${sessionId}`, {
@@ -57,7 +54,6 @@ export async function undoChange(sessionId: string) {
   return res.json() as Promise<ChatResponse>;
 }
 
->>>>>>> d0f6c492168557fa4388f91982979bcfb1d1353b
 export async function getBusinessUnits(): Promise<string[]> {
   const res = await fetch(`${API_BASE}/api/job-codes`);
  

@@ -245,7 +245,7 @@ export function getEmployees(): Employee[] {
         Specialism AS specialism,
         ${excludeExpr} AS excludeFromAI
       FROM Employee
-      INNER JOIN EmployeeSpecialisms ON Employee.EmployeeID = EmployeeSpecialisms.EmployeeID
+      LEFT JOIN EmployeeSpecialisms ON Employee.EmployeeID = EmployeeSpecialisms.EmployeeID
       ORDER BY Name ASC
     `)
     .all() as EmployeeRow[];

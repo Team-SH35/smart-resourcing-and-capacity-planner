@@ -14,6 +14,7 @@ import {
   updateCost,
   updateBudget,
   updateTimeBudget,
+  updateCurrencySymbol,
 } from "../services/dataService";
 import parseExcelInfo from "../excel-utils/parse_excel";
 import { writeExcelToDB } from "../db/write_to_db";
@@ -240,6 +241,43 @@ router.post("/update-time-budget", async (req, res) => {
     }
 
     const result = updateTimeBudget({ timeBudget, jobCode, workspaceID });
+
+    return res.status(201).json(result);
+  } catch (error) {
+    console.error("POST /api/forecast-entries failed:", error);
+
+    const message =
+      error instanceof Error ? error.message : "Failed to update Time Budget";
+
+    if (
+      message.includes("not found") ||
+      message.includes("already exists") ||
+      message.includes("Invalid month")
+    ) {
+      return res.status(400).json({ error: message });
+    }
+
+    return res.status(500).json({ error: "Failed to update job time budget" });
+  }
+})
+
+router.post("/update-currency-symbol", async (req, res) => {
+  try {
+    const { currencySymbol, jobCode, workspaceID } = req.body;
+
+    if (!currencySymbol || !jobCode || workspaceID) {
+      return res.status(400).json({
+        error: "newBudget, workspaceID and jobCode are required",
+      });  
+    }
+
+    if (currencySymbol.length != 1) {
+      return res.status(400).json({
+        error: "currency symbol must have length of 1",
+      })
+    }
+
+    const result = updateCurrencySymbol({ currencySymbol, jobCode, workspaceID });
 
     return res.status(201).json(result);
   } catch (error) {

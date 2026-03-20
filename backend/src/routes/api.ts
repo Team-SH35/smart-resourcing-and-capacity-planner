@@ -175,7 +175,7 @@ router.post("/update-cost", async (req, res) => {
   try {
     const { cost, jobCode, workspaceID } = req.body;
 
-    if (!cost || !jobCode || workspaceID) {
+    if (!cost || !jobCode || !workspaceID) {
       return res.status(400).json({
         error: "cost, workspaceID and jobCode are required",
       });
@@ -206,7 +206,7 @@ router.post("/update-monetary-budget", async (req, res) => {
   try {
     const { newBudget, jobCode, workspaceID } = req.body;
 
-    if (!newBudget || !jobCode || workspaceID) {
+    if (!newBudget || !jobCode || !workspaceID) {
       return res.status(400).json({
         error: "newBudget, workspaceID and jobCode are required",
       });
@@ -237,7 +237,7 @@ router.post("/update-time-budget", async (req, res) => {
   try {
     const { timeBudget, jobCode, workspaceID } = req.body;
 
-    if (!timeBudget || !jobCode || workspaceID) {
+    if (!timeBudget || !jobCode || !workspaceID) {
       return res.status(400).json({
         error: "newBudget, workspaceID and jobCode are required",
       });
@@ -268,7 +268,7 @@ router.post("/update-currency-symbol", async (req, res) => {
   try {
     const { currencySymbol, jobCode, workspaceID } = req.body;
 
-    if (!currencySymbol || !jobCode || workspaceID) {
+    if (!currencySymbol || !jobCode || !workspaceID) {
       return res.status(400).json({
         error: "newBudget, workspaceID and jobCode are required",
       });  
@@ -303,15 +303,15 @@ router.post("/update-currency-symbol", async (req, res) => {
 
 router.post("/update-start-date", async (req, res) => {
   try {
-    const { endTime: startTime, jobCode, workspaceID } = req.body;
+    const { startDate, jobCode, workspaceID } = req.body;
 
-    if (!startTime || !jobCode || workspaceID) {
+    if (!startDate || !jobCode || !workspaceID) {
       return res.status(400).json({
         error: "newBudget, workspaceID and jobCode are required",
       });  
     }
 
-    const startDateISO = new Date(startTime).toISOString()
+    const startDateISO = new Date(startDate).toISOString()
     const result = updateStartTime({ startDateISO, jobCode, workspaceID });
 
     return res.status(201).json(result);
@@ -335,9 +335,9 @@ router.post("/update-start-date", async (req, res) => {
 
 router.post("/update-end-date", async (req, res) => {
   try {
-    const { startTime: endDate, jobCode, workspaceID } = req.body;
+    const { endDate, jobCode, workspaceID } = req.body;
 
-    if (!endDate || !jobCode || workspaceID) {
+    if (!endDate || !jobCode || !workspaceID) {
       return res.status(400).json({
         error: "newBudget, workspaceID and jobCode are required",
       });  

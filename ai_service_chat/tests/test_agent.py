@@ -67,6 +67,46 @@ def test_should_continue_returns_write_tools_for_delete():
     assert agent._should_continue(state) == "write_tools"
 
 
+def test_should_continue_returns_write_tools_for_update_job_cost():
+    agent = make_agent()
+    last_msg = MagicMock()
+    last_msg.tool_calls = [{"name": "update_job_cost", "id": "1", "args": {}}]
+    state = {"messages": [last_msg]}
+    assert agent._should_continue(state) == "write_tools"
+
+
+def test_should_continue_returns_write_tools_for_update_job_monetary_budget():
+    agent = make_agent()
+    last_msg = MagicMock()
+    last_msg.tool_calls = [{"name": "update_job_monetary_budget", "id": "1", "args": {}}]
+    state = {"messages": [last_msg]}
+    assert agent._should_continue(state) == "write_tools"
+
+
+def test_should_continue_returns_write_tools_for_update_job_time_budget():
+    agent = make_agent()
+    last_msg = MagicMock()
+    last_msg.tool_calls = [{"name": "update_job_time_budget", "id": "1", "args": {}}]
+    state = {"messages": [last_msg]}
+    assert agent._should_continue(state) == "write_tools"
+
+
+def test_should_continue_returns_write_tools_for_update_job_start_date():
+    agent = make_agent()
+    last_msg = MagicMock()
+    last_msg.tool_calls = [{"name": "update_job_start_date", "id": "1", "args": {}}]
+    state = {"messages": [last_msg]}
+    assert agent._should_continue(state) == "write_tools"
+
+
+def test_should_continue_returns_write_tools_for_update_job_end_date():
+    agent = make_agent()
+    last_msg = MagicMock()
+    last_msg.tool_calls = [{"name": "update_job_end_date", "id": "1", "args": {}}]
+    state = {"messages": [last_msg]}
+    assert agent._should_continue(state) == "write_tools"
+
+
 def test_get_system_prompt_is_non_empty():
     agent = make_agent()
     prompt = agent.get_system_prompt()

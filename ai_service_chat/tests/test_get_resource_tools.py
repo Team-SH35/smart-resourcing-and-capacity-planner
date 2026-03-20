@@ -9,9 +9,9 @@ def test_get_resource_tools_returns_list():
     assert isinstance(tools, list)
 
 
-def test_get_resource_tools_returns_ten_tools():
+def test_get_resource_tools_returns_fifteen_tools():
     tools = get_resource_tools("http://localhost:4000")
-    assert len(tools) == 10
+    assert len(tools) == 15
 
 
 def test_get_resource_tools_includes_get_employees():
@@ -62,6 +62,36 @@ def test_get_resource_tools_includes_write_tools():
     assert "create_forecast_entry" in names
     assert "update_forecast_entry" in names
     assert "delete_forecast_entry" in names
+
+
+def test_get_resource_tools_includes_update_job_cost():
+    tools = get_resource_tools("http://localhost:4000")
+    names = [t.name for t in tools]
+    assert "update_job_cost" in names
+
+
+def test_get_resource_tools_includes_update_job_monetary_budget():
+    tools = get_resource_tools("http://localhost:4000")
+    names = [t.name for t in tools]
+    assert "update_job_monetary_budget" in names
+
+
+def test_get_resource_tools_includes_update_job_time_budget():
+    tools = get_resource_tools("http://localhost:4000")
+    names = [t.name for t in tools]
+    assert "update_job_time_budget" in names
+
+
+def test_get_resource_tools_includes_update_job_start_date():
+    tools = get_resource_tools("http://localhost:4000")
+    names = [t.name for t in tools]
+    assert "update_job_start_date" in names
+
+
+def test_get_resource_tools_includes_update_job_end_date():
+    tools = get_resource_tools("http://localhost:4000")
+    names = [t.name for t in tools]
+    assert "update_job_end_date" in names
 
 
 def test_get_resource_tools_sets_backend_url():

@@ -2,17 +2,24 @@ import { useMemo, useState } from "react";
 import type { Employee, ForecastEntry } from "../data/types";
 import EmployeeRow from "./EmployeeRow";
 
+type SortOption = "name-asc" | "name-desc" | "days-asc" | "days-desc";
+
 interface Props {
   employees: Employee[];
   forecastEntries: ForecastEntry[];
   currentDate: Date;
   jobCode: string;
-  sortBy: "name-asc" | "name-desc" | "days-asc" | "days-desc";
+  sortBy: SortOption;
   filtersOpen: boolean;
   setFiltersOpen: (open: boolean) => void;
   onUpdateAllocation: (employeeName: string, newDays: number) => void;
   onDeleteAllocation: (employeeName: string) => void;
 }
+
+type EmployeeWithDays = {
+  employee: Employee;
+  daysAllocated: number;
+};
 
 export default function EmployeeSchedule({
   employees,
@@ -23,83 +30,81 @@ export default function EmployeeSchedule({
   filtersOpen,
   setFiltersOpen,
   onUpdateAllocation,
-  onDeleteAllocation
+  onDeleteAllocation,
 }: Props) {
-  const monthKey = useMemo(() => {
-    return currentDate.toLocaleString("default", {
-      month: "long",
-      year: "numeric",
-    });
-  }, [currentDate]);
+  const monthKey = currentDate.toLocaleString("default", {
+    month: "long",
+  });
 
-  const daysInMonth = useMemo(() => {
-    return new Date(
-      currentDate.getFullYear(),
-      currentDate.getMonth() + 1,
-      0
-    ).getDate();
-  }, [currentDate]);
+  const daysInMonth = new Date(
+    currentDate.getFullYear(),
+    currentDate.getMonth() + 1,
+    0
+  ).getDate();
 
   const [searchName, setSearchName] = useState("");
   const [specialismFilter, setSpecialismFilter] = useState("");
 
-  // Employees with allocations for this month
-  const employeesForMonth = useMemo(() => {
-    return employees
-      .map(employee => {
-        const entry = forecastEntries.find(
-          f =>
-            f.employeeName === employee.name &&
-            f.jobCode === jobCode &&
-            f.month === monthKey
-        );
+  // ✅ Build clean typed array (no nulls)
+  const employeesForMonth = useMemo<EmployeeWithDays[]>(() => {
+    return employees.flatMap((employee) => {
+      const entry = forecastEntries.find(
+        (f) =>
+          f.employeeName?.toLowerCase() === employee.name.toLowerCase() &&
+          f.jobCode === jobCode &&
+          f.month?.toLowerCase() === monthKey.toLowerCase()
+      );
 
-        if (!entry) return null;
+      if (!entry || entry.days === 0) return [];
 
-        return {
+      return [
+        {
           employee,
           daysAllocated: entry.days,
-        };
-      })
-      .filter(Boolean) as { employee: Employee; daysAllocated: number }[];
+        },
+      ];
+    });
   }, [employees, forecastEntries, jobCode, monthKey]);
 
-  const specialisms = useMemo(
-    () => Array.from(new Set(employees.flatMap(e => e.specialisms))),
-    [employees]
-  );
+  const specialisms: string[] = [
+    ...new Set(employees.flatMap((e) => e.specialisms)),
+  ];
 
-  const displayedEmployees = useMemo(() => {
-    let filtered = employeesForMonth;
-
-    // Apply search by name
-    if (searchName) {
-      filtered = filtered.filter(f =>
+  // ✅ Filter + sort (fully typed)
+  const displayedEmployees = useMemo<EmployeeWithDays[]>(() => {
+    return employeesForMonth
+      .filter((f) =>
         f.employee.name.toLowerCase().includes(searchName.toLowerCase())
-      );
-    }
-    if (specialismFilter) {
-      filtered = filtered.filter(f =>
-        f.employee.specialisms.includes(specialismFilter)
-      );
-    }
+      )
+      .filter(
+        (f) =>
+          !specialismFilter ||
+          f.employee.specialisms.includes(specialismFilter)
+      )
+      .sort((a, b) => {
+        switch (sortBy) {
+          case "name-asc":
+            return a.employee.name.localeCompare(b.employee.name);
 
-    filtered = [...filtered].sort((a, b) => {
-      if (sortBy === "name-asc") return a.employee.name.localeCompare(b.employee.name);
-      if (sortBy === "name-desc") return b.employee.name.localeCompare(a.employee.name);
-      if (sortBy === "days-asc") return a.daysAllocated - b.daysAllocated;
-      if (sortBy === "days-desc") return b.daysAllocated - a.daysAllocated;
-      return 0;
-    });
+          case "name-desc":
+            return b.employee.name.localeCompare(a.employee.name);
 
-    return filtered;
-  }, [employeesForMonth, sortBy, searchName, specialismFilter]);
+          case "days-asc":
+            return a.daysAllocated - b.daysAllocated;
 
-  if (employeesForMonth.length === 0) {
-    return (
-      <div className="p-4 text-slate-400">No allocations this month</div>
-    );
-  }
+          case "days-desc":
+            return b.daysAllocated - a.daysAllocated;
+
+          default:
+            return 0;
+        }
+      });
+  }, [employeesForMonth, searchName, specialismFilter, sortBy]);
+
+  // ✅ Safe max calculation
+  const maxDays = useMemo(() => {
+    return Math.max(...employeesForMonth.map((e) => e.daysAllocated), 1);
+  }, [employeesForMonth]);
 
   return (
     <div className="space-y-4 relative">
@@ -109,40 +114,37 @@ export default function EmployeeSchedule({
           employee={employee}
           daysAllocated={daysAllocated}
           daysInMonth={daysInMonth}
+          maxDays={maxDays}
           onUpdateAllocation={onUpdateAllocation}
           onDeleteAllocation={onDeleteAllocation}
         />
       ))}
 
-      {/* Filters Overlay */}
+      {/* FILTER OVERLAY */}
       {filtersOpen && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 w-96 space-y-4">
             <h2 className="font-semibold text-lg">Filters</h2>
 
-            {/* Search by name */}
             <input
               placeholder="Search employee"
               value={searchName}
-              onChange={e => setSearchName(e.target.value)}
+              onChange={(e) => setSearchName(e.target.value)}
               className="border rounded w-full px-3 py-2"
             />
 
-            {/* Filter by specialism */}
             <select
               value={specialismFilter}
-              onChange={e => setSpecialismFilter(e.target.value)}
+              onChange={(e) => setSpecialismFilter(e.target.value)}
               className="border rounded w-full px-3 py-2"
             >
               <option value="">All Specialisms</option>
-              {specialisms.map(s => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
+              {specialisms.map((s) => (
+                <option key={s}>{s}</option>
               ))}
             </select>
 
-            <div className="flex justify-end gap-2 pt-4">
+            <div className="flex justify-end pt-4">
               <button
                 onClick={() => setFiltersOpen(false)}
                 className="border rounded px-3 py-1"

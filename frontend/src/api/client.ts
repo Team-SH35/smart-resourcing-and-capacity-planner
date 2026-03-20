@@ -1,5 +1,5 @@
-import type { JobCode } from "../../../backend/src/types";
 import type { ChatResponse } from "../components/data/types";
+import type {  JobCode, ForecastUpdateInput, ForecastDeleteInput } from "../components/data/types";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL as string;
 const AI_BASE = import.meta.env.VITE_AI_API_URL as string;
@@ -71,7 +71,7 @@ export async function uploadExcel(file: File) {
   const formData = new FormData();
   formData.append("file", file);
 
-  const res = await fetch(`${API_BASE}/api/upload`, {
+  const res = await fetch(`${API_BASE}/api/import-excel`, {
     method: "POST",
     body: formData,
   });
@@ -104,5 +104,60 @@ export async function getForecastEntries() {
   if (!res.ok) {
     throw new Error(`Failed to fetch capacity forecast: ${res.status}`);
   }
+  return res.json();
+}
+
+export async function updateForecast({
+  employeeName,
+  jobCode,
+  month,
+  days,
+}: ForecastUpdateInput) {
+  const res = await fetch(`${API_BASE}/api/forecast-entries`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ employeeName, jobCode, month, days }),
+  });
+
+  if (!res.ok) throw new Error("Failed to update forecast");
+
+  return res.json();
+}
+
+export async function deleteForecast({
+  employeeName,
+  jobCode,
+  month,
+}: ForecastDeleteInput) {
+  const res = await fetch(`${API_BASE}/api/forecast-entries`, {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ employeeName, jobCode, month }),
+  });
+
+  if (!res.ok) throw new Error("Failed to delete forecast");
+
+  return res.json();
+}
+
+export async function createForecastEntry({
+  employeeName,
+  jobCode,
+  month,
+  days,
+}: {
+  employeeName: string;
+  jobCode: string;
+  month: string;
+  days: number;
+}) {
+  const res = await fetch(`${API_BASE}/api/forecast-entries`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ employeeName, jobCode, month, days }),
+  });
+
+  if (!res.ok) throw new Error("Failed to create forecast");
+
   return res.json();
 }

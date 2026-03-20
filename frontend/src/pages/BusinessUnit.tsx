@@ -1,41 +1,70 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import EmployeeByBUCard from "../components/businessUnit/EmployeeByBUCard";
-import { employees } from "../components/data/employees";
-import { jobCodes } from "../components/data/jobCodes";
-import { forecastEntries } from "../components/data/forecastEntries";
+import { getEmployees, getJobs, getForecastEntries } from "../api/client";
+import type { Employee, JobCode, ForecastEntry } from "../components/data/types";
 
 type SortOption = "name-asc" | "name-desc" | "alloc-asc" | "alloc-desc";
-
-// Allocation filter type
 type AllocationFilter = "under" | "correct" | "over" | "";
 
 export default function BusinessUnit() {
   const { unit } = useParams<{ unit: string }>();
-  const [filtersOpen, setFiltersOpen] = useState(false);
 
-  // Filters & Sort state
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [jobCodes, setJobCodes] = useState<JobCode[]>([]);
+  const [forecastEntries, setForecastEntries] = useState<ForecastEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [filterName, setFilterName] = useState("");
   const [filterSpecialism, setFilterSpecialism] = useState("");
   const [filterAllocation, setFilterAllocation] = useState<AllocationFilter>("");
   const [sortBy, setSortBy] = useState<SortOption>("name-asc");
 
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const [emp, jobs, forecast] = await Promise.all([
+          getEmployees(),
+          getJobs(),
+          getForecastEntries(),
+        ]);
+
+        setEmployees(emp);
+        setJobCodes(jobs);
+        setForecastEntries(forecast);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchData();
+  }, []);
+
+  if (loading) return <div>Loading...</div>;
   if (!unit) return <div>No business unit selected.</div>;
 
-  // --- Employees in this business unit via jobCodes + forecastEntries ---
+  const normalize = (str: string) => str.toLowerCase().trim();
+
   const unitJobCodes = jobCodes
-    .filter((job) => job.businessUnit === unit)
+    .filter((job) => normalize(job.businessUnit) === normalize(unit))
     .map((job) => job.jobCode);
 
   const unitEmployeeNames = new Set(
-    unitJobCodes.flatMap((code) =>
-      forecastEntries.filter((entry) => entry.jobCode === code).map((entry) => entry.employeeName)
-    )
+    forecastEntries
+      .filter((entry) => unitJobCodes.includes(entry.jobCode))
+      .map((entry) => normalize(entry.employeeName))
   );
 
-  const unitEmployees = employees.filter((emp) => unitEmployeeNames.has(emp.name));
+  const unitEmployees = employees.filter((emp) =>
+    unitEmployeeNames.has(normalize(emp.name))
+  );
 
-  const specialismOptions = Array.from(new Set(unitEmployees.flatMap((e) => e.specialisms)));
+  const specialismOptions = Array.from(
+    new Set(unitEmployees.flatMap((e) => e.specialisms))
+  );
 
   return (
     <div className="min-h-screen bg-slate-50 p-10">
@@ -46,7 +75,6 @@ export default function BusinessUnit() {
           <h1 className="text-3xl font-bold text-slate-900">{unit}</h1>
 
           <div className="flex gap-3 items-center">
-            {/* Filter overlay button */}
             <button
               onClick={() => setFiltersOpen(true)}
               className="font-medium text-slate-400 border rounded px-3 py-1"
@@ -54,13 +82,12 @@ export default function BusinessUnit() {
               Filters
             </button>
 
-            {/* Sort By dropdown */}
             <select
               value={sortBy}
-              onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+              onChange={(e) =>
                 setSortBy(e.target.value as SortOption)
               }
-              className="border rounded px-3 py-1 flex items-center gap-2"
+              className="border rounded px-3 py-1"
             >
               <option value="name-asc">Name (A-Z)</option>
               <option value="name-desc">Name (Z-A)</option>
@@ -70,7 +97,7 @@ export default function BusinessUnit() {
           </div>
         </div>
 
-        {/* Filters Overlay */}
+        {/* Filters */}
         {filtersOpen && (
           <div
             className="fixed inset-0 bg-black/30 flex items-center justify-center z-50"
@@ -82,7 +109,6 @@ export default function BusinessUnit() {
             >
               <h2 className="font-semibold text-lg">Filters</h2>
 
-              {/* Name Filter */}
               <input
                 placeholder="Name"
                 value={filterName}
@@ -90,7 +116,6 @@ export default function BusinessUnit() {
                 className="border rounded w-full px-3 py-2"
               />
 
-              {/* Specialism Filter */}
               <select
                 value={filterSpecialism}
                 onChange={(e) => setFilterSpecialism(e.target.value)}
@@ -102,7 +127,6 @@ export default function BusinessUnit() {
                 ))}
               </select>
 
-              {/* Allocation Filter */}
               <select
                 value={filterAllocation}
                 onChange={(e) =>
@@ -112,11 +136,10 @@ export default function BusinessUnit() {
               >
                 <option value="">All Allocations</option>
                 <option value="under">Underallocated (&lt;80%)</option>
-                <option value="correct">Correctly allocated (80–100%)</option>
+                <option value="correct">80–100%</option>
                 <option value="over">Overallocated (&gt;100%)</option>
               </select>
 
-              {/* Close button */}
               <div className="flex justify-end pt-4">
                 <button
                   onClick={() => setFiltersOpen(false)}
@@ -129,9 +152,10 @@ export default function BusinessUnit() {
           </div>
         )}
 
-        {/* Employee Cards */}
+        {/* ✅ Pass already-filtered employees */}
         <EmployeeByBUCard
-          businessUnit={unit}
+          employees={unitEmployees}
+          forecastEntries={forecastEntries}
           filterName={filterName}
           filterSpecialism={filterSpecialism}
           filterAllocation={filterAllocation}

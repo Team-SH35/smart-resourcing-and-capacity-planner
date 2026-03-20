@@ -34,6 +34,20 @@ export interface CalendarRow {
   projects: CalendarProject[];
 }
 
+export type ProposedChange = {
+  id: string;
+  type: string;
+  description: string;
+  data: Record<string, unknown>;
+  status: string;
+};
+
+export type ChatResponse = {
+  response: string;
+  sessionId: string;
+  proposed_changes: ProposedChange[];
+};
+
 export type ForecastEntry = {
   employeeName: string;
   customer: string;
@@ -41,5 +55,18 @@ export type ForecastEntry = {
   description: string;
   days: number;
   cost: number | null;
+  month: string;
+};
+
+export type ForecastUpdateInput = {
+  employeeName: string;
+  jobCode: string;
+  month: string;
+  days: number;
+};
+
+export type ForecastDeleteInput = {
+  employeeName: string;
+  jobCode: string;
   month: string;
 };

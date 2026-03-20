@@ -1,10 +1,12 @@
 import type { Employee } from "../data/types";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 interface Props {
   employee: Employee;
   daysAllocated: number;
   daysInMonth: number;
+  maxDays: number;
   onUpdateAllocation: (employeeName: string, newDays: number) => void;
   onDeleteAllocation: (employeeName: string) => void;
 }
@@ -13,10 +15,18 @@ export default function EmployeeCard({
   employee,
   daysAllocated,
   daysInMonth,
+  maxDays,
   onUpdateAllocation,
   onDeleteAllocation,
 }: Props) {
-  const widthPercent = (daysAllocated / daysInMonth) * 100;
+  const navigate = useNavigate();
+
+  const min_width = 20;
+  const widthPercent =
+    maxDays > 0
+      ? min_width + (daysAllocated / maxDays) * (100 - min_width)
+      : 100;
+
   const [editOpen, setEditOpen] = useState(false);
   const [editedDays, setEditedDays] = useState(daysAllocated);
 
@@ -31,136 +41,83 @@ export default function EmployeeCard({
 
   return (
     <>
-      {/* CARD */}
       <div
-        className="
-          relative
-          h-16
-          rounded-xl
-          bg-white
-          border
-          border-slate-300
-          flex
-          items-center
-          justify-between
-          px-3
-          cursor-pointer
-          transition-all
-          duration-300
-          ease-in-out
-          group
-          hover:min-w-[260px]
-          hover:shadow-lg
-          z-10
-        "
+        onClick={() =>
+          navigate(`/Employee/${encodeURIComponent(employee.name)}`)
+        }
+        className="relative h-16 rounded-xl bg-white border border-slate-300 flex items-center justify-between px-3 cursor-pointer transition-all duration-300 ease-in-out group hover:min-w-[260px] hover:shadow-lg z-10"
         style={{ width: `${widthPercent}%` }}
       >
-        {/* Coloured left border */}
         <div
           className={`absolute top-0 left-0 h-full w-1 ${leftBorderColor} rounded-l-xl`}
         />
 
-        {/* Name + Specialism */}
         <div className="flex flex-col overflow-hidden ml-2">
-          <div className="font-medium text-sm truncate group-hover:whitespace-normal group-hover:overflow-visible">
+          <div className="font-medium text-sm">
             {employee.name}
           </div>
-          <div className="text-xs text-slate-500 truncate group-hover:whitespace-normal group-hover:overflow-visible">
+          <div className="text-xs text-slate-500">
             {employee.specialisms[0]}
           </div>
         </div>
 
-        {/* Days + More */}
-        <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-          <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-200 text-gray-600 rounded-full text-xs font-medium whitespace-nowrap">
-            <span className="material-icons-outlined text-[14px]">
-              schedule
-            </span>
+        <div className="flex items-center gap-2 ml-2">
+          <span className="px-2 py-1 bg-gray-200 text-xs rounded-full">
             {daysAllocated} days
           </span>
 
+          {/* prevent navigation */}
           <button
-            onClick={() => setEditOpen(true)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setEditOpen(true);
+            }}
             className="text-slate-400 hover:text-slate-600"
           >
-            <span className="material-icons-outlined">
-              more_horiz
-            </span>
+            ...
           </button>
         </div>
       </div>
 
-      {/* MODAL OVERLAY */}
+      {/* MODAL */}
       {editOpen && (
         <div
-          className="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
+          className="fixed inset-0 bg-black/40 flex items-center justify-center"
           onClick={() => setEditOpen(false)}
         >
           <div
-            className="bg-white rounded-xl shadow-xl w-full max-w-md p-6"
+            className="bg-white p-6 rounded-xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="text-lg font-semibold mb-6">
-              Edit Allocation
-            </h2>
+            <h2>Edit Allocation</h2>
 
-            <div className="mb-4">
-              <p className="text-sm text-slate-400">Employee</p>
-              <p className="font-medium">{employee.name}</p>
-            </div>
+            <input
+              type="number"
+              min={0}
+              max={daysInMonth}
+              value={editedDays}
+              onChange={(e) => setEditedDays(Number(e.target.value))}
+              className="border p-2 w-full"
+            />
 
-            <div className="mb-6">
-              <label className="text-sm text-slate-400 block mb-1">
-                Days Allocated
-              </label>
-              <input
-                type="number"
-                min={0}
-                max={daysInMonth}
-                value={editedDays}
-                onChange={(e) =>
-                  setEditedDays(Number(e.target.value))
-                }
-                className="w-full border rounded px-3 py-2"
-              />
-              <label className="text-xs text-slate-300 block mb-1">
-                Maximum {daysInMonth} days
-              </label>
-            </div>
-
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between mt-4">
               <button
-                  onClick={() => {
-                    const confirmed = window.confirm(
-                      `Are you sure you want to delete ${employee.name}'s allocation for this month?`
-                    );
-                    if (confirmed) {
-                      onDeleteAllocation(employee.name);
-                      setEditOpen(false);
-                    }
-                  }}
-                  className="text-red-600 text-sm hover:underline"
-                >
-                  Delete Allocation
-                </button>
+                onClick={() => {
+                  onDeleteAllocation(employee.name);
+                  setEditOpen(false);
+                }}
+              >
+                Delete
+              </button>
 
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setEditOpen(false)}
-                  className="border rounded px-3 py-1 hover:bg-gray-100"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => {
-                    onUpdateAllocation(employee.name, editedDays);
-                    setEditOpen(false);
-                  }}
-                  className="bg-blue-600 text-white rounded px-3 py-1 hover:bg-blue-700"
-                >
-                  Save
-                </button>
-              </div>
+              <button
+                onClick={() => {
+                  onUpdateAllocation(employee.name, editedDays);
+                  setEditOpen(false);
+                }}
+              >
+                Save
+              </button>
             </div>
           </div>
         </div>

@@ -1,5 +1,5 @@
 import Excel from 'exceljs';
-import fs from 'node:fs'
+import { Readable } from "stream"
 
 
 interface MonthAllocations {
@@ -23,6 +23,7 @@ interface MonthAllocation {
 }
  
 interface ForecastEntry {
+    employeeID              : number,
     name                    : string, 
     job_code                : string, 
     resource_allocation     : (string)[]
@@ -40,6 +41,7 @@ interface Job {
 }
 
 export interface Employee {
+    employeeID : number,
     name : string,
 }
 
@@ -63,7 +65,7 @@ const DESCRIPTION_INDEX         = 10;
 const RESOURCE_ALLOCATION_RANGE = [11,23];
 
 
-export default async function parseExcelInfo(excelFileStream: fs.ReadStream) : Promise<ParsedExcelInfo> {
+export default async function parseExcelInfo(excelFileStream: Readable) : Promise<ParsedExcelInfo> {
     
     const workbook = new Excel.Workbook();
     await workbook.xlsx.read(excelFileStream);
@@ -81,21 +83,33 @@ export default async function parseExcelInfo(excelFileStream: fs.ReadStream) : P
     let row = worksheet.getRow(currentRow);
 
     const registered_jobs = new Set<string>();
-    const registered_employees = new Set<string>();
+
+    let employeeID: number = 0;
+    let insideEmployeeBlock = false;
 
     while (getCellString(row.getCell(2)) != "NULL") {
+      const name = getCellString(row.getCell(NAME_INDEX));
 
         // If at total then at end of current employee. Go to next line
         if (getCellString(row.getCell(2)).startsWith("TOTAL")) {
             row = worksheet.getRow(++currentRow);
+            insideEmployeeBlock = false;
             continue;
         }
 
-        if (!registered_employees.has(getCellString(row.getCell(NAME_INDEX)))) {
-            parsed_excel_data.employees.push({
-                name: getCellString(row.getCell(NAME_INDEX))
-            })
+        // Resets to true after line has been skipped
+        if (!insideEmployeeBlock) {
+          insideEmployeeBlock = true;
+          employeeID++;
         }
+
+        if (!parsed_excel_data.employees.some(e => e.employeeID === employeeID)) {
+        parsed_excel_data.employees.push({
+            employeeID: employeeID,
+            name,
+        });
+    }
+
 
         // If job has not appeared yet add it to jobs array
         if (!registered_jobs.has(getCellString(row.getCell(JOB_CODE_INDEX)))) {
@@ -115,11 +129,14 @@ export default async function parseExcelInfo(excelFileStream: fs.ReadStream) : P
         parsed_excel_data.forecast_entries.push({
             name                : getCellString(row.getCell(NAME_INDEX)),
             job_code            : getCellString(row.getCell(JOB_CODE_INDEX)),
-            resource_allocation : getResourceAllocationArray(row)
+            resource_allocation : getResourceAllocationArray(row),
+            employeeID          : employeeID
         });
 
         row = worksheet.getRow(++currentRow);
     } 
+
+    console.log(parsed_excel_data.forecast_entries[0].name)
 
     return parsed_excel_data;
 }

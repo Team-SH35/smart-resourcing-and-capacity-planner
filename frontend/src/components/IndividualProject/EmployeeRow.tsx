@@ -5,6 +5,7 @@ interface Props {
   employee: Employee;
   daysAllocated: number;
   daysInMonth: number;
+  maxDays: number;
   onUpdateAllocation: (employeeName: string, newDays: number) => void;
   onDeleteAllocation: (employeeName: string) => void;
 }
@@ -13,6 +14,7 @@ export default function EmployeeRow({
   employee,
   daysAllocated,
   daysInMonth,
+  maxDays,
   onUpdateAllocation,
   onDeleteAllocation,
 }: Props) {
@@ -22,6 +24,7 @@ export default function EmployeeRow({
         employee={employee}
         daysAllocated={daysAllocated}
         daysInMonth={daysInMonth}
+        maxDays={maxDays}
         onUpdateAllocation={onUpdateAllocation}
         onDeleteAllocation={onDeleteAllocation}
       />

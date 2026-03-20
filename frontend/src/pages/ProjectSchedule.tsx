@@ -1,19 +1,25 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import ProjectCalendar from "../components/projectSchedule/ProjectCalendar";
+import { getBusinessUnits } from "../api/client";
 
 type CalendarView = "week" | "fortnight" | "month";
 
 export default function ProjectSchedule() {
   const [view, setView] = useState<CalendarView>("fortnight");
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [businessUnits, setBusinessUnits] = useState<string[]>([]);
+  const [businessUnitsLoading, setBusinessUnitsLoading] = useState(true);
 
-  const [clientFilter, setClientFilter] = useState("");
+  const [searchParams] = useSearchParams();
+
+  // Get client filter from URL
+  const clientFromUrl = searchParams.get("client") || "";
+
+  const [clientFilter, setClientFilter] = useState(clientFromUrl);
   const [activeOnly, setActiveOnly] = useState(false);
   const [teamFilter, setTeamFilter] = useState<string[]>([]);
 
-  const businessUnits = ["Developers", "Analytics"];
-
-  // Dropdown options
   const viewOptions: { value: CalendarView; label: string }[] = [
     { value: "week", label: "Week" },
     { value: "fortnight", label: "Fortnight" },
@@ -34,13 +40,32 @@ export default function ProjectSchedule() {
     return () => document.removeEventListener("mousedown", onClick);
   }, []);
 
+  useEffect(() => {
+    async function loadBusinessUnits() {
+      try {
+        setBusinessUnitsLoading(true);
+        const units = await getBusinessUnits();
+        setBusinessUnits(units);
+      } catch (err: unknown) {
+        console.error("Failed to load business units", err);
+        setBusinessUnits([]);
+      } finally {
+        setBusinessUnitsLoading(false);
+      }
+    }
+
+    loadBusinessUnits();
+  }, []);
+
   return (
     <div className="p-6 space-y-4">
+
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Projects</h1>
 
         <div className="flex items-center gap-2">
-          {/* View By dropdown */}
+
+          {/* View dropdown */}
           <div id="viewDropdown" className="relative">
             <button
               onClick={() => setViewDropdownOpen(o => !o)}
@@ -75,6 +100,7 @@ export default function ProjectSchedule() {
           >
             Filters
           </button>
+
         </div>
       </div>
 
@@ -85,7 +111,6 @@ export default function ProjectSchedule() {
         teamFilter={teamFilter}
       />
 
-      {/* Filters overlay */}
       {filtersOpen && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 w-96 space-y-4">
@@ -94,7 +119,7 @@ export default function ProjectSchedule() {
             <input
               placeholder="Client name"
               value={clientFilter}
-              onChange={e => setClientFilter(e.target.value)}
+              onChange={(e) => setClientFilter(e.target.value)}
               className="border rounded w-full px-3 py-2"
             />
 
@@ -102,29 +127,38 @@ export default function ProjectSchedule() {
               <input
                 type="checkbox"
                 checked={activeOnly}
-                onChange={e => setActiveOnly(e.target.checked)}
+                onChange={(e) => setActiveOnly(e.target.checked)}
               />
               Only active projects
             </label>
 
             <div className="space-y-2">
               <div className="font-medium text-sm">Business units</div>
-              {businessUnits.map(unit => (
-                <label key={unit} className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={teamFilter.includes(unit)}
-                    onChange={e =>
-                      setTeamFilter(t =>
-                        e.target.checked
-                          ? [...t, unit]
-                          : t.filter(x => x !== unit)
-                      )
-                    }
-                  />
-                  {unit}
-                </label>
-              ))}
+
+              {businessUnitsLoading ? (
+                <div className="text-sm text-slate-400">Loading business units...</div>
+              ) : businessUnits.length === 0 ? (
+                <div className="text-sm text-slate-400">
+                  No business units available
+                </div>
+              ) : (
+                businessUnits.map((unit) => (
+                  <label key={unit} className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={teamFilter.includes(unit)}
+                      onChange={(e) =>
+                        setTeamFilter((t) =>
+                          e.target.checked
+                            ? [...t, unit]
+                            : t.filter((x) => x !== unit)
+                        )
+                      }
+                    />
+                    {unit}
+                  </label>
+                ))
+              )}
             </div>
 
             <div className="flex justify-end gap-2 pt-4">
@@ -141,7 +175,3 @@ export default function ProjectSchedule() {
     </div>
   );
 }
-
-
-
-

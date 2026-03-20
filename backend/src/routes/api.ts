@@ -11,6 +11,13 @@ import {
   createForecastEntry,
   updateForecastEntryDays,
   deleteForecastEntry,
+  updateCost,
+  updateBudget,
+  updateTimeBudget,
+  updateCurrencySymbol,
+  updateStartTime,
+  updateEndTime,
+  addSpecialism,
 } from "../services/dataService";
 import parseExcelInfo from "../excel-utils/parse_excel";
 import { writeExcelToDB } from "../db/write_to_db";
@@ -91,6 +98,7 @@ router.post("/forecast-entries", (req, res) => {
   }
 });
 
+
 router.patch("/forecast-entries", (req, res) => {
   try {
     const { employeeName, jobCode, month, days } = req.body;
@@ -162,6 +170,234 @@ router.get("/calendar", (_req, res) => {
     res.status(500).json({ error: "Failed to fetch calendar data" });
   }
 });
+
+router.post("/update-cost", async (req, res) => {
+  try {
+    const { cost, jobCode, workspaceID } = req.body;
+
+    if (!cost || !jobCode || workspaceID) {
+      return res.status(400).json({
+        error: "cost, workspaceID and jobCode are required",
+      });
+    }
+
+    const result = updateCost({ cost, jobCode, workspaceID });
+
+    return res.status(201).json(result);
+  } catch (error) {
+    console.error("POST /api/forecast-entries failed:", error);
+
+    const message =
+      error instanceof Error ? error.message : "Failed to create forecast entry";
+
+    if (
+      message.includes("not found") ||
+      message.includes("already exists") ||
+      message.includes("Invalid month")
+    ) {
+      return res.status(400).json({ error: message });
+    }
+
+    return res.status(500).json({ error: "Failed to update job cost" });
+  }
+})
+
+router.post("/update-monetary-budget", async (req, res) => {
+  try {
+    const { newBudget, jobCode, workspaceID } = req.body;
+
+    if (!newBudget || !jobCode || workspaceID) {
+      return res.status(400).json({
+        error: "newBudget, workspaceID and jobCode are required",
+      });
+    }
+
+    const result = updateBudget({ newBudget, jobCode, workspaceID });
+
+    return res.status(201).json(result);
+  } catch (error) {
+    console.error("POST /api/forecast-entries failed:", error);
+
+    const message =
+      error instanceof Error ? error.message : "Failed to update budget";
+
+    if (
+      message.includes("not found") ||
+      message.includes("already exists") ||
+      message.includes("Invalid month")
+    ) {
+      return res.status(400).json({ error: message });
+    }
+
+    return res.status(500).json({ error: "Failed to update job budget" });
+  }
+})
+
+router.post("/update-time-budget", async (req, res) => {
+  try {
+    const { timeBudget, jobCode, workspaceID } = req.body;
+
+    if (!timeBudget || !jobCode || workspaceID) {
+      return res.status(400).json({
+        error: "newBudget, workspaceID and jobCode are required",
+      });
+    }
+
+    const result = updateTimeBudget({ timeBudget, jobCode, workspaceID });
+
+    return res.status(201).json(result);
+  } catch (error) {
+    console.error("POST /api/forecast-entries failed:", error);
+
+    const message =
+      error instanceof Error ? error.message : "Failed to update Time Budget";
+
+    if (
+      message.includes("not found") ||
+      message.includes("already exists") ||
+      message.includes("Invalid month")
+    ) {
+      return res.status(400).json({ error: message });
+    }
+
+    return res.status(500).json({ error: "Failed to update job time budget" });
+  }
+})
+
+router.post("/update-currency-symbol", async (req, res) => {
+  try {
+    const { currencySymbol, jobCode, workspaceID } = req.body;
+
+    if (!currencySymbol || !jobCode || workspaceID) {
+      return res.status(400).json({
+        error: "newBudget, workspaceID and jobCode are required",
+      });  
+    }
+
+    if (currencySymbol.length != 1) {
+      return res.status(400).json({
+        error: "currency symbol must have length of 1",
+      })
+    }
+
+    const result = updateCurrencySymbol({ currencySymbol, jobCode, workspaceID });
+
+    return res.status(201).json(result);
+  } catch (error) {
+    console.error("POST /api/forecast-entries failed:", error);
+
+    const message =
+      error instanceof Error ? error.message : "Failed to update currency symbol";
+
+    if (
+      message.includes("not found") ||
+      message.includes("already exists") ||
+      message.includes("Invalid month")
+    ) {
+      return res.status(400).json({ error: message });
+    }
+
+    return res.status(500).json({ error: "Failed to update job currency symbol" });
+  }
+})
+
+router.post("/update-start-date", async (req, res) => {
+  try {
+    const { endTime: startTime, jobCode, workspaceID } = req.body;
+
+    if (!startTime || !jobCode || workspaceID) {
+      return res.status(400).json({
+        error: "newBudget, workspaceID and jobCode are required",
+      });  
+    }
+
+    const startDateISO = new Date(startTime).toISOString()
+    const result = updateStartTime({ startDateISO, jobCode, workspaceID });
+
+    return res.status(201).json(result);
+  } catch (error) {
+    console.error("POST /api/forecast-entries failed:", error);
+
+    const message =
+      error instanceof Error ? error.message : "Failed to update start date";
+
+    if (
+      message.includes("not found") ||
+      message.includes("already exists") ||
+      message.includes("Invalid month")
+    ) {
+      return res.status(400).json({ error: message });
+    }
+
+    return res.status(500).json({ error: "Failed to update job start date" });
+  }
+})
+
+router.post("/update-end-date", async (req, res) => {
+  try {
+    const { startTime: endDate, jobCode, workspaceID } = req.body;
+
+    if (!endDate || !jobCode || workspaceID) {
+      return res.status(400).json({
+        error: "newBudget, workspaceID and jobCode are required",
+      });  
+    }
+
+    const startDateISO = new Date(endDate).toISOString()
+    const result = updateEndTime({ startDateISO, jobCode, workspaceID });
+
+    return res.status(201).json(result);
+  } catch (error) {
+    console.error("POST /api/forecast-entries failed:", error);
+
+    const message =
+      error instanceof Error ? error.message : "Failed to update end date";
+
+    if (
+      message.includes("not found") ||
+      message.includes("already exists") ||
+      message.includes("Invalid month")
+    ) {
+      return res.status(400).json({ error: message });
+    }
+
+    return res.status(500).json({ error: "Failed to update job end date" });
+  }
+})
+
+router.post("/add-specialisms", async (req, res) => {
+  try {
+    const { specialisms, employeeID } = req.body;
+
+    if (!specialisms || !employeeID) {
+      return res.status(400).json({
+          error: "specialisms, workspaceID and employeeID are required",
+      }); 
+    }
+
+    const result = addSpecialism({specialisms, employeeID});
+    return res.status(201).json(result);
+
+  } catch (error) {
+    console.error("POST /api/add-specialisms:", error);
+
+    const message =
+      error instanceof Error ? error.message : "Failed to add specalisms";
+
+    if (
+      message.includes("not found") ||
+      message.includes("already exists") ||
+      message.includes("Invalid month")
+    ) {
+      return res.status(400).json({ error: message });
+    }
+
+    return res.status(500).json({ error: "Failed to add specialisms"});
+  }
+
+
+
+})
 
 router.post("/import-excel", upload.single("file"), async (req, res) => {
   try {

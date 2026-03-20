@@ -13,6 +13,41 @@ type EmployeeRow = {
   excludeFromAI: number | boolean | null;
 };
 
+type CostUpdate = {
+    cost : number,
+    jobCode : string,
+    workspaceID: string
+}
+
+type BudgetUpdate = {
+    newBudget: number,
+    jobCode : string,
+    workspaceID : string
+}
+
+type TimeUpdate = {
+    timeBudget: number,
+    jobCode   : string,
+    workspaceID :string
+}
+
+type CurrencySymbolUpdate = {
+    currencySymbol : string,
+    jobCode        : string
+    workspaceID    : string
+}
+
+type startDateUpdate = {
+    startDateISO : string,
+    jobCode      : string,
+    workspaceID  : string
+}
+
+type specialisms = {
+    specialisms: string[],
+    employeeID: string
+} 
+
 type JobRow = {
   jobCode: string;
   description: string | null;
@@ -566,6 +601,115 @@ export function updateForecastEntryDays(input: ForecastWriteInput) {
     days,
     month,
   };
+}
+
+export function updateCost(input :CostUpdate) {
+    const { cost, jobCode, workspaceID} = input
+    db.prepare(
+        `UPDATE Job
+        SET Cost = ?
+        WHERE Job.JobCode = ? AND workspaceID = ?`
+    ).run( cost, jobCode, workspaceID);
+
+    return {
+      message: "Job cost updated",
+      cost,
+      jobCode,
+      workspaceID
+    };
+}
+
+export function updateBudget(input :BudgetUpdate) {
+const { newBudget, jobCode, workspaceID} = input
+    db.prepare(
+        `UPDATE Job
+        SET MonetaryBudget = ?
+        WHERE Job.JobCode = ? AND workspaceID = ?`
+    ).run(newBudget, jobCode, workspaceID);
+
+    return {
+      message: "Job budget updated",
+      newBudget,
+      jobCode,
+      workspaceID
+    };
+}
+
+export function updateTimeBudget(input :TimeUpdate) {
+    const { timeBudget, jobCode, workspaceID} = input
+    db.prepare(
+        `UPDATE Job
+        SET TimeBudget = ?
+        WHERE Job.JobCode = ? AND workspaceID = ?`
+    ).run(timeBudget, jobCode, workspaceID);
+
+    return {
+      message: "Job budget updated",
+      timeBudget,
+      jobCode,
+      workspaceID
+    };
+}
+
+export function updateCurrencySymbol(input :CurrencySymbolUpdate) {
+    const { currencySymbol, jobCode, workspaceID } = input
+    db.prepare(
+        `UPDATE Job
+        SET CurrencySymbol = ?
+        WHERE Job.JobCode = ? AND workspaceID = ?`
+    ).run(currencySymbol, jobCode, workspaceID);
+
+    return {
+      message: "Job budget updated",
+      currencySymbol,
+      jobCode,
+      workspaceID
+    };
+}
+
+export function updateStartTime(input :startDateUpdate) {
+    const { startDateISO, jobCode, workspaceID } = input
+    db.prepare(
+        `UPDATE Job
+        SET StartDate = ?
+        WHERE Job.JobCode = ? AND workspaceID = ?`
+    ).run({ startDateISO, jobCode, workspaceID});
+
+    return {
+      message: "Job budget updated",
+      startDateISO,
+      jobCode,
+      workspaceID
+    };
+}
+
+export function updateEndTime(input :startDateUpdate) {
+    const { startDateISO, jobCode, workspaceID } = input
+    db.prepare(
+        `UPDATE Job
+        SET FinishDate = ?
+        WHERE Job.JobCode = ? AND workspaceID = ?`
+    ).run(startDateISO, jobCode, workspaceID);
+
+    return {
+      message: "Job budget updated",
+      startDateISO,
+      jobCode,
+      workspaceID
+    };
+}
+
+export function addSpecialism(input: specialisms) {
+    const { employeeID } = input;
+    const transaction = db.transaction (() => {
+        input.specialisms.forEach(specialism => {
+            db.prepare(`
+                INSERT INTO EmployeeSpecialisms(EmployeeID, Specialism)
+                VALUES (?,?)
+                `).run(employeeID, specialism)
+        });
+    });
+    transaction();
 }
 
 export function deleteForecastEntry(input: ForecastWriteInput) {

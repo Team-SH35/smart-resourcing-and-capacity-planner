@@ -1,5 +1,5 @@
 import { render, screen, waitFor } from "@testing-library/react";
-import { vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import EmployeeProjects from "../../pages/EmployeeProjects";
 
 vi.mock("react-router-dom", () => ({
@@ -36,7 +36,7 @@ describe("EmployeeProjects", () => {
   const mockEmployee = {
     name: "John Doe",
     specialisms: ["Developer"],
-    excludedFromAI: false, // ✅ FIX
+    excludedFromAI: false, 
   };
 
   const mockJobs = [

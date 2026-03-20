@@ -1,5 +1,5 @@
 import { render, screen, fireEvent } from "@testing-library/react";
-import { vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import IndividualProject from "../../pages/IndividualProject";
 
 

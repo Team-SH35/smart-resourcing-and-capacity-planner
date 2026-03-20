@@ -1,10 +1,8 @@
 import { render, screen, fireEvent } from "@testing-library/react";
-import { vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import EmployeeCard from "../../components/IndividualProject/EmployeeCard";
 
-// --------------------
-// Mock router
-// --------------------
+
 const mockNavigate = vi.fn();
 
 vi.mock("react-router-dom", () => ({

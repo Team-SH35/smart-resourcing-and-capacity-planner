@@ -3,6 +3,7 @@ LangGraph workflow for HR Resource Management Chatbot.
 This implements an agent that can query and update resource allocations.
 """
 
+from datetime import datetime
 from typing import Annotated, TypedDict, Sequence
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage, ToolMessage
 from langchain_openai import ChatOpenAI
@@ -176,7 +177,6 @@ class ResourceManagementAgent:
             if not response_text:
                 response_text = "I have prepared the following changes. Please review and confirm:"
             
-            from datetime import datetime
             for tc in getattr(last_message, "tool_calls", []):
                 proposed_changes.append({
                     "id": tc["id"],

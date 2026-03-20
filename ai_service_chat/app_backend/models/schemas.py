@@ -1,5 +1,3 @@
-#TBC i'm gonna check in with Aidan about this later but putting this as a temp model
-
 from datetime import datetime
 from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field

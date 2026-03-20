@@ -673,7 +673,7 @@ export function updateStartTime(input :startDateUpdate) {
         `UPDATE Job
         SET StartDate = ?
         WHERE Job.JobCode = ? AND workspaceID = ?`
-    ).run({ startDateISO, jobCode, workspaceID});
+    ).run(startDateISO, jobCode, workspaceID);
 
     return {
       message: "Job budget updated",

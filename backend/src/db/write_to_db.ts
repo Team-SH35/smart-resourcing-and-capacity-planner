@@ -78,7 +78,7 @@ export function writeExcelToDB(workspaceID: string, excelData: ParsedExcelInfo) 
         `);
 
         const insertForecast = db.prepare(`
-            INSERT INTO ForecastEntry (
+            INSERT OR REPLACE INTO ForecastEntry (
                 EmployeeID, JobCode, Cost, Days,
                 Days_allocated_jan , Days_allocated_feb , Days_allocated_mar , Days_allocated_apr ,
                 Days_allocated_may , Days_allocated_jun , Days_allocated_jul , Days_allocated_sep ,

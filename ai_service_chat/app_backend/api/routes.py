@@ -22,7 +22,7 @@ async def get_agent():
     if _agent is None:
         backend_url = os.getenv("BACKEND_URL", "http://localhost:3001")
         tools = get_resource_tools(backend_url)
-        _agent = create_agent(tools=tools)
+        _agent = create_agent(tools=tools, backend_url=backend_url)
 
     return _agent
 
@@ -81,6 +81,25 @@ async def approve_change(session_id: str):
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error approving change: {str(e)}")
+
+
+@router.post("/undo-change/{session_id}", response_model=ChatResponse, response_model_by_alias=True)
+async def undo_change(session_id: str):
+    """Undo the last approved change for a session."""
+    try:
+        agent = await get_agent()
+        result = await agent.undo_change(session_id)
+
+        return ChatResponse(
+            id=str(uuid.uuid4()),
+            message="Change Undone",
+            response=result["response"],
+            timestamp=datetime.utcnow(),
+            session_id=session_id,
+            proposed_changes=None,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error undoing change: {str(e)}")
 
 
 @router.post("/reject-change/{session_id}", response_model=ChatResponse, response_model_by_alias=True)

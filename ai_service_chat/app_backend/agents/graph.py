@@ -13,6 +13,18 @@ from langgraph.checkpoint.memory import MemorySaver
 import os
 
 
+WRITE_TOOL_NAMES = {
+    "create_forecast_entry",
+    "update_forecast_entry",
+    "delete_forecast_entry",
+    "update_job_cost",
+    "update_job_monetary_budget",
+    "update_job_time_budget",
+    "update_job_start_date",
+    "update_job_end_date",
+}
+
+
 class AgentState(TypedDict):
     """State of the agent workflow."""
     messages: Annotated[Sequence[BaseMessage], add_messages]
@@ -54,9 +66,8 @@ class ResourceManagementAgent:
         # Create the graph
         workflow = StateGraph(AgentState)
 
-        write_tool_names = {"create_forecast_entry", "update_forecast_entry", "delete_forecast_entry", "update_job_cost", "update_job_monetary_budget", "update_job_time_budget", "update_job_start_date", "update_job_end_date"}
-        read_tools = [t for t in self.tools if t.name not in write_tool_names]
-        write_tools = [t for t in self.tools if t.name in write_tool_names]
+        read_tools = [t for t in self.tools if t.name not in WRITE_TOOL_NAMES]
+        write_tools = [t for t in self.tools if t.name in WRITE_TOOL_NAMES]
 
         # Add nodes
         workflow.add_node("agent", self._call_model)
@@ -113,8 +124,7 @@ class ResourceManagementAgent:
 
         # If there are tool calls, route them properly
         if hasattr(last_message, "tool_calls") and last_message.tool_calls:
-            write_tool_names = {"create_forecast_entry", "update_forecast_entry", "delete_forecast_entry", "update_job_cost", "update_job_monetary_budget", "update_job_time_budget", "update_job_start_date", "update_job_end_date"}
-            if any(tc["name"] in write_tool_names for tc in last_message.tool_calls):
+            if any(tc["name"] in WRITE_TOOL_NAMES for tc in last_message.tool_calls):
                 return "write_tools"
             return "tools"
 

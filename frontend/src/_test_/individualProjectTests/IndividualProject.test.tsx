@@ -29,7 +29,6 @@ import {
   getEmployees,
   getJobs,
   getForecastEntries,
-  createForecastEntry,
 } from "../../api/client";
 
 describe("IndividualProject", () => {

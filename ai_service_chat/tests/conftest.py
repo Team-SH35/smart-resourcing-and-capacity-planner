@@ -2,8 +2,6 @@
 import json
 from unittest.mock import AsyncMock, MagicMock
 
-import pytest
-
 
 MOCK_EMPLOYEES = [
     {

@@ -1,6 +1,5 @@
 """Tests that write tools send the correct request payloads."""
-import json
-from unittest.mock import patch, AsyncMock, MagicMock
+from unittest.mock import patch
 
 import pytest
 

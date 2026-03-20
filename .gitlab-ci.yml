@@ -52,3 +52,19 @@ frontend:test:
     - npm ci
   script:
     - npm test
+
+ai_service_chat:lint:
+  stage: Lint
+  script:
+    - cd ai_service_chat
+    - python -m venv .venv
+    - .venv/bin/pip install -r requirements-dev.txt
+    - .venv/bin/flake8 app_backend tests
+
+ai_service_chat:test:
+  stage: Test
+  script:
+    - cd ai_service_chat
+    - python -m venv .venv
+    - .venv/bin/pip install -r requirements.txt -r requirements-dev.txt
+    - .venv/bin/pytest

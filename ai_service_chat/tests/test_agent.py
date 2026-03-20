@@ -1,8 +1,6 @@
 """Tests for ResourceManagementAgent logic."""
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from app_backend.agents.graph import ResourceManagementAgent, create_agent
 
 

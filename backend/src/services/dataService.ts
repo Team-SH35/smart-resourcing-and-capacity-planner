@@ -687,7 +687,7 @@ export function updateEndTime(input :startDateUpdate) {
     const { startDateISO, jobCode, workspaceID } = input
     db.prepare(
         `UPDATE Job
-        SET EndDate = ?
+        SET FinishDate = ?
         WHERE Job.JobCode = ? AND workspaceID = ?`
     ).run(startDateISO, jobCode, workspaceID);
 

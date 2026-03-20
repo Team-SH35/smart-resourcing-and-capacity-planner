@@ -38,7 +38,6 @@ async def chat(
 
         result = await agent.process_message(
             message=message.message,
-            user_id=message.user_id,
             session_id=session_id,
         )
 

@@ -1,7 +1,7 @@
 import { useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
 import EmployeeSchedule from "../components/IndividualProject/EmployeeSchedule";
-import type { ForecastEntry, Employee } from "../components/data/types";
+import type { ForecastEntry, Employee, JobCode } from "../components/data/types";
 import { createForecastEntry } from "../api/client";
 
 import {
@@ -18,7 +18,7 @@ export default function IndividualProject() {
   const { jobCode } = useParams();
 
   const [employees, setEmployees] = useState<Employee[]>([]);
-  const [jobs, setJobs] = useState<any[]>([]);
+  const [jobs, setJobs] = useState<JobCode[]>([]);
   const [forecastEntries, setForecastEntries] = useState<ForecastEntry[]>([]);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [sortBy, setSortBy] = useState<SortOption>("name-asc");
@@ -46,7 +46,7 @@ export default function IndividualProject() {
 
   if (!jobCode) return null;
 
-  const job = jobs.find((j: any) => String(j.jobCode) === String(jobCode));
+  const job = jobs.find((j: JobCode) => String(j.jobCode) === String(jobCode));
 
   const monthKey = currentDate.toLocaleString("default", { month: "long" });
 
@@ -60,15 +60,6 @@ export default function IndividualProject() {
     setForecastEntries(await getForecastEntries());
   };
 
-    const availableEmployees = employees.filter(
-    e =>
-      !forecastEntries.some(
-        f =>
-          f.employeeName === e.name &&
-          f.jobCode === jobCode &&
-          f.month === monthKey
-      )
-  );
 
   const createAllocation = async () => {
     if (!selectedEmployee) return;
@@ -207,7 +198,7 @@ export default function IndividualProject() {
                 className="w-full border rounded px-3 py-2"
               >
                 <option value="">Select employee</option>
-                {employees.map((e: any) => (
+                {employees.map((e) => (
                   <option key={e.name} value={e.name}>
                     {e.name}
                   </option>

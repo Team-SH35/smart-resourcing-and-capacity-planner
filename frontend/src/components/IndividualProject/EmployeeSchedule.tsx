@@ -2,6 +2,25 @@ import { useMemo, useState } from "react";
 import type { Employee, ForecastEntry } from "../data/types";
 import EmployeeRow from "./EmployeeRow";
 
+type SortOption = "name-asc" | "name-desc" | "days-asc" | "days-desc";
+
+interface Props {
+  employees: Employee[];
+  forecastEntries: ForecastEntry[];
+  currentDate: Date;
+  jobCode: string;
+  sortBy: SortOption;
+  filtersOpen: boolean;
+  setFiltersOpen: (open: boolean) => void;
+  onUpdateAllocation: (employeeName: string, newDays: number) => void;
+  onDeleteAllocation: (employeeName: string) => void;
+}
+
+type EmployeeWithDays = {
+  employee: Employee;
+  daysAllocated: number;
+};
+
 export default function EmployeeSchedule({
   employees,
   forecastEntries,
@@ -11,11 +30,8 @@ export default function EmployeeSchedule({
   filtersOpen,
   setFiltersOpen,
   onUpdateAllocation,
-  onDeleteAllocation
-}: any) {
-
-
-  
+  onDeleteAllocation,
+}: Props) {
   const monthKey = currentDate.toLocaleString("default", {
     month: "long",
   });
@@ -29,64 +45,70 @@ export default function EmployeeSchedule({
   const [searchName, setSearchName] = useState("");
   const [specialismFilter, setSpecialismFilter] = useState("");
 
-  const employeesForMonth = useMemo(() => {
-    return employees
-      .map((employee: Employee) => {
-        const entry = forecastEntries.find(
-          (f: ForecastEntry) =>
-            f.employeeName?.toLowerCase() === employee.name.toLowerCase() &&
-            f.jobCode === jobCode &&
-            f.month?.toLowerCase() === monthKey.toLowerCase()
-        );
+  // ✅ Build clean typed array (no nulls)
+  const employeesForMonth = useMemo<EmployeeWithDays[]>(() => {
+    return employees.flatMap((employee) => {
+      const entry = forecastEntries.find(
+        (f) =>
+          f.employeeName?.toLowerCase() === employee.name.toLowerCase() &&
+          f.jobCode === jobCode &&
+          f.month?.toLowerCase() === monthKey.toLowerCase()
+      );
 
-        if (!entry || entry.days === 0) return null;
+      if (!entry || entry.days === 0) return [];
 
-        return {
+      return [
+        {
           employee,
           daysAllocated: entry.days,
-        };
-      })
-      .filter(Boolean);
+        },
+      ];
+    });
   }, [employees, forecastEntries, jobCode, monthKey]);
 
-  const specialisms = [
-    ...new Set(employees.flatMap((e: Employee) => e.specialisms)),
-  ] as string[];
+  const specialisms: string[] = [
+    ...new Set(employees.flatMap((e) => e.specialisms)),
+  ];
 
-  const displayedEmployees = employeesForMonth
-    .filter((f: any) =>
-      f.employee.name.toLowerCase().includes(searchName.toLowerCase())
-    )
-    .filter((f: any) =>
-      !specialismFilter || f.employee.specialisms.includes(specialismFilter)
-    )
-    .sort((a: any, b: any) => {
-      switch (sortBy) {
-        case "name-asc":
-          return a.employee.name.localeCompare(b.employee.name);
+  // ✅ Filter + sort (fully typed)
+  const displayedEmployees = useMemo<EmployeeWithDays[]>(() => {
+    return employeesForMonth
+      .filter((f) =>
+        f.employee.name.toLowerCase().includes(searchName.toLowerCase())
+      )
+      .filter(
+        (f) =>
+          !specialismFilter ||
+          f.employee.specialisms.includes(specialismFilter)
+      )
+      .sort((a, b) => {
+        switch (sortBy) {
+          case "name-asc":
+            return a.employee.name.localeCompare(b.employee.name);
 
-        case "name-desc":
-          return b.employee.name.localeCompare(a.employee.name);
+          case "name-desc":
+            return b.employee.name.localeCompare(a.employee.name);
 
-        case "days-asc":
-          return a.daysAllocated - b.daysAllocated;
+          case "days-asc":
+            return a.daysAllocated - b.daysAllocated;
 
-        case "days-desc":
-          return b.daysAllocated - a.daysAllocated;
+          case "days-desc":
+            return b.daysAllocated - a.daysAllocated;
 
-        default:
-          return 0;
-      }
-    });
+          default:
+            return 0;
+        }
+      });
+  }, [employeesForMonth, searchName, specialismFilter, sortBy]);
 
-    const maxDays = Math.max(
-      ...employeesForMonth.map((e: any) => e.daysAllocated),
-      1 
-    );
+  // ✅ Safe max calculation
+  const maxDays = useMemo(() => {
+    return Math.max(...employeesForMonth.map((e) => e.daysAllocated), 1);
+  }, [employeesForMonth]);
 
   return (
     <div className="space-y-4 relative">
-      {displayedEmployees.map(({ employee, daysAllocated }: any) => (
+      {displayedEmployees.map(({ employee, daysAllocated }) => (
         <EmployeeRow
           key={employee.name}
           employee={employee}
@@ -117,7 +139,7 @@ export default function EmployeeSchedule({
               className="border rounded w-full px-3 py-2"
             >
               <option value="">All Specialisms</option>
-              {specialisms.map((s: string) => (
+              {specialisms.map((s) => (
                 <option key={s}>{s}</option>
               ))}
             </select>

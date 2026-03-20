@@ -413,6 +413,152 @@ async def delete_forecast_entry(
             return json.dumps({"error": f"Failed with status {response.status_code}", "text": response.text})
 
 
+@tool
+async def update_job_cost(
+    job_code: str,
+    cost: float,
+) -> str:
+    """
+    Update the daily cost/rate for a job.
+
+    Args:
+        job_code: Job code to update (e.g. "P001")
+        cost: New cost/rate value for the job
+
+    Returns:
+        JSON string with update result or error
+    """
+    payload = {
+        "cost": cost,
+        "jobCode": job_code,
+        "workspaceID": _workspace_id(),
+    }
+
+    async with httpx.AsyncClient() as client:
+        response = await client.post(f"{_backend_url}/api/update-cost", json=payload)
+        try:
+            return json.dumps(response.json())
+        except Exception:
+            return json.dumps({"error": f"Failed with status {response.status_code}", "text": response.text})
+
+
+@tool
+async def update_job_monetary_budget(
+    job_code: str,
+    new_budget: float,
+) -> str:
+    """
+    Update the monetary budget for a job.
+
+    Args:
+        job_code: Job code to update (e.g. "P001")
+        new_budget: New monetary budget value
+
+    Returns:
+        JSON string with update result or error
+    """
+    payload = {
+        "newBudget": new_budget,
+        "jobCode": job_code,
+        "workspaceID": _workspace_id(),
+    }
+
+    async with httpx.AsyncClient() as client:
+        response = await client.post(f"{_backend_url}/api/update-monetary-budget", json=payload)
+        try:
+            return json.dumps(response.json())
+        except Exception:
+            return json.dumps({"error": f"Failed with status {response.status_code}", "text": response.text})
+
+
+@tool
+async def update_job_time_budget(
+    job_code: str,
+    time_budget: float,
+) -> str:
+    """
+    Update the time budget (in days) for a job.
+
+    Args:
+        job_code: Job code to update (e.g. "P001")
+        time_budget: New time budget in days
+
+    Returns:
+        JSON string with update result or error
+    """
+    payload = {
+        "timeBudget": time_budget,
+        "jobCode": job_code,
+        "workspaceID": _workspace_id(),
+    }
+
+    async with httpx.AsyncClient() as client:
+        response = await client.post(f"{_backend_url}/api/update-time-budget", json=payload)
+        try:
+            return json.dumps(response.json())
+        except Exception:
+            return json.dumps({"error": f"Failed with status {response.status_code}", "text": response.text})
+
+
+@tool
+async def update_job_start_date(
+    job_code: str,
+    start_date: str,
+) -> str:
+    """
+    Update the start date for a job.
+
+    Args:
+        job_code: Job code to update (e.g. "P001")
+        start_date: New start date in ISO format (e.g. "2024-03-01")
+
+    Returns:
+        JSON string with update result or error
+    """
+    payload = {
+        "startDate": start_date,
+        "jobCode": job_code,
+        "workspaceID": _workspace_id(),
+    }
+
+    async with httpx.AsyncClient() as client:
+        response = await client.post(f"{_backend_url}/api/update-start-date", json=payload)
+        try:
+            return json.dumps(response.json())
+        except Exception:
+            return json.dumps({"error": f"Failed with status {response.status_code}", "text": response.text})
+
+
+@tool
+async def update_job_end_date(
+    job_code: str,
+    end_date: str,
+) -> str:
+    """
+    Update the end date for a job.
+
+    Args:
+        job_code: Job code to update (e.g. "P001")
+        end_date: New end date in ISO format (e.g. "2024-06-30")
+
+    Returns:
+        JSON string with update result or error
+    """
+    payload = {
+        "endDate": end_date,
+        "jobCode": job_code,
+        "workspaceID": _workspace_id(),
+    }
+
+    async with httpx.AsyncClient() as client:
+        response = await client.post(f"{_backend_url}/api/update-end-date", json=payload)
+        try:
+            return json.dumps(response.json())
+        except Exception:
+            return json.dumps({"error": f"Failed with status {response.status_code}", "text": response.text})
+
+
+
 def get_resource_tools(backend_url: str) -> List:
     """Get list of resource management tools for LangGraph."""
     set_backend_url(backend_url)
@@ -428,4 +574,9 @@ def get_resource_tools(backend_url: str) -> List:
         create_forecast_entry,
         update_forecast_entry,
         delete_forecast_entry,
+        update_job_cost,
+        update_job_monetary_budget,
+        update_job_time_budget,
+        update_job_start_date,
+        update_job_end_date,
     ]

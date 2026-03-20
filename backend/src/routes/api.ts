@@ -15,6 +15,7 @@ import {
   updateBudget,
   updateTimeBudget,
   updateCurrencySymbol,
+  updateStartTime,
 } from "../services/dataService";
 import parseExcelInfo from "../excel-utils/parse_excel";
 import { writeExcelToDB } from "../db/write_to_db";
@@ -284,7 +285,7 @@ router.post("/update-currency-symbol", async (req, res) => {
     console.error("POST /api/forecast-entries failed:", error);
 
     const message =
-      error instanceof Error ? error.message : "Failed to update Time Budget";
+      error instanceof Error ? error.message : "Failed to update currency symbol";
 
     if (
       message.includes("not found") ||
@@ -294,7 +295,41 @@ router.post("/update-currency-symbol", async (req, res) => {
       return res.status(400).json({ error: message });
     }
 
-    return res.status(500).json({ error: "Failed to update job time budget" });
+    return res.status(500).json({ error: "Failed to update job currency symbol" });
+  }
+})
+
+router.post("/update-start-date", async (req, res) => {
+  try {
+    const { startTime, jobCode, workspaceID } = req.body;
+
+    if (!startTime || !jobCode || workspaceID) {
+      return res.status(400).json({
+        error: "newBudget, workspaceID and jobCode are required",
+      });  
+    }
+
+    const startDateISO = new Date(startTime).toISOString()
+
+  
+    const result = updateStartTime({ startDateISO, jobCode, workspaceID });
+
+    return res.status(201).json(result);
+  } catch (error) {
+    console.error("POST /api/forecast-entries failed:", error);
+
+    const message =
+      error instanceof Error ? error.message : "Failed to update start date";
+
+    if (
+      message.includes("not found") ||
+      message.includes("already exists") ||
+      message.includes("Invalid month")
+    ) {
+      return res.status(400).json({ error: message });
+    }
+
+    return res.status(500).json({ error: "Failed to update job start date" });
   }
 })
 

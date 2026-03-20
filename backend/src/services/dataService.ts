@@ -37,6 +37,12 @@ type CurrencySymbolUpdate = {
     workspaceID    : string
 }
 
+type startDateUpdate = {
+    startDateISO : string,
+    jobCode      : string,
+    workspaceID  : string
+}
+
 type JobRow = {
   jobCode: string;
   description: string | null;
@@ -651,6 +657,22 @@ export function updateCurrencySymbol(input :CurrencySymbolUpdate) {
     return {
       message: "Job budget updated",
       currencySymbol,
+      jobCode,
+      workspaceID
+    };
+}
+
+export function updateStartTime(input :startDateUpdate) {
+    const { startDateISO, jobCode, workspaceID } = input
+    db.prepare(
+        `UPDATE Job
+        SET StartDate = ?
+        WHERE Job.JobCode = ? AND workspaceID = ?`
+    ).run({ startDateISO, jobCode, workspaceID});
+
+    return {
+      message: "Job budget updated",
+      startDateISO,
       jobCode,
       workspaceID
     };

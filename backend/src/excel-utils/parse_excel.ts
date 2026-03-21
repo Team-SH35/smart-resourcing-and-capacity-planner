@@ -156,8 +156,6 @@ export default async function parseExcelInfo(
     row = worksheet.getRow(++currentRow);
   }
 
-  console.log(parsed_excel_data.forecast_entries[0].name);
-
   return parsed_excel_data;
 }
 

@@ -8,7 +8,6 @@ import { ParsedExcelInfo } from "../excel-utils/parse_excel";
 export function writeExcelToDB(workspaceID: string, excelData: ParsedExcelInfo) {
   const transaction = db.transaction(() => {
     // Make sure the workspace exists before inserting related data.
-    console.log("Inserting Workspace:", workspaceID);
     db.prepare(`
       INSERT OR IGNORE INTO Workspace (WorkspaceID)
       VALUES (?)
@@ -51,14 +50,17 @@ export function writeExcelToDB(workspaceID: string, excelData: ParsedExcelInfo) 
       ad.dec.work ?? 0, ad.dec.HYPO ?? 0
     );
 
-    // Insert job rows. IGNORE prevents duplicate JobCode inserts from crashing the import.
+    // Insert job rows. All fields from the parsed Excel are written.
+    // IGNORE prevents duplicate JobCode inserts from crashing the import.
     const insertJob = db.prepare(`
       INSERT OR IGNORE INTO Job (
         JobCode, Description, BusinessUnit,
+        ResourceBu, JobOrigin, ReplyEntity,
+        customer, t_code,
         TimeBudget, CurrencySymbol, MonetaryBudget,
         StartDate, FinishDate, WorkspaceID
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     for (const job of excelData.jobs) {
@@ -71,6 +73,11 @@ export function writeExcelToDB(workspaceID: string, excelData: ParsedExcelInfo) 
         job.job_code,
         job.description ?? "",
         job.business_unit ?? "",
+        job.resource_bu ?? "",
+        job.job_origin ?? "",
+        job.reply_entity ?? "",
+        job.customer ?? "",
+        job.t_code ?? "",
         null,
         null,
         null,
@@ -88,19 +95,19 @@ export function writeExcelToDB(workspaceID: string, excelData: ParsedExcelInfo) 
 
     // Insert forecast rows.
     // Each row represents one employee/job pairing, with monthly allocation values.
+    // Column order matches the chronological month order: jan → dec.
     const insertForecast = db.prepare(`
       INSERT OR REPLACE INTO ForecastEntry (
         EmployeeID, JobCode, Cost, Days,
         Days_allocated_jan, Days_allocated_feb, Days_allocated_mar, Days_allocated_apr,
-        Days_allocated_may, Days_allocated_jun, Days_allocated_jul, Days_allocated_sep,
-        Days_allocated_aug, Days_allocated_oct, Days_allocated_nov, Days_allocated_dec,
+        Days_allocated_may, Days_allocated_jun, Days_allocated_jul, Days_allocated_aug,
+        Days_allocated_sep, Days_allocated_oct, Days_allocated_nov, Days_allocated_dec,
         WorkspaceID
       )
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     for (const employee of excelData.employees) {
-      console.log("Inserting Employee:", employee.employeeID, employee.name);
       insertEmployee.run(employee.employeeID, employee.name, workspaceID);
 
       // Find all forecast rows for the current employee.
@@ -132,16 +139,12 @@ export function writeExcelToDB(workspaceID: string, excelData: ParsedExcelInfo) 
           alloc[4],  // may
           alloc[5],  // jun
           alloc[6],  // jul
-          alloc[7],  // sep
-          alloc[8],  // aug
+          alloc[7],  // aug
+          alloc[8],  // sep
           alloc[9],  // oct
           alloc[10], // nov
           alloc[11], // dec
           workspaceID
-        );
-
-        console.log(
-          `Inserted ForecastEntry: EmployeeID=${employee.employeeID}, JobCode=${forecast_entry.job_code}`
         );
       }
     }

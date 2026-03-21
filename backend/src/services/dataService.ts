@@ -677,7 +677,7 @@ export function updateForecastEntryDays(input: ForecastWriteInput) {
 }
 
 export function updateCost(input :CostUpdate) {
-    const { cost, jobCode, workspaceID} = input
+    const { cost, employeeID, jobCode, workspaceID} = input
     db.prepare(
         `UPDATE ForecastEntry
         SET Cost = ?
@@ -785,7 +785,7 @@ export function updateCurrencySymbol(input: CurrencySymbolUpdate) {
   };
 }
 
-export function updateStartTime(input :startDateUpdate) {
+export function updateStartTime(input :StartDateUpdate) {
     const { startDateISO, jobCode, workspaceID } = input
     db.prepare(
         `UPDATE Job

@@ -1,5 +1,4 @@
 """Tests that tools call the correct backend URLs."""
-import json
 from unittest.mock import patch
 
 import pytest
@@ -14,9 +13,7 @@ from tests.conftest import (
 from app_backend.tools.resource_tools import (
     get_employees,
     get_jobs,
-    get_employee_availability,
     get_project_staffing,
-    get_understaffed_projects,
     get_capacity_forecast,
     get_schedule,
     set_backend_url,

@@ -17,10 +17,11 @@ def set_backend_url(url: str):
     global _backend_url
     _backend_url = url
 
+
 def _workspace_id() -> int:
-    # Returns the workspace ID from the WORKSPACE_ID environment variable,
-    # defaulting to 1 if not set. Used to scope API calls to a specific workspace.
+    """Returns the workspace ID from the WORKSPACE_ID env var, defaulting to 1."""
     return int(os.getenv("WORKSPACE_ID", "1"))
+
 
 @tool
 async def get_employees(
@@ -54,6 +55,7 @@ async def get_employees(
 
     return json.dumps(employees)
 
+
 @tool
 async def get_jobs(
     business_unit: Optional[str] = None,
@@ -84,6 +86,7 @@ async def get_jobs(
 
     return json.dumps(jobs)
 
+
 @tool
 async def get_employee_availability(
     specialism: Optional[str] = None,
@@ -105,27 +108,21 @@ async def get_employee_availability(
     async with httpx.AsyncClient() as client:
         url_emp = f"{_backend_url}/api/employees"
         url_fc = f"{_backend_url}/api/forecast-entries"
-        print(f"[get_employee_availability] Fetching {url_emp} and {url_fc} with workspace_id {workspace_id}", flush=True)
         try:
             emp_resp, forecast_resp = await asyncio.gather(
                 client.get(url_emp, params={"workspaceID": workspace_id}),
                 client.get(url_fc, params={"workspaceID": workspace_id}),
             )
-            print(f"[get_employee_availability] emp status: {emp_resp.status_code}, forecast status: {forecast_resp.status_code}", flush=True)
         except Exception as e:
-            print(f"[get_employee_availability] HTTPX EXCEPTION: {str(e)}", flush=True)
             return json.dumps({"error": f"Exception: {str(e)}"})
 
         if not emp_resp.is_success:
-            print(f"[get_employee_availability] emp failed: {emp_resp.text}", flush=True)
             return json.dumps({"error": "Failed to fetch employees"})
         if not forecast_resp.is_success:
-            print(f"[get_employee_availability] forecast failed: {forecast_resp.text}", flush=True)
             return json.dumps({"error": "Failed to fetch forecast"})
 
         employees = emp_resp.json()
         forecast = forecast_resp.json()
-        print(f"[get_employee_availability] Fetched {len(employees)} employees and {len(forecast)} forecast entries", flush=True)
 
     if month:
         m_prefix = month.lower()[:3]
@@ -156,6 +153,7 @@ async def get_employee_availability(
         })
 
     return json.dumps(result)
+
 
 @tool
 async def get_project_staffing(
@@ -190,6 +188,7 @@ async def get_project_staffing(
 
     return json.dumps(rows)
 
+
 @tool
 async def get_understaffed_projects(
     month: Optional[str] = None,
@@ -223,7 +222,6 @@ async def get_understaffed_projects(
         m_prefix = month.lower()[:3]
         forecast = [f for f in forecast if f.get("month", "").lower().startswith(m_prefix)]
 
-    # Sum allocated days per job
     allocated_map = {}
     for entry in forecast:
         jc = entry["jobCode"]
@@ -246,6 +244,7 @@ async def get_understaffed_projects(
             })
 
     return json.dumps(understaffed)
+
 
 @tool
 async def get_capacity_forecast(
@@ -270,20 +269,21 @@ async def get_capacity_forecast(
         response = await client.get(f"{_backend_url}/api/forecast-entries", params=params)
         if not response.is_success:
             return json.dumps({"error": f"Backend error: {response.status_code}"})
-        
+
         rows = response.json()
 
     if month:
         m_prefix = month.lower()[:3]
         rows = [r for r in rows if r.get("month", "").lower().startswith(m_prefix)]
-        
+
     if employee_name:
         rows = [r for r in rows if r.get("employeeName", "").lower() == employee_name.lower()]
 
     if job_code:
         rows = [r for r in rows if r.get("jobCode") == job_code]
-        
+
     return json.dumps(rows)
+
 
 @tool
 async def get_schedule(
@@ -304,14 +304,15 @@ async def get_schedule(
         response = await client.get(f"{_backend_url}/api/forecast-entries", params=params)
         if not response.is_success:
             return json.dumps({"error": f"Backend error: {response.status_code}"})
-        
+
         rows = response.json()
 
     if month:
         m_prefix = month.lower()[:3]
         rows = [r for r in rows if r.get("month", "").lower().startswith(m_prefix)]
-        
+
     return json.dumps(rows)
+
 
 @tool
 async def create_forecast_entry(
@@ -322,7 +323,7 @@ async def create_forecast_entry(
 ) -> str:
     """
     Create a new forecast entry for an employee on a job for a specific month.
-    
+
     Args:
         employee_name: Employee name to allocate (e.g. "John Doe")
         job_code: Job code to assign the employee to
@@ -347,6 +348,7 @@ async def create_forecast_entry(
         except Exception:
             return json.dumps({"error": f"Failed with status {response.status_code}", "text": response.text})
 
+
 @tool
 async def update_forecast_entry(
     employee_name: str,
@@ -356,7 +358,7 @@ async def update_forecast_entry(
 ) -> str:
     """
     Update the days for an existing forecast entry.
-    
+
     Args:
         employee_name: Employee name to update
         job_code: Job code for the update
@@ -381,6 +383,7 @@ async def update_forecast_entry(
         except Exception:
             return json.dumps({"error": f"Failed with status {response.status_code}", "text": response.text})
 
+
 @tool
 async def delete_forecast_entry(
     employee_name: str,
@@ -389,7 +392,7 @@ async def delete_forecast_entry(
 ) -> str:
     """
     Delete a forecast entry for an employee on a job in a specific month.
-    
+
     Args:
         employee_name: Employee name to delete allocation for
         job_code: Job code
@@ -556,7 +559,6 @@ async def update_job_end_date(
             return json.dumps(response.json())
         except Exception:
             return json.dumps({"error": f"Failed with status {response.status_code}", "text": response.text})
-
 
 
 def get_resource_tools(backend_url: str) -> List:

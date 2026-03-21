@@ -1,7 +1,6 @@
 """Tests for workspace ID env var behaviour across tools."""
-import json
 import os
-from unittest.mock import patch, call
+from unittest.mock import patch
 
 import pytest
 

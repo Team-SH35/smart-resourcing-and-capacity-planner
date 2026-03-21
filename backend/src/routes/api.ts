@@ -21,6 +21,7 @@ import {
 } from "../services/dataService";
 import parseExcelInfo from "../excel-utils/parse_excel";
 import { writeExcelToDB } from "../db/write_to_db";
+import { exportDbExcel } from "../excel-utils/export_db_to_excel";
 
 const router = Router();
 
@@ -64,6 +65,42 @@ router.get("/forecast-entries", (_req, res) => {
   } catch (error) {
     console.error("GET /api/forecast-entries failed:", error);
     res.status(500).json({ error: "Failed to fetch forecast entries" });
+  }
+});
+
+// Exports current database to excel sheet and sends it to frontend
+router.get("/export-excel-sheet", async (req, res) => {
+  try {
+    const { workspaceID } = req.body;
+
+    // Validate input
+    if (!workspaceID) {
+      return res.status(400).json({ error: "workspaceID is required" });
+    }
+
+    // Generate the Excel workbook (assuming exportDbExcel returns a Promise<Workbook>)
+    const workbook = await exportDbExcel(workspaceID);
+
+    if (!workbook) {
+      return res.status(404).json({ error: "Workbook could not be generated" });
+    }
+
+    // Set headers for Excel file download
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename="forecast.xlsx"'
+    );
+
+    // Stream workbook to response
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    console.error("Error exporting Excel sheet:", error);
+    res.status(500).json({ error: "An error occurred while exporting Excel sheet" });
   }
 });
 

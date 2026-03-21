@@ -113,6 +113,7 @@ export default async function parseExcelInfo(excelFileStream: Readable) : Promis
 
         // If job has not appeared yet add it to jobs array
         if (!registered_jobs.has(getCellString(row.getCell(JOB_CODE_INDEX)))) {
+            console.log(getCellString(row.getCell(RESOURCE_BU_INDEX)))
             parsed_excel_data.jobs.push({
                 job_code        : getCellString(row.getCell(JOB_CODE_INDEX)),
                 description     : getCellString(row.getCell(DESCRIPTION_INDEX)),
@@ -135,8 +136,6 @@ export default async function parseExcelInfo(excelFileStream: Readable) : Promis
 
         row = worksheet.getRow(++currentRow);
     } 
-
-    console.log(parsed_excel_data.forecast_entries[0].name)
 
     return parsed_excel_data;
 }

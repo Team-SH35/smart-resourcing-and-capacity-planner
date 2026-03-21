@@ -118,33 +118,32 @@ function getEmployees(workspaceID: string): Employee[] {
 }
 
 function getForecastEntries(workspaceID: string, employeeID: string): ForecastEntry[] {
+  
   return db.prepare(`
     SELECT 
-    Employee.Name,
-    Job.ResourceBu,
-    Job.Customer,
-    Job.ReplyEntity,
-    Job.BusinessUnit,
-    Job.JobOrigin,
-    Job.t_code,
-    ForecastEntry.JobCode,
-    Job.Description,
-    ForecastEntry.Days_allocated_jan,
-    ForecastEntry.Days_allocated_feb,
-    ForecastEntry.Days_allocated_mar,
-    ForecastEntry.Days_allocated_apr,
-    ForecastEntry.Days_allocated_may,
-    ForecastEntry.Days_allocated_jun,
-    ForecastEntry.Days_allocated_jul,
-    ForecastEntry.Days_allocated_aug,
-    ForecastEntry.Days_allocated_sep,
-    ForecastEntry.Days_allocated_oct,
-    ForecastEntry.Days_allocated_nov,
-    ForecastEntry.Days_allocated_dec
-    FROM ForecastEntry
-    INNER JOIN Job ON Job.JobCode = ForecastEntry.JobCode
-    INNER JOIN Employee ON Employee.EmployeeID = ForecastEntry.EmployeeID
-    WHERE ForecastEntry.WorkspaceID = ? AND ForecastEntry.EmployeeID = ?
+    Employee.Name AS Name,
+    Job.ResourceBu As ResourceBu,
+    Job.Customer AS Customer,
+    Job.ReplyEntity AS ReplyEntity,
+    Job.BusinessUnit AS BusinessUnit,
+    Job.JobOrigin AS JobOrigin,
+    Job.t_code AS t_code,
+    ForecastEntry.JobCode AS JobCode,
+    Job.Description AS Description,
+    ForecastEntry.Days_allocated_jan AS Days_allocated_jan,
+    ForecastEntry.Days_allocated_feb AS Days_allocated_feb,
+    ForecastEntry.Days_allocated_mar AS Days_allocated_mar,
+    ForecastEntry.Days_allocated_apr AS Days_allocated_apr,
+    ForecastEntry.Days_allocated_may AS Days_allocated_may,
+    ForecastEntry.Days_allocated_jun AS Days_allocated_jun,
+    ForecastEntry.Days_allocated_jul AS Days_allocated_jul,
+    ForecastEntry.Days_allocated_aug AS Days_allocated_aug,
+    ForecastEntry.Days_allocated_sep AS Days_allocated_sep,
+    ForecastEntry.Days_allocated_oct AS Days_allocated_oct,
+    ForecastEntry.Days_allocated_nov AS Days_allocated_nov,
+    ForecastEntry.Days_allocated_dec AS Days_allocated_dec
+    FROM ForecastEntry, Employee, Job
+    WHERE Job.JobCode = ForecastEntry.JobCode AND Employee.EmployeeID = ForecastEntry.EmployeeID AND ForecastEntry.WorkspaceID = ? AND ForecastEntry.EmployeeID = ?
   `).all(workspaceID, employeeID) as ForecastEntry[];
 }
 
@@ -177,28 +176,18 @@ function writeMonthAllocationDaysToExcel(allocations: MonthAllocations, workshee
 function totalDaysForEmployee(
   cell: Excel.Cell,
   sum_total: number,
-  work_days: number,
-  hypo_days: number,
   employee_start_index: number,
   current_row: number,
   column_letter: string
 ) {
   cell.value = { formula: `SUM(${column_letter}${employee_start_index}:${column_letter}${current_row-1})`, result: sum_total };
 
-  if (sum_total === work_days) {
-    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF92d050" } };
-  } else if (sum_total < hypo_days) {
-    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFC000" } };
-  } else if (sum_total < work_days) {
-    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFF0000" } };
-  }
 }
 
 // ---------------- Forecast Entries ----------------
 export function writeForecastEntries(
   workspaceID: string,
   worksheet: Worksheet,
-  monthAllocations: MonthAllocations
 ) {
   let current_row = 20;
   const employees = getEmployees(workspaceID);
@@ -221,12 +210,38 @@ export function writeForecastEntries(
   employees.forEach(employee => {
     const forecasts = getForecastEntries(workspaceID, employee.EmployeeID);
     const employee_start_index = current_row;
-    console.log(employee.Name + " " + employee.EmployeeID +" " + forecasts.length)
+    //console.log(employee.Name + " " + employee.EmployeeID +" " + forecasts.length)
 
+    if (forecasts.length === 0) {
+      const one_row = worksheet.getRow(current_row);
+
+      one_row.getCell(NAME_INDEX).value = employee.Name
+      one_row.getCell(DESCRIPTION_INDEX).value = "NO FORECAST"
+
+      one_row.getCell(JAN_ALLOCATION_INDEX).value = 0;
+      one_row.getCell(FEB_ALLOCATION_INDEX).value = 0;
+      one_row.getCell(MAR_ALLOCATION_INDEX).value = 0;
+      one_row.getCell(APR_ALLOCATION_INDEX).value = 0;
+      one_row.getCell(MAY_ALLOCATION_INDEX).value = 0;
+      one_row.getCell(JUN_ALLOCATION_INDEX).value = 0;
+      one_row.getCell(JUL_ALLOCATION_INDEX).value = 0;
+      one_row.getCell(AUG_ALLOCATION_INDEX).value = 0;
+      one_row.getCell(SEP_ALLOCATION_INDEX).value = 0;
+      one_row.getCell(OCT_ALLOCATION_INDEX).value = 0;
+      one_row.getCell(NOV_ALLOCATION_INDEX).value = 0;
+      one_row.getCell(DEC_ALLOCATION_INDEX).value = 0;
+      current_row++
+    }
 
     forecasts.forEach(forecast => {
       const row = worksheet.getRow(current_row);
 
+      // Warn about nulls
+    if (!forecast.ResourceBu || !forecast.Customer || !forecast.BusinessUnit) {
+        console.warn(`Row ${current_row}: Job data missing for JobCode ${forecast.JobCode}`);
+    }
+
+      //console.log(forecast.JobOrigin)
       row.getCell(NAME_INDEX).value = forecast.Name;
       row.getCell(RESOURCE_BU_INDEX).value = forecast.ResourceBu;
       row.getCell(CUSTOMER_INDEX).value = forecast.Customer;
@@ -256,11 +271,10 @@ export function writeForecastEntries(
     const totalRow = worksheet.getRow(current_row);
     const mergeRange = `B${current_row}:J${current_row}`;
 
-    totalRow.getCell(2).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF508cd4" } };
     worksheet.mergeCells(mergeRange);
     totalRow.getCell(2).value = `TOTAL - ${employee.Name}`;
 
-    monthColumns.forEach(({ index, field, letter }) => {
+    monthColumns.forEach(({ index, letter }) => {
       let sum_total = 0;
       for (let r = employee_start_index; r < current_row; r++) {
         const val = worksheet.getRow(r).getCell(index).value;
@@ -270,8 +284,6 @@ export function writeForecastEntries(
       totalDaysForEmployee(
         totalRow.getCell(index),
         sum_total,
-        monthAllocations[field],
-        monthAllocations[field.replace("_work", "_hypo") as keyof MonthAllocations],
         employee_start_index,
         current_row,
         letter
@@ -282,7 +294,6 @@ export function writeForecastEntries(
   });
 }
 
-// ---------------- Export Function (returns workbook) ----------------
 export async function exportDbExcel(workspaceID: string): Promise<Excel.Workbook> {
   const workbook = new Excel.Workbook();
   await workbook.xlsx.readFile('./src/excel-utils/out_excel_sheet_template.xlsx');
@@ -290,7 +301,7 @@ export async function exportDbExcel(workspaceID: string): Promise<Excel.Workbook
 
   const monthAllocations = getMonthAllocations(workspaceID);
   writeMonthAllocationDaysToExcel(monthAllocations, worksheet);
-  writeForecastEntries(workspaceID, worksheet, monthAllocations);
+  writeForecastEntries(workspaceID, worksheet);
 
   return workbook; // return workbook instead of saving
 }

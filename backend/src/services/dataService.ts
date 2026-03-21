@@ -1,4 +1,4 @@
-import db  from "../db/db";
+import db from "../db/db";
 import type {
   Employee,
   JobCode,
@@ -7,47 +7,57 @@ import type {
   CalendarProject,
 } from "../types";
 
+// Raw row shape used when reading employees + specialisms from SQL.
 type EmployeeRow = {
+  employeeId: number;
   name: string;
-  specialism: string,
+  specialism: string | null;
   excludeFromAI: number | boolean | null;
 };
 
+// Input for updating forecast cost.
 type CostUpdate = {
-    cost : number,
-    jobCode : string,
-    workspaceID: string
-}
+  cost: number;
+  employeeID: number | string;
+  jobCode: string;
+  workspaceID: number | string;
+};
 
+// Input for updating job monetary budget.
 type BudgetUpdate = {
-    newBudget: number,
-    jobCode : string,
-    workspaceID : string
-}
+  newBudget: number;
+  jobCode: string;
+  workspaceID: number | string;
+};
 
+// Input for updating job time budget.
 type TimeUpdate = {
-    timeBudget: number,
-    jobCode   : string,
-    workspaceID :string
-}
+  timeBudget: number;
+  jobCode: string;
+  workspaceID: number | string;
+};
 
+// Input for updating job currency symbol.
 type CurrencySymbolUpdate = {
-    currencySymbol : string,
-    jobCode        : string
-    workspaceID    : string
-}
+  currencySymbol: string;
+  jobCode: string;
+  workspaceID: number | string;
+};
 
-type startDateUpdate = {
-    startDateISO : string,
-    jobCode      : string,
-    workspaceID  : string
-}
+// Input for updating job dates.
+type StartDateUpdate = {
+  startDateISO: string;
+  jobCode: string;
+  workspaceID: number | string;
+};
 
-type specialisms = {
-    specialisms: string[],
-    employeeID: string
-} 
+// Input for adding employee specialisms.
+type SpecialismsInput = {
+  specialisms: string[];
+  employeeID: number | string;
+};
 
+// SQL result shape for jobs.
 type JobRow = {
   jobCode: string;
   description: string | null;
@@ -60,6 +70,7 @@ type JobRow = {
   finishDate: string | null;
 };
 
+// SQL result shape for forecast-entry read queries.
 type ForecastDbRow = {
   employeeName: string | null;
   jobCode: string;
@@ -80,6 +91,7 @@ type ForecastDbRow = {
   dec: number | null;
 };
 
+// Input used for creating/updating/deleting forecast entries.
 type ForecastWriteInput = {
   employeeName: string;
   jobCode: string;
@@ -87,6 +99,7 @@ type ForecastWriteInput = {
   month?: string;
 };
 
+// Helper lookup shapes.
 type EmployeeLookupRow = {
   employeeId: number;
   workspaceId: number;
@@ -106,10 +119,16 @@ type ForecastMonthValueRow = {
   value: number | null;
 };
 
+/**
+ * Returns a fallback string when a DB field is null or undefined.
+ */
 function safeString(value: string | null | undefined, fallback = ""): string {
   return value ?? fallback;
 }
 
+/**
+ * Checks whether a given table exists in the database.
+ */
 function tableExists(tableName: string): boolean {
   const row = db
     .prepare(
@@ -124,6 +143,10 @@ function tableExists(tableName: string): boolean {
   return Boolean(row);
 }
 
+/**
+ * Checks whether a table contains a specific column.
+ * Useful because some schemas differ slightly between environments.
+ */
 function tableHasColumn(tableName: string, columnName: string): boolean {
   if (!tableExists(tableName)) return false;
 
@@ -134,10 +157,16 @@ function tableHasColumn(tableName: string, columnName: string): boolean {
   return columns.some((column) => column.name === columnName);
 }
 
+/**
+ * Converts a business-unit label into a stable frontend row ID.
+ */
 function businessUnitToRowId(businessUnit: string): string {
   return `team-${businessUnit.toLowerCase().replace(/\s+/g, "-")}`;
 }
 
+/**
+ * Picks a display color for a given business unit.
+ */
 function businessUnitToColor(businessUnit: string): string {
   const key = businessUnit.toLowerCase();
 
@@ -149,6 +178,10 @@ function businessUnitToColor(businessUnit: string): string {
   return "#6B7280";
 }
 
+/**
+ * Normalises many possible month strings into a short key.
+ * Example: "September" -> "sep"
+ */
 function normalizeMonthKey(month?: string): string | null {
   if (!month) return null;
 
@@ -184,11 +217,17 @@ function normalizeMonthKey(month?: string): string | null {
   return monthMap[value] ?? null;
 }
 
+/**
+ * Converts a month name into the corresponding forecast-entry column name.
+ */
 function monthColumnFromInput(month?: string): string | null {
   const key = normalizeMonthKey(month);
   return key ? `Days_allocated_${key}` : null;
 }
 
+/**
+ * Converts a short month key into a human-readable display name.
+ */
 function monthDisplayNameFromKey(key: string): string {
   const displayMap: Record<string, string> = {
     jan: "January",
@@ -208,6 +247,9 @@ function monthDisplayNameFromKey(key: string): string {
   return displayMap[key] ?? key;
 }
 
+/**
+ * Looks up an employee by name and returns their ID + workspace.
+ */
 function getEmployeeByName(employeeName: string): EmployeeLookupRow | undefined {
   return db
     .prepare(`
@@ -220,6 +262,9 @@ function getEmployeeByName(employeeName: string): EmployeeLookupRow | undefined 
     .get(employeeName) as EmployeeLookupRow | undefined;
 }
 
+/**
+ * Looks up a job by code and returns its code + workspace.
+ */
 function getJobByCode(jobCode: string): JobLookupRow | undefined {
   return db
     .prepare(`
@@ -232,6 +277,9 @@ function getJobByCode(jobCode: string): JobLookupRow | undefined {
     .get(jobCode) as JobLookupRow | undefined;
 }
 
+/**
+ * Checks whether a forecast entry already exists for an employee/job pair.
+ */
 function getExistingForecastEntry(
   employeeId: number,
   jobCode: string
@@ -247,6 +295,9 @@ function getExistingForecastEntry(
     .get(employeeId, jobCode) as ForecastExistingRow | undefined;
 }
 
+/**
+ * Reads the current value of a single month column on an existing forecast entry.
+ */
 function getExistingForecastMonthValue(
   employeeId: number,
   jobCode: string,
@@ -263,33 +314,38 @@ function getExistingForecastMonthValue(
   return row?.value ?? null;
 }
 
+/**
+ * Returns employees grouped with all their specialisms.
+ */
 export function getEmployees(): Employee[] {
   if (!tableExists("Employee")) return [];
 
+  // Different schemas may use different casing/naming for the AI exclusion column.
   const excludeExpr = tableHasColumn("Employee", "ExcludeFromAI")
-    ? "ExcludeFromAI"
+    ? "e.ExcludeFromAI"
     : tableHasColumn("Employee", "Exclude_from_AI")
-    ? "Exclude_from_AI"
+    ? "e.Exclude_from_AI"
     : "0";
 
-  // Fetch all employee-specialism pairs
   const rows = db
     .prepare(`
       SELECT
-        Name AS name,
-        Specialism AS specialism,
+        e.EmployeeID AS employeeId,
+        e.Name AS name,
+        es.Specialism AS specialism,
         ${excludeExpr} AS excludeFromAI
-      FROM Employee
-      LEFT JOIN EmployeeSpecialisms ON Employee.EmployeeID = EmployeeSpecialisms.EmployeeID
-      ORDER BY Name ASC
+      FROM Employee e
+      LEFT JOIN EmployeeSpecialisms es ON e.EmployeeID = es.EmployeeID
+      ORDER BY e.Name ASC, es.Specialism ASC
     `)
     .all() as EmployeeRow[];
 
-  // Group by employee
-  const employeesMap = new Map<string, Employee>();
+  // Group rows by employee ID so each employee appears once with an array of specialisms.
+  const employeesMap = new Map<number, Employee>();
 
   for (const row of rows) {
-    const key = row.name;
+    const key = row.employeeId;
+
     if (!employeesMap.has(key)) {
       employeesMap.set(key, {
         name: safeString(row.name),
@@ -297,18 +353,22 @@ export function getEmployees(): Employee[] {
         excludedFromAI: Boolean(row.excludeFromAI),
       });
     }
+
     if (row.specialism != null) {
       employeesMap.get(key)!.specialisms.push(row.specialism);
     }
   }
 
-  // Convert map to array
   return Array.from(employeesMap.values());
 }
 
+/**
+ * Returns all jobs formatted for the frontend.
+ */
 export function getJobCodes(): JobCode[] {
   if (!tableExists("Job")) return [];
 
+  // Support both "customer" and "Customer" column names.
   const hasCustomer = tableHasColumn("Job", "customer");
   const hasCustomerCapitalized = tableHasColumn("Job", "Customer");
 
@@ -348,6 +408,9 @@ export function getJobCodes(): JobCode[] {
   }));
 }
 
+/**
+ * Returns forecast entries flattened by month so the frontend can render each month allocation as its own row.
+ */
 export function getForecastEntries(): ForecastEntry[] {
   if (!tableExists("ForecastEntry") || !tableExists("Employee") || !tableExists("Job")) {
     return [];
@@ -425,6 +488,9 @@ export function getForecastEntries(): ForecastEntry[] {
   return entries;
 }
 
+/**
+ * Returns job rows transformed for a calendar-style UI.
+ */
 export function getCalendarRows(): CalendarRow[] {
   const jobs = getJobCodes();
   const rowsByTeam = new Map<string, CalendarRow>();
@@ -459,6 +525,9 @@ export function getCalendarRows(): CalendarRow[] {
   return Array.from(rowsByTeam.values());
 }
 
+/**
+ * Creates a new forecast entry, or fills in a single month on an existing entry.
+ */
 export function createForecastEntry(input: ForecastWriteInput) {
   const { employeeName, jobCode, days = 0, month } = input;
 
@@ -513,6 +582,7 @@ export function createForecastEntry(input: ForecastWriteInput) {
     };
   }
 
+  // Create a brand new entry with only the requested month populated.
   db.prepare(`
     INSERT INTO ForecastEntry (
       EmployeeID,
@@ -527,8 +597,8 @@ export function createForecastEntry(input: ForecastWriteInput) {
       Days_allocated_may,
       Days_allocated_jun,
       Days_allocated_jul,
-      Days_allocated_sep,
       Days_allocated_aug,
+      Days_allocated_sep,
       Days_allocated_oct,
       Days_allocated_nov,
       Days_allocated_dec
@@ -547,8 +617,8 @@ export function createForecastEntry(input: ForecastWriteInput) {
     monthColumn === "Days_allocated_may" ? days : null,
     monthColumn === "Days_allocated_jun" ? days : null,
     monthColumn === "Days_allocated_jul" ? days : null,
-    monthColumn === "Days_allocated_sep" ? days : null,
     monthColumn === "Days_allocated_aug" ? days : null,
+    monthColumn === "Days_allocated_sep" ? days : null,
     monthColumn === "Days_allocated_oct" ? days : null,
     monthColumn === "Days_allocated_nov" ? days : null,
     monthColumn === "Days_allocated_dec" ? days : null
@@ -563,6 +633,9 @@ export function createForecastEntry(input: ForecastWriteInput) {
   };
 }
 
+/**
+ * Updates the value for one month on an existing forecast entry.
+ */
 export function updateForecastEntryDays(input: ForecastWriteInput) {
   const { employeeName, jobCode, days = 0, month } = input;
 
@@ -611,60 +684,105 @@ export function updateCost(input :CostUpdate) {
         WHERE ForecastEntry.JobCode = ? AND ForecastEntry.EmployeeID = ? AND workspaceID = ?`
     ).run( cost, jobCode, workspaceID);
 
-    return {
-      message: "Job cost updated",
-      cost,
-      jobCode,
-      workspaceID
-    };
+  const result = db
+    .prepare(`
+      UPDATE ForecastEntry
+      SET Cost = ?
+      WHERE JobCode = ? AND EmployeeID = ? AND WorkspaceID = ?
+    `)
+    .run(cost, jobCode, employeeID, workspaceID);
+
+  if (result.changes === 0) {
+    throw new Error(
+      `Forecast entry not found for employeeID "${employeeID}", job "${jobCode}", workspace "${workspaceID}"`
+    );
+  }
+
+  return {
+    message: "Forecast cost updated",
+    cost,
+    employeeID,
+    jobCode,
+    workspaceID,
+  };
 }
 
-export function updateBudget(input :BudgetUpdate) {
-const { newBudget, jobCode, workspaceID} = input
-    db.prepare(
-        `UPDATE Job
-        SET MonetaryBudget = ?
-        WHERE Job.JobCode = ? AND workspaceID = ?`
-    ).run(newBudget, jobCode, workspaceID);
+/**
+ * Updates the monetary budget on a job.
+ */
+export function updateBudget(input: BudgetUpdate) {
+  const { newBudget, jobCode, workspaceID } = input;
 
-    return {
-      message: "Job budget updated",
-      newBudget,
-      jobCode,
-      workspaceID
-    };
+  const result = db
+    .prepare(`
+      UPDATE Job
+      SET MonetaryBudget = ?
+      WHERE JobCode = ? AND WorkspaceID = ?
+    `)
+    .run(newBudget, jobCode, workspaceID);
+
+  if (result.changes === 0) {
+    throw new Error(`Job not found for jobCode "${jobCode}" and workspace "${workspaceID}"`);
+  }
+
+  return {
+    message: "Job budget updated",
+    newBudget,
+    jobCode,
+    workspaceID,
+  };
 }
 
-export function updateTimeBudget(input :TimeUpdate) {
-    const { timeBudget, jobCode, workspaceID} = input
-    db.prepare(
-        `UPDATE Job
-        SET TimeBudget = ?
-        WHERE Job.JobCode = ? AND workspaceID = ?`
-    ).run(timeBudget, jobCode, workspaceID);
+/**
+ * Updates the time budget on a job.
+ */
+export function updateTimeBudget(input: TimeUpdate) {
+  const { timeBudget, jobCode, workspaceID } = input;
 
-    return {
-      message: "Job budget updated",
-      timeBudget,
-      jobCode,
-      workspaceID
-    };
+  const result = db
+    .prepare(`
+      UPDATE Job
+      SET TimeBudget = ?
+      WHERE JobCode = ? AND WorkspaceID = ?
+    `)
+    .run(timeBudget, jobCode, workspaceID);
+
+  if (result.changes === 0) {
+    throw new Error(`Job not found for jobCode "${jobCode}" and workspace "${workspaceID}"`);
+  }
+
+  return {
+    message: "Job time budget updated",
+    timeBudget,
+    jobCode,
+    workspaceID,
+  };
 }
 
-export function updateCurrencySymbol(input :CurrencySymbolUpdate) {
-    const { currencySymbol, jobCode, workspaceID } = input
-    db.prepare(
-        `UPDATE Job
-        SET CurrencySymbol = ?
-        WHERE Job.JobCode = ? AND workspaceID = ?`
-    ).run(currencySymbol, jobCode, workspaceID);
+/**
+ * Updates the currency symbol on a job.
+ */
+export function updateCurrencySymbol(input: CurrencySymbolUpdate) {
+  const { currencySymbol, jobCode, workspaceID } = input;
 
-    return {
-      message: "Job budget updated",
-      currencySymbol,
-      jobCode,
-      workspaceID
-    };
+  const result = db
+    .prepare(`
+      UPDATE Job
+      SET CurrencySymbol = ?
+      WHERE JobCode = ? AND WorkspaceID = ?
+    `)
+    .run(currencySymbol, jobCode, workspaceID);
+
+  if (result.changes === 0) {
+    throw new Error(`Job not found for jobCode "${jobCode}" and workspace "${workspaceID}"`);
+  }
+
+  return {
+    message: "Job currency symbol updated",
+    currencySymbol,
+    jobCode,
+    workspaceID,
+  };
 }
 
 export function updateStartTime(input :startDateUpdate) {
@@ -675,43 +793,81 @@ export function updateStartTime(input :startDateUpdate) {
         WHERE Job.JobCode = ? AND workspaceID = ?`
     ).run(startDateISO, jobCode, workspaceID);
 
-    return {
-      message: "Job budget updated",
-      startDateISO,
-      jobCode,
-      workspaceID
-    };
+  const result = db
+    .prepare(`
+      UPDATE Job
+      SET StartDate = ?
+      WHERE JobCode = ? AND WorkspaceID = ?
+    `)
+    .run(startDateISO, jobCode, workspaceID);
+
+  if (result.changes === 0) {
+    throw new Error(`Job not found for jobCode "${jobCode}" and workspace "${workspaceID}"`);
+  }
+
+  return {
+    message: "Job start date updated",
+    startDateISO,
+    jobCode,
+    workspaceID,
+  };
 }
 
-export function updateEndTime(input :startDateUpdate) {
-    const { startDateISO, jobCode, workspaceID } = input
-    db.prepare(
-        `UPDATE Job
-        SET FinishDate = ?
-        WHERE Job.JobCode = ? AND workspaceID = ?`
-    ).run(startDateISO, jobCode, workspaceID);
+/**
+ * Updates the end date on a job.
+ */
+export function updateEndTime(input: StartDateUpdate) {
+  const { startDateISO, jobCode, workspaceID } = input;
 
-    return {
-      message: "Job budget updated",
-      startDateISO,
-      jobCode,
-      workspaceID
-    };
+  const result = db
+    .prepare(`
+      UPDATE Job
+      SET FinishDate = ?
+      WHERE JobCode = ? AND WorkspaceID = ?
+    `)
+    .run(startDateISO, jobCode, workspaceID);
+
+  if (result.changes === 0) {
+    throw new Error(`Job not found for jobCode "${jobCode}" and workspace "${workspaceID}"`);
+  }
+
+  return {
+    message: "Job end date updated",
+    startDateISO,
+    jobCode,
+    workspaceID,
+  };
 }
 
-export function addSpecialism(input: specialisms) {
-    const { employeeID } = input;
-    const transaction = db.transaction (() => {
-        input.specialisms.forEach(specialism => {
-            db.prepare(`
-                INSERT INTO EmployeeSpecialisms(EmployeeID, Specialism)
-                VALUES (?,?)
-                `).run(employeeID, specialism)
-        });
-    });
-    transaction();
+/**
+ * Adds one or more specialisms to an employee in a transaction.
+ */
+export function addSpecialism(input: SpecialismsInput) {
+  const { employeeID, specialisms } = input;
+
+  const transaction = db.transaction(() => {
+    for (const specialism of specialisms) {
+      db.prepare(`
+        INSERT INTO EmployeeSpecialisms (EmployeeID, Specialism)
+        VALUES (?, ?)
+      `).run(employeeID, specialism);
+    }
+  });
+
+  transaction();
+
+  return {
+    message: "Specialisms added",
+    employeeID,
+    added: specialisms.length,
+  };
 }
 
+/**
+ * Deletes either:
+ * - a single month allocation from a forecast entry, or
+ * - the whole forecast entry if no month is provided.
+ */
 export function deleteForecastEntry(input: ForecastWriteInput) {
   const { employeeName, jobCode, month } = input;
 

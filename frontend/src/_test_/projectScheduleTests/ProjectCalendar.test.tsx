@@ -37,7 +37,6 @@ describe("ProjectCalendar", () => {
     render(
       <ProjectCalendar
         view="week"
-        clientFilter=""
         activeOnly={false}
         teamFilter={[]}
       />
@@ -52,7 +51,6 @@ describe("ProjectCalendar", () => {
     render(
       <ProjectCalendar
         view="week"
-        clientFilter=""
         activeOnly={false}
         teamFilter={[]}
       />
@@ -68,7 +66,6 @@ describe("ProjectCalendar", () => {
     render(
       <ProjectCalendar
         view="week"
-        clientFilter="zzz"
         activeOnly={false}
         teamFilter={[]}
       />
@@ -83,7 +80,6 @@ describe("ProjectCalendar", () => {
     render(
       <ProjectCalendar
         view="week"
-        clientFilter=""
         activeOnly={false}
         teamFilter={[]}
       />

@@ -55,6 +55,7 @@ frontend:test:
 
 ai_service_chat:lint:
   stage: Lint
+  image: python:3.11-slim
   script:
     - cd ai_service_chat
     - python -m venv .venv
@@ -63,6 +64,7 @@ ai_service_chat:lint:
 
 ai_service_chat:test:
   stage: Test
+  image: python:3.11-slim
   script:
     - cd ai_service_chat
     - python -m venv .venv

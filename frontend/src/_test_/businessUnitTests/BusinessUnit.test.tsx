@@ -58,6 +58,7 @@ const makeJob = (overrides: Partial<JobCode> = {}): JobCode => ({
   customerName: "Client",
   businessUnit: "Developers",
   startDate: "2024-01-01",
+  finishDate:"",
   ...overrides,
 });
 

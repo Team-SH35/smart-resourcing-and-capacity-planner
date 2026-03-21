@@ -82,7 +82,7 @@ export default function EmployeeCard({
       {/* MODAL */}
       {editOpen && (
         <div
-          className="fixed inset-0 bg-black/40 flex items-center justify-center"
+          className="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
           onClick={() => setEditOpen(false)}
         >
           <div

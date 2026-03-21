@@ -6,83 +6,117 @@ import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
 import ChatbotOverlay from "../chatbot/chatbotOverlay";
 
-import { employees } from "../data/employees";
-import { jobCodes } from "../data/jobCodes";
+import { getEmployees, getJobs } from "../../api/client";
+
+/* ================= TYPES ================= */
 
 type AppLayoutProps = {
   children: ReactNode;
 };
 
+type Employee = {
+  id: number;
+  name: string;
+};
+
+type Job = {
+  jobCode: string;
+  description: string;
+  customerName: string;
+};
+
+/* ================= COMPONENT ================= */
+
 export default function AppLayout({ children }: AppLayoutProps) {
   const [query, setQuery] = useState("");
   const [isFocused, setIsFocused] = useState(false);
-  const navigate = useNavigate();
 
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [jobCodes, setJobCodes] = useState<Job[]>([]);
+
+  const navigate = useNavigate();
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   const tokens = ["employee", "project", "client"];
-  const tokenMatch = query.match(/^(employee|project|client):(.*)$/i);
 
+  /* ================= LOAD DATA ================= */
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const empData = await getEmployees();
+        const jobData = await getJobs();
+
+        setEmployees(empData);
+        setJobCodes(jobData);
+      } catch (err) {
+        console.error("Failed to load search data", err);
+      }
+    };
+
+    loadData();
+  }, []);
+
+  /* ================= SEARCH LOGIC ================= */
+
+  const tokenMatch = query.match(/^(employee|project|client):(.*)$/i);
   const tokenType = tokenMatch?.[1];
   const tokenValue = tokenMatch?.[2]?.toLowerCase().trim() || "";
 
-  const clients = [...new Set(jobCodes.map(job => job.customerName))];
+  const clients = [
+    ...new Set(jobCodes.map((job) => job.customerName || "Unknown")),
+  ];
 
-  let employeeResults: typeof employees = [];
-  let projectResults: typeof jobCodes = [];
+  let employeeResults: Employee[] = [];
+  let projectResults: Job[] = [];
   let clientResults: string[] = [];
-  let clientProjectResults: typeof jobCodes = [];
+  let clientProjectResults: Job[] = [];
 
   if (tokenType === "employee") {
-    employeeResults = employees.filter(emp =>
+    employeeResults = employees.filter((emp) =>
       emp.name.toLowerCase().includes(tokenValue)
     );
-  }
-
-  else if (tokenType === "project") {
-    projectResults = jobCodes.filter(job =>
+  } else if (tokenType === "project") {
+    projectResults = jobCodes.filter((job) =>
       job.description.toLowerCase().includes(tokenValue)
     );
-  }
-
-  else if (tokenType === "client") {
-
-    // show matching client names
-    clientResults = clients.filter(client =>
+  } else if (tokenType === "client") {
+    clientResults = clients.filter((client) =>
       client.toLowerCase().includes(tokenValue)
     );
 
-    // if exact client typed → show their projects
     const matchedClient = clients.find(
-      c => c.toLowerCase() === tokenValue
+      (c) => c.toLowerCase() === tokenValue
     );
 
     if (matchedClient) {
       clientProjectResults = jobCodes.filter(
-        job => job.customerName === matchedClient
+        (job) => job.customerName === matchedClient
       );
     }
-  }
+  } else if (query !== "") {
+    const lower = query.toLowerCase();
 
-  else if (query !== "") {
-    employeeResults = employees.filter(emp =>
-      emp.name.toLowerCase().includes(query.toLowerCase())
+    employeeResults = employees.filter((emp) =>
+      emp.name.toLowerCase().includes(lower)
     );
 
-    projectResults = jobCodes.filter(job =>
-      job.description.toLowerCase().includes(query.toLowerCase())
+    projectResults = jobCodes.filter((job) =>
+      job.description.toLowerCase().includes(lower)
     );
   }
+
+  /* ================= NAVIGATION ================= */
 
   const goToResult = (type: string, value: string) => {
     setQuery(`${type}: ${value}`);
 
     if (type === "employee") {
-      navigate(`/Employee/${encodeURIComponent(value)}`);
+      navigate(`/employee/${encodeURIComponent(value)}`);
     }
 
     if (type === "project") {
-      navigate(`/Project/${encodeURIComponent(value)}`);
+      navigate(`/project/${encodeURIComponent(value)}`);
     }
 
     if (type === "client") {
@@ -96,7 +130,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
     const search = query.toLowerCase().trim();
     if (!search) return;
 
-    const employeeMatch = employees.find(emp =>
+    const employeeMatch = employees.find((emp) =>
       emp.name.toLowerCase().includes(search)
     );
 
@@ -106,7 +140,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
       return;
     }
 
-    const projectMatch = jobCodes.find(job =>
+    const projectMatch = jobCodes.find((job) =>
       job.description.toLowerCase().includes(search)
     );
 
@@ -120,26 +154,27 @@ export default function AppLayout({ children }: AppLayoutProps) {
     setIsFocused(false);
   };
 
+  /* ================= CLICK OUTSIDE ================= */
+
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
+    const handleClickOutside = (event: MouseEvent) => {
       if (
         wrapperRef.current &&
         !wrapperRef.current.contains(event.target as Node)
       ) {
         setIsFocused(false);
       }
-    }
+    };
 
     document.addEventListener("mousedown", handleClickOutside);
-
-    return () => {
+    return () =>
       document.removeEventListener("mousedown", handleClickOutside);
-    };
   }, []);
+
+  /* ================= UI ================= */
 
   return (
     <div className="flex h-screen bg-slate-50 pt-16">
-
       <header className="fixed top-0 left-0 right-0 z-10">
         <Topbar />
       </header>
@@ -151,15 +186,14 @@ export default function AppLayout({ children }: AppLayoutProps) {
       </aside>
 
       <main className="flex-1 flex flex-col overflow-y-auto">
-
         {/* Search */}
         <div className="flex justify-center p-10 relative" ref={wrapperRef}>
           <input
             type="text"
             value={query}
-            onChange={e => setQuery(e.target.value)}
+            onChange={(e) => setQuery(e.target.value)}
             onFocus={() => setIsFocused(true)}
-            onKeyDown={e => {
+            onKeyDown={(e) => {
               if (e.key === "Enter") handleSearch();
             }}
             placeholder="Search for employee, project or client..."
@@ -168,10 +202,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
 
           {isFocused && (
             <div className="absolute top-16 w-full max-w-5xl bg-white border rounded-xl shadow mt-8 z-20">
-
-              {/* Token suggestions */}
+              {/* Tokens */}
               {query === "" &&
-                tokens.map(t => (
+                tokens.map((t) => (
                   <div
                     key={t}
                     onClick={() => setQuery(`${t}:`)}
@@ -182,47 +215,20 @@ export default function AppLayout({ children }: AppLayoutProps) {
                   </div>
                 ))}
 
-              {/* Employee results */}
-              {query !== "" && (tokenType === "employee" || !tokenType) &&
-                employeeResults.map(emp => (
-                  <div
-                    key={emp.name}
-                    onClick={() => goToResult("employee", emp.name)}
-                    className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex justify-between"
-                  >
-                    <span>{emp.name}</span>
-                    <span className="text-xs text-gray-500">employee</span>
-                  </div>
-                ))}
+              {/* Employees */}
+              {employeeResults.map((emp) => (
+                <div
+                  key={emp.id}
+                  onClick={() => goToResult("employee", emp.name)}
+                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex justify-between"
+                >
+                  <span>{emp.name}</span>
+                  <span className="text-xs text-gray-500">employee</span>
+                </div>
+              ))}
 
-              {/* Project results */}
-              {query !== "" && (tokenType === "project" || !tokenType) &&
-                projectResults.map(job => (
-                  <div
-                    key={job.jobCode}
-                    onClick={() => goToResult("project", job.jobCode)}
-                    className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex justify-between"
-                  >
-                    <span>{job.description}</span>
-                    <span className="text-xs text-gray-500">project</span>
-                  </div>
-                ))}
-
-              {/* Client results */}
-              {query !== "" && tokenType === "client" &&
-                clientResults.map(client => (
-                  <div
-                    key={client}
-                    onClick={() => goToResult("client", client)}
-                    className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex justify-between"
-                  >
-                    <span>{client}</span>
-                    <span className="text-xs text-gray-500">client</span>
-                  </div>
-                ))}
-
-              {/* Client project results */}
-              {clientProjectResults.map(job => (
+              {/* Projects */}
+              {projectResults.map((job) => (
                 <div
                   key={job.jobCode}
                   onClick={() => goToResult("project", job.jobCode)}
@@ -233,14 +239,35 @@ export default function AppLayout({ children }: AppLayoutProps) {
                 </div>
               ))}
 
+              {/* Clients */}
+              {clientResults.map((client) => (
+                <div
+                  key={client}
+                  onClick={() => goToResult("client", client)}
+                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex justify-between"
+                >
+                  <span>{client}</span>
+                  <span className="text-xs text-gray-500">client</span>
+                </div>
+              ))}
+
+              {/* Client Projects */}
+              {clientProjectResults.map((job) => (
+                <div
+                  key={job.jobCode}
+                  onClick={() => goToResult("project", job.jobCode)}
+                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex justify-between"
+                >
+                  <span>{job.description}</span>
+                  <span className="text-xs text-gray-500">project (client)</span>
+                </div>
+              ))}
             </div>
           )}
         </div>
 
         <div className="flex-1 p-1">{children}</div>
-
       </main>
     </div>
   );
 }
-

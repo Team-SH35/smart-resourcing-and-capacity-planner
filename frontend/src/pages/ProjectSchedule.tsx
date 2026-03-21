@@ -106,7 +106,6 @@ export default function ProjectSchedule() {
 
       <ProjectCalendar
         view={view}
-        clientFilter={clientFilter}
         activeOnly={activeOnly}
         teamFilter={teamFilter}
       />

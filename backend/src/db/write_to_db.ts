@@ -3,7 +3,7 @@ import { ParsedExcelInfo } from "../excel-utils/parse_excel";
 
 export function writeExcelToDB(workspaceID: string, excelData: ParsedExcelInfo) {
     const transaction = db.transaction(() => {
-        console.log("Inserting Workspace:", workspaceID);
+        //console.log("Inserting Workspace:", workspaceID);
         db.prepare(`
             INSERT OR IGNORE INTO Workspace (WorkspaceID)
             VALUES (?)
@@ -47,22 +47,28 @@ export function writeExcelToDB(workspaceID: string, excelData: ParsedExcelInfo) 
 
         const insertJob = db.prepare(`
             INSERT OR IGNORE INTO Job (
-                JobCode, Description, BusinessUnit,
+                JobCode, ResourceBu, Customer, ReplyEntity, 
+                JobOrigin, t_code, Description, BusinessUnit,
                 TimeBudget, CurrencySymbol, MonetaryBudget,
                 StartDate, FinishDate, WorkspaceID
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `);
 
         for (const job of excelData.jobs) {
             if (!job.job_code) {
-                console.warn("Skipping job with empty JobCode", job);
+                //console.warn("Skipping job with empty JobCode", job);
                 continue;
             }
             insertJob.run(
                 job.job_code,
-                job.description ?? "",
-                job.business_unit ?? "",
+                job.resource_bu,
+                job.customer,
+                job.reply_entity,
+                job.job_origin,
+                job.t_code,
+                job.description,
+                job.business_unit,
                 null,
                 null,
                 null,
@@ -89,14 +95,14 @@ export function writeExcelToDB(workspaceID: string, excelData: ParsedExcelInfo) 
         `);
 
         for (const employee of excelData.employees) {
-            console.log("Inserting Employee:", employee.employeeID, employee.name);
+            //console.log("Inserting Employee:", employee.employeeID, employee.name);
             insertEmployee.run(employee.employeeID, employee.name, workspaceID);
 
             const employeeForecasts = excelData.forecast_entries.filter(f => f.employeeID === employee.employeeID);
 
             for (const forecast_entry of employeeForecasts) {
                 if (!forecast_entry.job_code) {
-                    console.warn("Skipping ForecastEntry with missing JobCode for employee", employee.employeeID);
+                    //console.warn("Skipping ForecastEntry with missing JobCode for employee", employee.employeeID);
                     continue;
                 }
 
@@ -112,7 +118,7 @@ export function writeExcelToDB(workspaceID: string, excelData: ParsedExcelInfo) 
                     alloc[6], alloc[7], alloc[8], alloc[9], alloc[10], alloc[11],
                     workspaceID
                 );
-                console.log(`Inserted ForecastEntry: EmployeeID=${employee.employeeID}, JobCode=${forecast_entry.job_code}`);
+                //console.log(`Inserted ForecastEntry: EmployeeID=${employee.employeeID}, JobCode=${forecast_entry.job_code}`);
             }
 
         }

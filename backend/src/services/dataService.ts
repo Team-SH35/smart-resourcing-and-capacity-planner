@@ -676,11 +676,13 @@ export function updateForecastEntryDays(input: ForecastWriteInput) {
   };
 }
 
-/**
- * Updates the cost field on a specific forecast entry.
- */
-export function updateCost(input: CostUpdate) {
-  const { cost, employeeID, jobCode, workspaceID } = input;
+export function updateCost(input :CostUpdate) {
+    const { cost, employeeID, jobCode, workspaceID} = input
+    db.prepare(
+        `UPDATE ForecastEntry
+        SET Cost = ?
+        WHERE ForecastEntry.JobCode = ? AND ForecastEntry.EmployeeID = ? AND workspaceID = ?`
+    ).run( cost, jobCode, workspaceID);
 
   const result = db
     .prepare(`
@@ -783,11 +785,13 @@ export function updateCurrencySymbol(input: CurrencySymbolUpdate) {
   };
 }
 
-/**
- * Updates the start date on a job.
- */
-export function updateStartTime(input: StartDateUpdate) {
-  const { startDateISO, jobCode, workspaceID } = input;
+export function updateStartTime(input :StartDateUpdate) {
+    const { startDateISO, jobCode, workspaceID } = input
+    db.prepare(
+        `UPDATE Job
+        SET StartDate = ?
+        WHERE Job.JobCode = ? AND workspaceID = ?`
+    ).run(startDateISO, jobCode, workspaceID);
 
   const result = db
     .prepare(`

@@ -16,12 +16,14 @@ interface Props {
   view: CalendarView;
   activeOnly: boolean;
   teamFilter: string[];
+  clientFilter: string;
 }
 
 export default function ProjectCalendar({
   view,
   activeOnly,
   teamFilter,
+  clientFilter
 }: Props) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [jobs, setJobs] = useState<JobCode[]>([]);
@@ -101,9 +103,20 @@ export default function ProjectCalendar({
       mapped = mapped.filter((r) => teamFilter.includes(r.team));
     }
 
+
     mapped = mapped.map((r) => ({
       ...r,
       projects: r.projects.filter((p) => {
+        if (!p.title || p.title.trim() === "") {
+          return false;
+        }
+
+        if (
+          clientFilter &&
+          !p.client?.toLowerCase().includes(clientFilter.toLowerCase())
+        ) {
+          return false;
+        }
 
         if (activeOnly) {
           const start = startOfDay(parseDateUTC(p.startDate));

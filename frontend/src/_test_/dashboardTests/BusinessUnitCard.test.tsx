@@ -35,24 +35,5 @@ describe("BusinessUnitCard", () => {
     expect(mockNavigate).toHaveBeenCalledWith("/businessunit/Dev");
   });
 
-  it("opens edit modal", () => {
-    render(<BusinessUnitCard {...baseProps} />);
 
-    fireEvent.click(screen.getByText("more_horiz"));
-
-    expect(screen.getByText("Edit Business Unit")).toBeInTheDocument();
-  });
-
-  it("adds employee", () => {
-    render(<BusinessUnitCard {...baseProps} />);
-
-    fireEvent.click(screen.getByText("more_horiz"));
-
-    const input = screen.getByPlaceholderText("Add employee");
-
-    fireEvent.change(input, { target: { value: "Jane" } });
-    fireEvent.click(screen.getByText("Add"));
-
-    expect(screen.getByText("Jane")).toBeInTheDocument();
-  });
 });

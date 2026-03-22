@@ -8,9 +8,12 @@ import {
   getEmployees,
   getJobs,
   getForecastEntries,
+  getBusinessUnits,
   updateForecast,
   deleteForecast,
   createForecastEntry,
+  getMonthWorkDays,
+  upsertMonthWorkDays,
 } from "../api/client";
 
 type SortOption = "name-asc" | "name-desc" | "days-asc" | "days-desc";
@@ -27,38 +30,46 @@ export default function EmployeeProjects() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [jobCodes, setJobCodes] = useState<JobCode[]>([]);
   const [forecastEntries, setForecastEntries] = useState<ForecastEntry[]>([]);
+  const [monthWorkDays, setMonthWorkDays] = useState<any | null>(null);
+  const [businessUnits, setBusinessUnits] = useState<string[]>([]);
+
   const [loading, setLoading] = useState(true);
 
   const [addOpen, setAddOpen] = useState(false);
+  const [editMonthOpen, setEditMonthOpen] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+
   const [newJobCode, setNewJobCode] = useState("");
   const [newDays, setNewDays] = useState(0);
 
   const [clientFilter, setClientFilter] = useState("");
   const [teamFilter, setTeamFilter] = useState<string[]>([]);
-  const [filtersOpen, setFiltersOpen] = useState(false);
-
+  const [projectFilter, setProjectFilter] = useState("");
   const [sortBy, setSortBy] = useState<SortOption>("name-asc");
 
-  const businessUnits = ["Developers", "Analytics"];
+  const [monthForm, setMonthForm] = useState<any>({});
+
+  const workspaceID = 1;
 
   useEffect(() => {
     async function load() {
-      try {
-        const [empData, jobData, forecastData] = await Promise.all([
+      const [empData, jobData, forecastData, monthDays, units] =
+        await Promise.all([
           getEmployees(),
           getJobs(),
           getForecastEntries(),
+          getMonthWorkDays(workspaceID).catch(() => null),
+          getBusinessUnits(),
         ]);
 
-        setEmployees(empData);
-        setJobCodes(jobData);
-        setForecastEntries(forecastData);
-        setNewJobCode(jobData[0]?.jobCode || "");
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
+      setEmployees(empData);
+      setJobCodes(jobData);
+      setForecastEntries(forecastData);
+      setBusinessUnits(units);
+      setMonthWorkDays(monthDays);
+      setMonthForm(monthDays || {});
+      setNewJobCode(jobData[0]?.jobCode || "");
+      setLoading(false);
     }
 
     load();
@@ -70,7 +81,6 @@ export default function EmployeeProjects() {
   const employee = employees.find(
     e => e.name.toLowerCase().trim() === decodedName.toLowerCase().trim()
   );
-
   if (!employee) return <p className="p-6">Employee not found</p>;
 
   const monthKey = currentDate.toLocaleString("default", {
@@ -82,132 +92,96 @@ export default function EmployeeProjects() {
     month: "long",
   });
 
-  const filteredForecastEntries = forecastEntries.filter(entry => {
-    if (
-      entry.employeeName.toLowerCase().trim() !==
-      employee.name.toLowerCase().trim()
-    )
-      return false;
-
-    if (entry.month !== currentMonthName) return false;
-    if (entry.days === 0) return false;
-
-    if (
-      clientFilter &&
-      !entry.customer.toLowerCase().includes(clientFilter.toLowerCase())
-    )
-      return false;
-
-    if (teamFilter.length > 0) {
-      const job = jobCodes.find(j => j.jobCode === entry.jobCode);
-      if (!job || !teamFilter.includes(job.businessUnit)) return false;
-    }
-
-    return true;
-  });
-
-  const sortedForecastEntries = [...filteredForecastEntries].sort((a, b) => {
-    switch (sortBy) {
-      case "name-asc":
-        return a.description.localeCompare(b.description);
-      case "name-desc":
-        return b.description.localeCompare(a.description);
-      case "days-asc":
-        return a.days - b.days;
-      case "days-desc":
-        return b.days - a.days;
-      default:
-        return 0;
-    }
-  });
-
-  const monthAllocations = sortedForecastEntries;
+  const keys = [
+    "jan","feb","mar","apr","may","jun",
+    "jul","aug","sep","oct","nov","dec"
+  ];
+  const key = keys[currentDate.getMonth()];
 
   const getWorkingDaysInMonth = (date: Date) => {
-    const year = date.getFullYear();
-    const month = date.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-
-    let workingDays = 0;
-    const current = new Date(firstDay);
-
-    while (current <= lastDay) {
-      const day = current.getDay();
-      if (day !== 0 && day !== 6) workingDays++;
-      current.setDate(current.getDate() + 1);
+    let count = 0;
+    const d = new Date(date.getFullYear(), date.getMonth(), 1);
+    while (d.getMonth() === date.getMonth()) {
+      if (d.getDay() !== 0 && d.getDay() !== 6) count++;
+      d.setDate(d.getDate() + 1);
     }
-
-    return workingDays;
+    return count;
   };
 
-  const workingDays = getWorkingDaysInMonth(currentDate);
+  const workingDays =
+    monthWorkDays?.[`${key}_work`] ??
+    getWorkingDaysInMonth(currentDate);
 
-  const totalAllocated = monthAllocations.reduce(
-    (sum, entry) => sum + entry.days,
-    0
-  );
+  const hypotheticalDays =
+    monthWorkDays?.[`${key}_hypo`] ?? null;
+
+  /* FILTER + SORT */
+  const monthAllocations = forecastEntries
+    .filter(entry =>
+      entry.employeeName === employee.name &&
+      entry.month === currentMonthName &&
+      entry.days > 0 &&
+      (!clientFilter ||
+        entry.customer.toLowerCase().includes(clientFilter.toLowerCase())) &&
+      (!projectFilter ||
+        entry.description.toLowerCase().includes(projectFilter.toLowerCase())) &&
+      (teamFilter.length === 0 ||
+        teamFilter.includes(
+          jobCodes.find(j => j.jobCode === entry.jobCode)?.businessUnit || ""
+        ))
+    )
+    .sort((a, b) => {
+      switch (sortBy) {
+        case "name-asc": return a.description.localeCompare(b.description);
+        case "name-desc": return b.description.localeCompare(a.description);
+        case "days-asc": return a.days - b.days;
+        case "days-desc": return b.days - a.days;
+        default: return 0;
+      }
+    });
 
   const allocatedJobCodes = monthAllocations.map(e => e.jobCode);
   const availableProjects = jobCodes.filter(
     j => !allocatedJobCodes.includes(j.jobCode)
   );
 
-  // API functions
-  const updateAllocation = async (jobCode: string, newDays: number) => {
+  const totalAllocated = monthAllocations.reduce(
+    (sum, entry) => sum + entry.days,
+    0
+  );
+
+  const targetDays = hypotheticalDays ?? workingDays;
+
+  const status =
+    totalAllocated < targetDays
+      ? "Underallocated"
+      : totalAllocated > targetDays
+      ? "Overallocated"
+      : "Fully allocated";
+
+  const remainingCapacity = targetDays - totalAllocated;
+
+  const updateAllocation = async (jobCode: string, days: number) => {
+    await updateForecast({ employeeName: employee.name, jobCode, month: currentMonthName, days });
     setForecastEntries(prev =>
-      prev.map(entry =>
-        entry.employeeName === employee.name &&
-        entry.jobCode === jobCode &&
-        entry.month === currentMonthName
-          ? { ...entry, days: newDays }
-          : entry
+      prev.map(e =>
+        e.jobCode === jobCode && e.month === currentMonthName
+          ? { ...e, days }
+          : e
       )
     );
-
-    await updateForecast({
-      employeeName: employee.name,
-      jobCode,
-      month: currentMonthName,
-      days: newDays,
-    });
   };
 
   const deleteAllocation = async (jobCode: string) => {
+    await deleteForecast({ employeeName: employee.name, jobCode, month: currentMonthName });
     setForecastEntries(prev =>
-      prev.filter(
-        entry =>
-          !(
-            entry.employeeName === employee.name &&
-            entry.jobCode === jobCode &&
-            entry.month === currentMonthName
-          )
+      prev.filter(e =>
+        !(e.jobCode === jobCode && e.month === currentMonthName)
       )
     );
-
-    await deleteForecast({
-      employeeName: employee.name,
-      jobCode,
-      month: currentMonthName,
-    });
   };
 
   const addAllocation = async () => {
-    const job = jobCodes.find(j => j.jobCode === newJobCode);
-    if (!job) return;
-
-    const newEntry: ForecastEntry = {
-      employeeName: employee.name,
-      customer: job.customerName,
-      jobCode: job.jobCode,
-      description: job.description,
-      days: newDays,
-      cost: null,
-      month: currentMonthName,
-    };
-
-    setForecastEntries(prev => [...prev, newEntry]);
-
     await createForecastEntry({
       employeeName: employee.name,
       jobCode: newJobCode,
@@ -215,54 +189,81 @@ export default function EmployeeProjects() {
       days: newDays,
     });
 
+    setForecastEntries(prev => [
+      ...prev,
+      {
+        employeeName: employee.name,
+        jobCode: newJobCode,
+        description: jobCodes.find(j => j.jobCode === newJobCode)?.description || "",
+        customer: jobCodes.find(j => j.jobCode === newJobCode)?.customerName || "",
+        days: newDays,
+        cost: null,
+        month: currentMonthName,
+      },
+    ]);
+
     setAddOpen(false);
     setNewDays(0);
   };
 
+  const saveMonthDays = async () => {
+    await upsertMonthWorkDays({ workspaceID, ...monthForm });
+    setMonthWorkDays(monthForm);
+    setEditMonthOpen(false);
+  };
+
   return (
     <div className="space-y-6 p-6">
+
       {/* HEADER */}
       <div className="flex items-end justify-between mb-4">
         <div className="flex items-end gap-4">
+
+          {/* NAME */}
           <div>
             <h1 className="text-xl font-semibold tracking-tight">
               {employee.name}
             </h1>
-            <p className="text-slate-400">{employee.specialisms[0]}</p>
+            <p className="text-slate-400">
+              {employee.specialisms?.[0] || ""}
+            </p>
           </div>
 
-          {/* STATUS CARD */}
+          {/* ✅ ALLOCATION CARD */}
           <div
             className={`w-60 rounded-lg border px-3 py-2 text-sm font-medium ${
-              totalAllocated < workingDays
+              status === "Underallocated"
                 ? "bg-red-100 text-red-500"
-                : totalAllocated > workingDays
+                : status === "Overallocated"
                 ? "bg-yellow-100 text-yellow-600"
                 : "bg-green-100 text-green-600"
             }`}
           >
             <div className="font-semibold">
-              Status:{" "}
-              {totalAllocated < workingDays
-                ? "Underallocated"
-                : totalAllocated > workingDays
-                ? "Overallocated"
-                : "Fully allocated"}
+              Status: {status}
             </div>
 
             <hr className="my-2 border-current border-[2px] opacity-80" />
 
             <div className="text-xs">
-              {totalAllocated < workingDays
-                ? `${workingDays - totalAllocated} days left`
-                : totalAllocated > workingDays
-                ? `${totalAllocated - workingDays} days over`
-                : "All days allocated"}
+              {status === "Underallocated" &&
+                `${targetDays - totalAllocated} days left`}
+              {status === "Overallocated" &&
+                `${totalAllocated - targetDays} days over`}
+              {status === "Fully allocated" && "All days allocated"}
             </div>
           </div>
         </div>
 
+        {/* ACTIONS */}
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => setAddOpen(true)}
+            className="bg-blue-600 text-white rounded px-3 py-1"
+          >
+            + Add Allocation
+          </button>
+
           <button
             onClick={() => setFiltersOpen(true)}
             className="border rounded px-3 py-1"
@@ -270,9 +271,10 @@ export default function EmployeeProjects() {
             Filters
           </button>
 
+          {/* SORT BACK IN UI */}
           <select
             value={sortBy}
-            onChange={e => setSortBy(e.target.value as SortOption)}
+            onChange={(e) => setSortBy(e.target.value as SortOption)}
             className="border rounded px-3 py-1"
           >
             <option value="name-asc">Name A–Z</option>
@@ -281,109 +283,115 @@ export default function EmployeeProjects() {
             <option value="days-desc">Days High–Low</option>
           </select>
 
-          <button
-            onClick={() => setAddOpen(true)}
-            className="bg-blue-600 text-white rounded px-3 py-1"
-          >
-            + New
-          </button>
         </div>
       </div>
 
-      {/* MONTH */}
+      {/* MONTH HEADER + NAV */}
       <div className="bg-white border rounded-xl overflow-hidden">
         <div className="flex justify-between items-center p-4 border-b">
           <div>
             <div className="font-semibold">{monthKey}</div>
             <div className="text-sm text-slate-400">
-              Working Days: {workingDays}
+              Working: {workingDays}
+              {hypotheticalDays !== null && ` | Hypo: ${hypotheticalDays}`}
+              
+              <button
+                onClick={() => setEditMonthOpen(true)}
+              >
+                <span className="material-icons-outlined text-lg">
+                  more_horiz
+                </span>
+              </button>
             </div>
           </div>
 
           <div className="flex gap-2">
-            <button
-              onClick={() => setCurrentDate(new Date())}
-              className="border px-3 py-1 rounded"
-            >
-              Today
-            </button>
-            <button
-              onClick={() =>
-                setCurrentDate(
-                  prev =>
-                    new Date(prev.getFullYear(), prev.getMonth() - 1, 1)
-                )
-              }
-              className="border px-3 py-1 rounded"
-            >
-              ←
-            </button>
-            <button
-              onClick={() =>
-                setCurrentDate(
-                  prev =>
-                    new Date(prev.getFullYear(), prev.getMonth() + 1, 1)
-                )
-              }
-              className="border px-3 py-1 rounded"
-            >
-              →
-            </button>
+            <button onClick={() => setCurrentDate(new Date())} className="border px-3 py-1 rounded">Today</button>
+            <button onClick={() => setCurrentDate(p => new Date(p.getFullYear(), p.getMonth() - 1, 1))} className="border px-3 py-1 rounded">←</button>
+            <button onClick={() => setCurrentDate(p => new Date(p.getFullYear(), p.getMonth() + 1, 1))} className="border px-3 py-1 rounded">→</button>
           </div>
         </div>
 
         <div className="p-4">
-          {monthAllocations.length === 0 ? (
-            <p className="text-slate-400">No allocations this month</p>
-          ) : (
-            <EmployeeProjectSchedule
-              employeeName={employee.name}
-              forecastEntries={monthAllocations}
-              jobCodes={jobCodes}
-              currentDate={currentDate}
-              onUpdateAllocation={updateAllocation}
-              onDeleteAllocation={deleteAllocation}
-            />
-          )}
+          <EmployeeProjectSchedule
+            employeeName={employee.name}
+            forecastEntries={monthAllocations}
+            jobCodes={jobCodes}
+            currentDate={currentDate}
+            onUpdateAllocation={updateAllocation}
+            onDeleteAllocation={deleteAllocation}
+          />
         </div>
       </div>
 
       {/* ADD MODAL */}
       {addOpen && (
-        <div
-          className="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
-          onClick={() => setAddOpen(false)}
-        >
-          <div
-            className="bg-white rounded-xl p-6 w-96"
-            onClick={e => e.stopPropagation()}
-          >
-            <h2 className="font-semibold mb-4">Add Allocation</h2>
+        <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-[9999]">
+          <div className="bg-white p-6 w-96 space-y-4">
+            <h2 className="font-semibold text-lg">Add Allocation</h2>
 
+            {/* Remaining capacity */}
+            <div className="text-sm text-slate-500">
+              Remaining capacity:{" "}
+              <span
+                className={`font-semibold ${
+                  remainingCapacity < 0
+                    ? "text-red-500"
+                    : remainingCapacity === 0
+                    ? "text-yellow-600"
+                    : "text-green-600"
+                }`}
+              >
+                {remainingCapacity} days
+              </span>
+            </div>
+
+            {/* Project select */}
             <select
               value={newJobCode}
-              onChange={e => setNewJobCode(e.target.value)}
-              className="w-full border mb-4 px-3 py-2"
+              onChange={(e) => setNewJobCode(e.target.value)}
+              className="w-full border px-3 py-2"
             >
-              {availableProjects.map(j => (
+              {availableProjects.map((j) => (
                 <option key={j.jobCode} value={j.jobCode}>
                   {j.description}
                 </option>
               ))}
             </select>
 
+            {/* Days input */}
             <input
               type="number"
               value={newDays}
-              onChange={e => setNewDays(Number(e.target.value))}
-              className="w-full border px-3 py-2 mb-4"
+              onChange={(e) => setNewDays(Number(e.target.value))}
+              className="w-full border px-3 py-2"
+              placeholder="Days"
             />
 
-            <div className="flex justify-end gap-2">
+            {/* Quick fill buttons */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => setNewDays(Math.max(remainingCapacity, 0))}
+                className="border px-2 py-1 text-xs rounded"
+              >
+                Fill Remaining
+              </button>
+            </div>
+
+            {/* Warning */}
+            {newDays > remainingCapacity && (
+              <p className="text-xs text-red-500">
+                This will overallocate the employee
+              </p>
+            )}
+
+            {/* Actions */}
+            <div className="flex justify-end gap-2 pt-2">
               <button onClick={() => setAddOpen(false)}>Cancel</button>
+
               <button
                 onClick={addAllocation}
-                className="bg-blue-600 text-white px-3 py-1"
+                className="bg-blue-600 text-white px-3 py-1 rounded"
               >
                 Add
               </button>
@@ -391,59 +399,93 @@ export default function EmployeeProjects() {
           </div>
         </div>
       )}
+
+      {/* FILTER MODAL */}
       {filtersOpen && (
-        <div
-          className="fixed inset-0 bg-black/30 flex items-center justify-center z-50"
-          onClick={() => setFiltersOpen(false)}
-        >
-          <div
-            className="bg-white rounded-xl p-6 w-96 space-y-4"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2 className="font-semibold text-lg">Filters</h2>
-
-            {/* Client filter */}
+        <div className="fixed inset-0 bg-black/30 flex justify-center items-center z-[9999]">
+          <div className="bg-white rounded-xl p-6 w-96 space-y-3">
+            <h3 className="font-semibold text-lg">Filters</h3>
+            <input placeholder="Client" value={clientFilter} onChange={e => setClientFilter(e.target.value)} className="border rounded-xl w-full px-2 py-1"/>
             <input
-              placeholder="Client name"
-              value={clientFilter}
-              onChange={(e) => setClientFilter(e.target.value)}
-              className="border rounded w-full px-3 py-2"
+              placeholder="Project name"
+              value={projectFilter}
+              onChange={(e) => setProjectFilter(e.target.value)}
+              className="border rounded-xl w-full px-2 py-1"
             />
+            {businessUnits.map((unit) => (
+              <label key={unit} className="flex gap-2">
+                <input
+                  type="checkbox"
+                  checked={teamFilter.includes(unit)}
+                  onChange={(e) =>
+                    setTeamFilter((prev) =>
+                      e.target.checked
+                        ? [...prev, unit]
+                        : prev.filter((u) => u !== unit)
+                    )
+                  }
+                />
+                {unit}
+              </label>
+            ))}
 
-            {/* Business units */}
-            <div className="space-y-2">
-              <div className="font-medium text-sm">Business units</div>
+            <button onClick={() => setFiltersOpen(false)}>Close</button>
+          </div>
+        </div>
+      )}
 
-              {businessUnits.map((unit) => (
-                <label key={unit} className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={teamFilter.includes(unit)}
-                    onChange={(e) =>
-                      setTeamFilter((t) =>
-                        e.target.checked
-                          ? [...t, unit]
-                          : t.filter((x) => x !== unit)
-                      )
-                    }
-                  />
-                  {unit}
-                </label>
-              ))}
+      {/* EDIT MONTH MODAL */}
+      {editMonthOpen && (
+        <div className="fixed inset-0 bg-black/30 flex justify-center items-center z-[9999]">
+          <div className="bg-white p-6 w-[600px] space-y-3">
+            <h2 className="font-semibold">Edit Month Days</h2>
+
+            {/* HEADINGS */}
+            <div className="flex gap-2 mb-2 font-semibold text-sm text-slate-500">
+              <span className="w-16"></span>
+              <span className="flex-1 text-center">Working</span>
+              <span className="flex-1 text-center">Hypothetical</span>
             </div>
 
-      {/* Close button */}
-      <div className="flex justify-end gap-2 pt-4">
-        <button
-          onClick={() => setFiltersOpen(false)}
-          className="border rounded px-3 py-1"
-        >
-          Close
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+            {/* MONTH ROWS */}
+            {keys.map((k) => (
+              <div key={k} className="flex gap-2 items-center">
+                <span className="w-16 font-medium">{k.toUpperCase()}</span>
+
+                <input
+                  type="number"
+                  className="flex-1 border rounded px-2 py-1"
+                  value={monthForm[`${k}_work`] || 0}
+                  onChange={(e) =>
+                    setMonthForm({
+                      ...monthForm,
+                      [`${k}_work`]: Number(e.target.value),
+                    })
+                  }
+                />
+
+                <input
+                  type="number"
+                  className="flex-1 border rounded px-2 py-1"
+                  value={monthForm[`${k}_hypo`] || 0}
+                  onChange={(e) =>
+                    setMonthForm({
+                      ...monthForm,
+                      [`${k}_hypo`]: Number(e.target.value),
+                    })
+                  }
+                />
+              </div>
+            ))}
+
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setEditMonthOpen(false)}>Cancel</button>
+              <button onClick={saveMonthDays} className="bg-blue-600 border rounded text-white px-3 py-1">Save</button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

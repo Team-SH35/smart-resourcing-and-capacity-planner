@@ -2,12 +2,16 @@ import { useState, useEffect } from "react";
 import {
   uploadExcel,
   getJobs,
+  getEmployees,
   updateStartDate,
   updateEndDate,
   updateBudget,
   updateTimeBudget,
   updateCurrencySymbol,
+  addSpecialism,
 } from "../api/client";
+
+/* ================= TYPES ================= */
 
 type JobRow = {
   jobCode: string;
@@ -29,7 +33,15 @@ type JobApi = {
   budgetCostCurrency?: string;
 };
 
+type EmployeeRow = {
+  employeeID: number;
+  name: string;
+  specialisms: string;
+};
+
 const CURRENCIES = ["£", "$", "€"];
+
+/* ================= SETTINGS ================= */
 
 export default function Settings() {
   const [loading, setLoading] = useState(false);
@@ -37,10 +49,17 @@ export default function Settings() {
   const [fileName, setFileName] = useState<string | null>(null);
 
   const [showJobModal, setShowJobModal] = useState(false);
+  const [showEmployeeModal, setShowEmployeeModal] = useState(false);
 
   useEffect(() => {
     const uploaded = sessionStorage.getItem("excelUploaded");
+    const savedFileName = sessionStorage.getItem("excelFileName");
+
     if (uploaded === "true") setHasUploaded(true);
+
+    if (savedFileName) {
+      setFileName(savedFileName);
+    }
   }, []);
 
   const handleFileChange = async (
@@ -56,9 +75,11 @@ export default function Settings() {
       await uploadExcel(file);
 
       sessionStorage.setItem("excelUploaded", "true");
+      sessionStorage.setItem("excelFileName", file.name);
       setHasUploaded(true);
 
       alert("Upload successful");
+      window.location.reload();
     } catch {
       alert("Upload failed");
       setFileName(null);
@@ -91,6 +112,12 @@ export default function Settings() {
               Complete Job Data
             </button>
 
+            <button
+              onClick={() => setShowEmployeeModal(true)}
+              className="border-2 border-blue-600 rounded text-blue-600 px-3 py-1"
+            >
+              Add Employee Specialisms
+            </button>
           </div>
         )}
       </div>
@@ -99,11 +126,14 @@ export default function Settings() {
         <JobModal onClose={() => setShowJobModal(false)} />
       )}
 
+      {showEmployeeModal && (
+        <EmployeeModal onClose={() => setShowEmployeeModal(false)} />
+      )}
     </div>
   );
 }
 
-/* ================= JOB MODAL ================= */
+/* ================= JOB MODAL (UNCHANGED) ================= */
 
 function JobModal({ onClose }: { onClose: () => void }) {
   const [jobs, setJobs] = useState<JobRow[]>([]);
@@ -152,7 +182,6 @@ function JobModal({ onClose }: { onClose: () => void }) {
     );
   };
 
-  // ✅ typed handlers
   const handleInputChange =
     (row: number, field: keyof JobRow) =>
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -242,7 +271,97 @@ function JobModal({ onClose }: { onClose: () => void }) {
           </div>
         ))}
 
-        <button onClick={handleSave}>Save</button>
+        <div className="flex justify-end gap-3">
+          <button onClick={onClose}>Cancel</button>
+          <button onClick={handleSave} className="bg-blue-600 border rounded text-white px-3 py-1">
+            Save
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ================= EMPLOYEE MODAL (NEW) ================= */
+
+function EmployeeModal({ onClose }: { onClose: () => void }) {
+  const [employees, setEmployees] = useState<EmployeeRow[]>([]);
+
+  useEffect(() => {
+    const init = async () => {
+      const data = await getEmployees();
+
+      const mapped = data.map((e: any) => ({
+        employeeID: e.employeeID,
+        name: e.name,
+        specialisms: (e.specialisms || []).join(", "),
+      }));
+
+      setEmployees(mapped);
+    };
+
+    init();
+  }, []);
+
+  const updateField = (row: number, value: string) => {
+    setEmployees((prev) =>
+      prev.map((e, i) =>
+        i === row ? { ...e, specialisms: value } : e
+      )
+    );
+  };
+
+  const handleSave = async () => {
+    const updates: Promise<any>[] = [];
+
+    employees.forEach((emp) => {
+      const specialismsArray = emp.specialisms
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+
+      updates.push(
+        addSpecialism({
+          employeeID: emp.employeeID,
+          specialisms: specialismsArray,
+        })
+      );
+    });
+
+    await Promise.all(updates);
+
+    alert("Specialisms saved");
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
+      <div className="bg-white rounded-xl p-6 w-[600px] max-h-[80vh] overflow-auto space-y-4">
+        <h2 className="text-lg font-semibold">Add Employee Specialisms</h2>
+
+        {employees.map((emp, i) => (
+          <div key={`${emp.employeeID}-${i}`} className="grid grid-cols-2 gap-2">
+            <div>{emp.name}</div>
+
+            <input
+              type="text"
+              placeholder="e.g. React, Finance"
+              value={emp.specialisms}
+              onChange={(e) => updateField(i, e.target.value)}
+              className="border px-2 py-1 rounded"
+            />
+          </div>
+        ))}
+
+        <div className="flex justify-end gap-3">
+          <button onClick={onClose}>Cancel</button>
+          <button
+            onClick={handleSave}
+            className="border-blue-600 rounded text-blue-600 px-3 py-1"
+          >
+            Save
+          </button>
+        </div>
       </div>
     </div>
   );

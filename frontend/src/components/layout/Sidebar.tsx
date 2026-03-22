@@ -14,6 +14,33 @@ export default function Sidebar() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  async function handleExport() {
+    try {
+      const workspaceID = 1;
+
+      const res = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/api/export-excel-sheet?workspaceId=${workspaceID}`
+      );
+
+      if (!res.ok) {
+        throw new Error("Export failed");
+      }
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "Resourcing and Capacity Forecast.xlsx";
+      a.click();
+
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to export Excel");
+    }
+  }
+
   useEffect(() => {
     async function loadBusinessUnits() {
       try {
@@ -106,6 +133,14 @@ export default function Sidebar() {
               {label}
             </NavLink>
           ))}
+
+          {/* ✅ EXPORT BUTTON */}
+          <button
+            onClick={handleExport}
+            className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100 font-medium text-black"
+          >
+            Export
+          </button>
         </nav>
       </div>
     </div>

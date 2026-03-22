@@ -86,10 +86,10 @@ export default function EmployeeCard({
           onClick={() => setEditOpen(false)}
         >
           <div
-            className="bg-white p-6 rounded-xl"
+            className="bg-white rounded-xl w-[200px]  p-6 rounded-xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2>Edit Allocation</h2>
+            <h2 className="font-semibold text-lg">Edit Allocation</h2>
 
             <input
               type="number"
@@ -106,6 +106,7 @@ export default function EmployeeCard({
                   onDeleteAllocation(employee.name);
                   setEditOpen(false);
                 }}
+                className="border rounded px-3 py-1"
               >
                 Delete
               </button>
@@ -115,6 +116,7 @@ export default function EmployeeCard({
                   onUpdateAllocation(employee.name, editedDays);
                   setEditOpen(false);
                 }}
+                className="bg-emerald-500 text-white rounded px-3 py-1"
               >
                 Save
               </button>

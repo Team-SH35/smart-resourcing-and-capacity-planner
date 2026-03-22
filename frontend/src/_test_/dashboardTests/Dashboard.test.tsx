@@ -19,9 +19,5 @@ describe("Dashboard", () => {
     expect(screen.getByText("MockProjectsSection")).toBeInTheDocument();
   });
 
-  it("renders filter button", () => {
-    render(<Dashboard />);
 
-    expect(screen.getByText("Filter")).toBeInTheDocument();
-  });
 });

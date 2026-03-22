@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 interface Employee {
@@ -32,38 +31,9 @@ export default function BusinessUnitCard({
   iconBgColor,
   iconColor,
   avatars,
-  employees: initialEmployees,
-  onSave,
+  employees
 }: BusinessUnitCardProps) {
-  const navigate = useNavigate(); // ✅ NEW
-
-  const [editOpen, setEditOpen] = useState(false);
-  const [unitName, setUnitName] = useState(name);
-  const [employees, setEmployees] = useState<Employee[]>([...initialEmployees]);
-  const [newEmployeeName, setNewEmployeeName] = useState("");
-
-  const handleAddEmployee = () => {
-    if (!newEmployeeName.trim()) return;
-    const newEmp: Employee = {
-      name: newEmployeeName.trim(),
-      specialisms: [],
-      excludedFromAI: false,
-    };
-    setEmployees([...employees, newEmp]);
-    setNewEmployeeName("");
-  };
-
-  const handleDeleteEmployee = (name: string) => {
-    setEmployees(employees.filter(emp => emp.name !== name));
-  };
-
-  const handleSave = () => {
-    if (onSave) {
-      onSave({ name: unitName, icon: icon, employees });
-    }
-    setEditOpen(false);
-  };
-
+  const navigate = useNavigate(); 
  
   const handleNavigate = () => {
     navigate(`/businessunit/${name}`);
@@ -87,15 +57,6 @@ export default function BusinessUnitCard({
           <span className="font-bold text-lg">{name}</span>
         </div>
 
-        <button
-          className="text-slate-400"
-          onClick={(e) => {
-            e.stopPropagation(); // ✅ prevent navigation when clicking edit
-            setEditOpen(true);
-          }}
-        >
-          <span className="material-icons-outlined text-xl">more_horiz</span>
-        </button>
       </div>
 
       <div className="flex items-center">
@@ -120,81 +81,7 @@ export default function BusinessUnitCard({
         })}
       </div>
 
-      {/* Edit Overlay */}
-      {editOpen && (
-        <div
-          className="fixed inset-0 bg-black/30 flex items-center justify-center z-50"
-          onClick={() => setEditOpen(false)}
-        >
-          <div
-            className="bg-white rounded-xl p-6 w-96 space-y-4 max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()} // ✅ prevent closing when clicking inside
-          >
-            <h3 className="text-lg font-bold">Edit Business Unit</h3>
-
-            <label className="flex flex-col">
-              <h4 className="font-semibold mt-4 mb-2">Name</h4>
-              <input
-                type="text"
-                value={unitName}
-                onChange={(e) => setUnitName(e.target.value)}
-                className="border rounded px-2 py-1 mt-1"
-              />
-            </label>
-
-            <div>
-              <h4 className="font-semibold mt-4 mb-2">Employees</h4>
-              <ul className="space-y-2">
-                {employees.map(emp => (
-                  <li
-                    key={emp.name}
-                    className="flex justify-between items-center border p-2 rounded"
-                  >
-                    <span>{emp.name}</span>
-                    <button
-                      className="text-red-500 font-bold"
-                      onClick={() => handleDeleteEmployee(emp.name)}
-                    >
-                      Delete
-                    </button>
-                  </li>
-                ))}
-              </ul>
-
-              <div className="flex gap-2 mt-2">
-                <input
-                  type="text"
-                  placeholder="Add employee"
-                  value={newEmployeeName}
-                  onChange={(e) => setNewEmployeeName(e.target.value)}
-                  className="flex-1 border rounded px-2 py-1"
-                />
-                <button
-                  onClick={handleAddEmployee}
-                  className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
-                >
-                  Add
-                </button>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2 pt-4">
-              <button
-                onClick={() => setEditOpen(false)}
-                className="border rounded px-3 py-1"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSave}
-                className="border rounded px-3 py-1 bg-indigo-500 text-white hover:bg-indigo-600"
-              >
-                Save
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      
     </div>
   );
 }

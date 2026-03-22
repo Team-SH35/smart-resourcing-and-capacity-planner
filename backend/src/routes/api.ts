@@ -76,11 +76,11 @@ router.get("/forecast-entries", (_req, res) => {
 // Exports current database to excel sheet and sends it to frontend
 router.get("/export-excel-sheet", async (req, res) => {
   try {
-    const { workspaceID } = req.body;
+    const workspaceID = req.query.workspaceId as string | undefined;
 
     // Validate input
     if (!workspaceID) {
-      return res.status(400).json({ error: "workspaceID is required" });
+      return res.status(400).json({ error: "workspaceId query param is required" });
     }
 
     // Generate the Excel workbook (assuming exportDbExcel returns a Promise<Workbook>)

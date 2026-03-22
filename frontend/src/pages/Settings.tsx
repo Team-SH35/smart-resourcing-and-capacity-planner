@@ -133,7 +133,7 @@ export default function Settings() {
   );
 }
 
-/* ================= JOB MODAL (UNCHANGED) ================= */
+/* ================= JOB MODAL ================= */
 
 function JobModal({ onClose }: { onClose: () => void }) {
   const [jobs, setJobs] = useState<JobRow[]>([]);
@@ -252,31 +252,80 @@ function JobModal({ onClose }: { onClose: () => void }) {
     <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
       <div className="bg-white rounded-xl p-6 w-[900px] max-h-[80vh] overflow-auto space-y-4">
         <h2 className="text-lg font-semibold">Complete Job Data</h2>
+        <div className="grid grid-cols-7 gap-2 text-sm font-semibold text-slate-500 border-b pb-2">
+          <div>Code</div>
+          <div>Description</div>
+          <div>Start</div>
+          <div>End</div>
+          <div>Budget</div>
+          <div>Time</div>
+          <div>Currency</div>
+        </div>
 
+        {/* DATA ROWS */}
         {jobs.map((job, i) => (
-          <div key={job.jobCode} className="grid grid-cols-7 gap-2">
-            <div>{job.jobCode}</div>
-            <div>{job.description}</div>
+          <div key={job.jobCode}>
 
-            <input type="date" value={job.startDate} onChange={handleInputChange(i, "startDate")} />
-            <input type="date" value={job.endDate} onChange={handleInputChange(i, "endDate")} />
-            <input type="number" value={job.budget} onChange={handleInputChange(i, "budget")} />
-            <input type="number" value={job.timeBudget} onChange={handleInputChange(i, "timeBudget")} />
+            <div className="grid grid-cols-7 gap-2 items-center py-2">
+              <div className="text-sm">{job.jobCode}</div>
+              <div className="text-sm">{job.description}</div>
 
-            <select value={job.currency} onChange={handleSelectChange(i)}>
-              {CURRENCIES.map((c) => (
-                <option key={c}>{c}</option>
-              ))}
-            </select>
+              <input
+                type="date"
+                value={job.startDate}
+                onChange={handleInputChange(i, "startDate")}
+                className="border rounded px-2 py-1"
+              />
+
+              <input
+                type="date"
+                value={job.endDate}
+                onChange={handleInputChange(i, "endDate")}
+                className="border rounded px-2 py-1"
+              />
+
+              <input
+                type="number"
+                value={job.budget}
+                onChange={handleInputChange(i, "budget")}
+                className="border rounded px-2 py-1"
+              />
+
+              <input
+                type="number"
+                value={job.timeBudget}
+                onChange={handleInputChange(i, "timeBudget")}
+                className="border rounded px-2 py-1"
+              />
+
+              <select
+                value={job.currency}
+                onChange={handleSelectChange(i)}
+                className="border rounded px-2 py-1"
+              >
+                {CURRENCIES.map((c) => (
+                  <option key={c}>{c}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* THIN GREY DIVIDER */}
+            <div className="border-t border-slate-200" />
           </div>
         ))}
+        <div className="flex justify-end gap-3 pt-4 border-t mt-4">
+          <button onClick={onClose} className="px-3 py-1 border rounded">
+            Cancel
+          </button>
 
-        <div className="flex justify-end gap-3">
-          <button onClick={onClose}>Cancel</button>
-          <button onClick={handleSave} className="bg-blue-600 border rounded text-white px-3 py-1">
+          <button
+            onClick={handleSave}
+            className="bg-blue-600 text-white px-4 py-1 rounded"
+          >
             Save
           </button>
         </div>
+
       </div>
     </div>
   );

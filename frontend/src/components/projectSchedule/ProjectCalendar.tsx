@@ -130,7 +130,7 @@ export default function ProjectCalendar({
     }));
 
     return mapped;
-  }, [jobs, activeOnly, teamFilter]);
+  }, [jobs, activeOnly, teamFilter, clientFilter]);
 
   return (
     <div className="bg-white border rounded-xl overflow-hidden">

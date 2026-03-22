@@ -54,7 +54,7 @@ type StartDateUpdate = {
 // Input for adding employee specialisms.
 type SpecialismsInput = {
   specialisms: string[];
-  employeeID: number | string;
+  employeeName: string;
 };
 
 // SQL result shape for jobs.
@@ -1041,14 +1041,19 @@ export function upsertMonthWorkDays(input: MonthWorkDaysInput) {
  * Adds one or more specialisms to an employee in a transaction.
  */
 export function addSpecialism(input: SpecialismsInput) {
-  const { employeeID, specialisms } = input;
+  const { employeeName, specialisms } = input;
+
+  const employee = getEmployeeByName(employeeName);
+  if (!employee) {
+    throw new Error(`Employee not found: ${employeeName}`);
+  }
 
   const transaction = db.transaction(() => {
     for (const specialism of specialisms) {
       db.prepare(`
         INSERT INTO EmployeeSpecialisms (EmployeeID, Specialism)
         VALUES (?, ?)
-      `).run(employeeID, specialism);
+      `).run(employee.employeeId, specialism);
     }
   });
 
@@ -1056,7 +1061,7 @@ export function addSpecialism(input: SpecialismsInput) {
 
   return {
     message: "Specialisms added",
-    employeeID,
+    employeeName,
     added: specialisms.length,
   };
 }

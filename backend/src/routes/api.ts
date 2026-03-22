@@ -449,7 +449,7 @@ router.post("/update-end-date", (req, res) => {
 // Add one or more specialisms to an employee.
 router.post("/add-specialisms", (req, res) => {
   try {
-    const { specialisms, employeeID } = req.body;
+    const { specialisms, employeeName } = req.body;
 
     if (!Array.isArray(specialisms) || specialisms.length === 0) {
       return res.status(400).json({
@@ -457,13 +457,13 @@ router.post("/add-specialisms", (req, res) => {
       });
     }
 
-    if (employeeID === undefined || employeeID === null) {
+    if (!employeeName) {
       return res.status(400).json({
-        error: "employeeID is required",
+        error: "employeeName is required",
       });
     }
 
-    const result = addSpecialism({ specialisms, employeeID });
+    const result = addSpecialism({ specialisms, employeeName });
     return res.status(201).json(result);
   } catch (error) {
     console.error("POST /api/add-specialisms failed:", error);

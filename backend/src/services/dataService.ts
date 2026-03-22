@@ -676,9 +676,6 @@ export function updateForecastEntryDays(input: ForecastWriteInput) {
   };
 }
 
-/**
- * Updates the cost field on a specific forecast entry.
- */
 export function updateCost(input: CostUpdate) {
   const { cost, employeeID, jobCode, workspaceID } = input;
 
@@ -783,9 +780,6 @@ export function updateCurrencySymbol(input: CurrencySymbolUpdate) {
   };
 }
 
-/**
- * Updates the start date on a job.
- */
 export function updateStartTime(input: StartDateUpdate) {
   const { startDateISO, jobCode, workspaceID } = input;
 

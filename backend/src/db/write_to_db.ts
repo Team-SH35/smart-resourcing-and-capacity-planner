@@ -1,19 +1,13 @@
 import db from "./db";
 import { ParsedExcelInfo } from "../excel-utils/parse_excel";
 
-/**
- * Writes parsed Excel data into the database for a given workspace.
- * Everything is wrapped in a single transaction so the import is all-or-nothing.
- */
 export function writeExcelToDB(workspaceID: string, excelData: ParsedExcelInfo) {
   const transaction = db.transaction(() => {
-    // Make sure the workspace exists before inserting related data.
     db.prepare(`
       INSERT OR IGNORE INTO Workspace (WorkspaceID)
       VALUES (?)
     `).run(workspaceID);
 
-    // Insert or replace the month work/HYPO values for this workspace.
     const monthWorkStmt = db.prepare(`
       INSERT OR REPLACE INTO Month_Work_Days (
         WorkspaceID,
@@ -65,10 +59,8 @@ export function writeExcelToDB(workspaceID: string, excelData: ParsedExcelInfo) 
 
     for (const job of excelData.jobs) {
       if (!job.job_code) {
-        console.warn("Skipping job with empty JobCode", job);
         continue;
       }
-
       insertJob.run(
         job.job_code,
         job.description ?? "",
@@ -87,15 +79,12 @@ export function writeExcelToDB(workspaceID: string, excelData: ParsedExcelInfo) 
       );
     }
 
-    // Insert employee rows.
     const insertEmployee = db.prepare(`
       INSERT OR IGNORE INTO Employee (EmployeeID, Name, ExcludeFromAI, WorkspaceID)
       VALUES (?, ?, FALSE, ?)
     `);
 
-    // Insert forecast rows.
-    // Each row represents one employee/job pairing, with monthly allocation values.
-    // Column order matches the chronological month order: jan → dec.
+    // Insert forecast rows. Column order is chronological: jan → dec.
     const insertForecast = db.prepare(`
       INSERT OR REPLACE INTO ForecastEntry (
         EmployeeID, JobCode, Cost, Days,
@@ -110,21 +99,15 @@ export function writeExcelToDB(workspaceID: string, excelData: ParsedExcelInfo) 
     for (const employee of excelData.employees) {
       insertEmployee.run(employee.employeeID, employee.name, workspaceID);
 
-      // Find all forecast rows for the current employee.
       const employeeForecasts = excelData.forecast_entries.filter(
         (f) => f.employeeID === employee.employeeID
       );
 
       for (const forecast_entry of employeeForecasts) {
         if (!forecast_entry.job_code) {
-          console.warn(
-            "Skipping ForecastEntry with missing JobCode for employee",
-            employee.employeeID
-          );
           continue;
         }
 
-        // Convert raw Excel values to numbers, defaulting invalid/missing cells to 0.
         const alloc = forecast_entry.resource_allocation.map((v) => Number(v) || 0);
 
         insertForecast.run(
@@ -150,6 +133,5 @@ export function writeExcelToDB(workspaceID: string, excelData: ParsedExcelInfo) 
     }
   });
 
-  // Execute the transaction.
   transaction();
 }

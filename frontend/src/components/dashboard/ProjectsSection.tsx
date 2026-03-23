@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import ProjectCard from "./ProjectCard";
 import AddUnitCard from "./AddUnitCard";
 import EmptyStateCard from "./EmptyStateCard";
@@ -56,7 +56,7 @@ export default function ProjectsSection({
   const [loading, setLoading] = useState<boolean>(true);
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
 
-  const loadProjects = async () => {
+  const loadProjects = useCallback(async () => {
     try {
       const [jobs, employees, forecast] = await Promise.all([
         getJobs(),
@@ -186,11 +186,11 @@ export default function ProjectsSection({
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters]);
 
   useEffect(() => {
     loadProjects();
-  }, [filters]); 
+  }, [filters, loadProjects]); 
 
   return (
     <section>

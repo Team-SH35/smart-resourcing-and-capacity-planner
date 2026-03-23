@@ -74,7 +74,12 @@ return ( <div className="p-6 space-y-4">
 
   {/* HEADER */}
   <div className="flex items-center justify-between">
-    <h1 className="text-xl font-semibold">Projects</h1>
+    <div className="flex items-center gap-1">
+      <span className="material-icons-outlined text-3xl">
+        calendar_month
+      </span>
+      <h1 className="text-2xl font-semibold">Projects</h1>
+    </div>
 
     <div className="flex items-center gap-2">
 
@@ -120,7 +125,12 @@ return ( <div className="p-6 space-y-4">
         onClick={() => setFiltersOpen(true)}
         className="font-medium text-slate-400 border rounded px-3 py-1"
       >
-        Filters
+        <div className="flex justify-end gap-2">
+          <span className="material-icons-outlined text">
+            filter_alt
+          </span>
+          Filters
+        </div>
       </button>
     </div>
   </div>
@@ -137,7 +147,12 @@ return ( <div className="p-6 space-y-4">
   {filtersOpen && (
     <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[9999]">
       <div className="bg-white rounded-xl p-6 w-96 space-y-4">
-        <h2 className="font-semibold text-lg">Filters</h2>
+        <div className="flex gap-2">
+          <span className="material-icons-outlined text">
+            filter_alt
+          </span>
+          <h2 className="font-semibold text-lg">Filters</h2>
+        </div>
 
         <input
           placeholder="Client name"

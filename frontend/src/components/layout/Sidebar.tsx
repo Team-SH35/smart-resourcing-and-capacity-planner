@@ -3,9 +3,9 @@ import { NavLink } from "react-router-dom";
 import { getBusinessUnits } from "../../api/client"; 
 
 const navItems = [
-  { label: "Dashboard", path: "/" },
-  { label: "Projects", path: "/ProjectSchedule" },
-  { label: "Settings", path: "/Settings" },
+  { label: "Dashboard", path: "/", icon:"dashboard" },
+  { label: "Projects", path: "/ProjectSchedule", icon:"calendar_month" },
+  { label: "Settings", path: "/Settings", icon:"settings" },
 ];
 
 export default function Sidebar() {
@@ -60,13 +60,13 @@ export default function Sidebar() {
   }, []);
 
   return (
-    <div className="space-y-6 p-4 w-60 bg-white shadow-md h-screen">
+    <div className="space-y-4 p-4 w-60 bg-white shadow-md h-screen">
       
       {/* Business Unit Dropdown */}
       <div>
         <button
           onClick={() => setOpen(!open)}
-          className="w-full flex items-center justify-between text-xs font-semibold text-slate-400 uppercase tracking-wide"
+          className="w-full flex items-center justify-between text-sm font-semibold text-slate-400 uppercase tracking-wide"
         >
           Business Unit
           <span>{open ? "▲" : "▼"}</span>
@@ -117,7 +117,7 @@ export default function Sidebar() {
       {/* Main Nav Links */}
       <div>
         <nav className="space-y-1">
-          {navItems.map(({ label, path }) => (
+          {navItems.map(({ label, path, icon }) => (
             <NavLink
               key={label}
               to={path}
@@ -130,16 +130,24 @@ export default function Sidebar() {
                 }`
               }
             >
-              {label}
+              <div className="flex items-center gap-3">
+                <span className="material-icons-outlined text-xxl">
+                  {icon}
+                </span>
+                {label}
+              </div>
             </NavLink>
           ))}
-
-          {/* ✅ EXPORT BUTTON */}
           <button
             onClick={handleExport}
             className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100 font-medium text-black"
           >
-            Export
+            <div className="flex items-center gap-3">
+              <span className="material-icons-outlined text-xxl">
+                download
+              </span>
+              Export
+            </div>
           </button>
         </nav>
       </div>

@@ -291,15 +291,15 @@ export async function updateCurrencySymbol({
  
 export async function addSpecialism({
   specialisms,
-  employeeID,
+  employeeName,
 }: {
   specialisms: string[];
-  employeeID: number;
+  employeeName: string;
 }) {
   const res = await fetch(`${API_BASE}/api/add-specialisms`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ specialisms, employeeID }),
+    body: JSON.stringify({ specialisms, employeeName }),
   });
  
   if (!res.ok) throw new Error("Failed to add specialisms");

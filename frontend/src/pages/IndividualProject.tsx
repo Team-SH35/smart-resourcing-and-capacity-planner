@@ -104,7 +104,12 @@ export default function IndividualProject() {
           </button>
 
           <button onClick={() => setFiltersOpen(true)} className="bg-white border rounded px-3 py-1 hover:bg-gray-100">
-            Filters
+            <div className="flex justify-end gap-2">
+              <span className="material-icons-outlined text">
+                filter_alt
+              </span>
+              Filters
+            </div>
           </button>
 
           <select value={sortBy} 

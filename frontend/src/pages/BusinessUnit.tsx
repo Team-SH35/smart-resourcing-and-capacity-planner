@@ -79,7 +79,12 @@ export default function BusinessUnit() {
               onClick={() => setFiltersOpen(true)}
               className="font-medium text-slate-400 border rounded px-3 py-1"
             >
+            <div className="flex gap-2">
+              <span className="material-icons-outlined text">
+                filter_alt
+              </span>
               Filters
+            </div>
             </button>
 
             <select
@@ -107,7 +112,12 @@ export default function BusinessUnit() {
               className="bg-white rounded-xl p-6 w-96 space-y-4"
               onClick={(e) => e.stopPropagation()}
             >
+            <div className="flex gap-2">
+              <span className="material-icons-outlined text">
+                filter_alt
+              </span>
               <h2 className="font-semibold text-lg">Filters</h2>
+            </div>
 
               <input
                 placeholder="Name"

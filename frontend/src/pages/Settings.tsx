@@ -90,15 +90,26 @@ export default function Settings() {
 
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-xl font-semibold">Settings</h1>
+      <div className="flex gap-2">
+        <span className="material-icons-outlined text-xxl">
+          settings
+        </span>
+        <h1 className="text-xl font-semibold">Settings</h1>
+      </div>
 
       <div className="bg-white p-4 rounded-xl border space-y-3">
+        <div className="flex gap-2">
+          <span className="material-icons-outlined text-xxl">
+            upload
+          </span>
+          <h1 className="text-xl font-semibold">Upload</h1>
+        </div>
         <input type="file" onChange={handleFileChange} />
 
         {loading && <p>Uploading...</p>}
 
         {fileName && (
-          <p className="text-sm text-slate-600">
+          <p className="text-lg text-slate-600">
             Loaded file: <span className="font-medium">{fileName}</span>
           </p>
         )}
@@ -331,6 +342,13 @@ function JobModal({ onClose }: { onClose: () => void }) {
   );
 }
 
+type EmployeeApi = {
+  employeeID: number;
+  name: string;
+  specialisms?: string[];
+};
+
+
 /* ================= EMPLOYEE MODAL (NEW) ================= */
 
 function EmployeeModal({ onClose }: { onClose: () => void }) {
@@ -338,9 +356,9 @@ function EmployeeModal({ onClose }: { onClose: () => void }) {
 
   useEffect(() => {
     const init = async () => {
-      const data = await getEmployees();
+      const data = (await getEmployees()) as EmployeeApi[];
 
-      const mapped = data.map((e: any) => ({
+      const mapped = data.map((e) => ({
         employeeID: e.employeeID,
         name: e.name,
         specialisms: (e.specialisms || []).join(", "),
@@ -361,7 +379,7 @@ function EmployeeModal({ onClose }: { onClose: () => void }) {
   };
 
   const handleSave = async () => {
-    const updates: Promise<any>[] = [];
+    const updates: Promise<void>[] = [];
 
     employees.forEach((emp) => {
       const specialismsArray = emp.specialisms
@@ -371,7 +389,7 @@ function EmployeeModal({ onClose }: { onClose: () => void }) {
 
       updates.push(
         addSpecialism({
-          employeeID: emp.employeeID,
+          employeeName: emp.name,
           specialisms: specialismsArray,
         })
       );

@@ -32,7 +32,7 @@ export default function Dashboard() {
     <div className="max-w-[1200px] mx-auto px-6 py-8">
       <div className="mb-10">
         <h1 className="text-2xl font-bold mb-1">
-          Hi SH35,{" "}
+          Hi,{" "}
           <span className="text-slate-400 font-normal">
             here's the current projects
           </span>
@@ -41,22 +41,23 @@ export default function Dashboard() {
 
       <BusinessUnitSection />
 
-      {/* 🔥 FILTER BUTTON */}
+
       <div className="mb-8">
         <button
           onClick={openFilters}
           className="px-4 py-2 bg-card-light dark:bg-card-dark rounded-lg border border-slate-200 dark:border-slate-700 flex items-center gap-2 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
         >
-          <span className="material-icons-outlined text-sm">
+        <div className="flex justify-end gap-2">
+          <span className="material-icons-outlined text">
             filter_alt
           </span>
           Filters
+        </div>
         </button>
       </div>
 
       <ProjectsSection filters={filters} />
 
-      {/* 🔥 FILTER MODAL */}
       {filtersOpen && (
         <div
           className="fixed inset-0 bg-black/30 flex items-center justify-center z-50"
@@ -66,7 +67,12 @@ export default function Dashboard() {
             className="bg-white rounded-xl p-6 w-96 space-y-4"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="font-semibold text-lg">Filters</h2>
+            <div className="flex gap-2">
+              <span className="material-icons-outlined text">
+                filter_alt
+              </span>
+              <h2 className="font-semibold text-lg">Filters</h2>
+            </div>
 
             {/* Client */}
             <div>

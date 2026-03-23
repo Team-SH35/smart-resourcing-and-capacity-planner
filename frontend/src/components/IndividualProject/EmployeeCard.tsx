@@ -74,7 +74,9 @@ export default function EmployeeCard({
             }}
             className="text-slate-400 hover:text-slate-600"
           >
-            ...
+            <span className="material-icons-outlined">
+              more_horiz
+            </span>
           </button>
         </div>
       </div>
@@ -82,23 +84,25 @@ export default function EmployeeCard({
       {/* MODAL */}
       {editOpen && (
         <div
-          className="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
+          className="fixed p-6 inset-0 bg-black/40 flex items-center justify-center z-50"
           onClick={() => setEditOpen(false)}
         >
           <div
-            className="bg-white rounded-xl w-[200px]  p-6 rounded-xl"
+            className="bg-white p-6 rounded-xl w-[200px]  p-6 rounded-xl"
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className="font-semibold text-lg">Edit Allocation</h2>
-
-            <input
-              type="number"
-              min={0}
-              max={daysInMonth}
-              value={editedDays}
-              onChange={(e) => setEditedDays(Number(e.target.value))}
-              className="border p-2 w-full"
-            />
+            <div className="flex items-center gap-2">
+              Days: 
+              <input
+                type="number"
+                min={0}
+                max={daysInMonth}
+                value={editedDays}
+                onChange={(e) => setEditedDays(Number(e.target.value)) }
+                className="border p-2 w-full"
+              />
+            </div>
 
             <div className="flex justify-between mt-4">
               <button
@@ -106,7 +110,7 @@ export default function EmployeeCard({
                   onDeleteAllocation(employee.name);
                   setEditOpen(false);
                 }}
-                className="border rounded px-3 py-1"
+                className="border border-2 border-red-600 rounded text-red-600 px-3 py-1"
               >
                 Delete
               </button>

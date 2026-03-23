@@ -17,6 +17,9 @@ import {
 } from "../api/client";
 
 type SortOption = "name-asc" | "name-desc" | "days-asc" | "days-desc";
+type MonthWorkDays = {
+  [key: string]: number;
+};
 
 export default function EmployeeProjects() {
   const { employeeName } = useParams();
@@ -30,7 +33,7 @@ export default function EmployeeProjects() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [jobCodes, setJobCodes] = useState<JobCode[]>([]);
   const [forecastEntries, setForecastEntries] = useState<ForecastEntry[]>([]);
-  const [monthWorkDays, setMonthWorkDays] = useState<any | null>(null);
+  const [monthWorkDays, setMonthWorkDays] = useState<MonthWorkDays | null>(null);
   const [businessUnits, setBusinessUnits] = useState<string[]>([]);
 
   const [loading, setLoading] = useState(true);
@@ -47,7 +50,7 @@ export default function EmployeeProjects() {
   const [projectFilter, setProjectFilter] = useState("");
   const [sortBy, setSortBy] = useState<SortOption>("name-asc");
 
-  const [monthForm, setMonthForm] = useState<any>({});
+  const [monthForm, setMonthForm] = useState<MonthWorkDays>({});
 
   const workspaceID = 1;
 
@@ -95,7 +98,7 @@ export default function EmployeeProjects() {
   const keys = [
     "jan","feb","mar","apr","may","jun",
     "jul","aug","sep","oct","nov","dec"
-  ];
+  ] as const;
   const key = keys[currentDate.getMonth()];
 
   const getWorkingDaysInMonth = (date: Date) => {
@@ -207,17 +210,26 @@ export default function EmployeeProjects() {
   };
 
   const saveMonthDays = async () => {
-    await upsertMonthWorkDays({ workspaceID, ...monthForm });
+    const payload = {} as Parameters<typeof upsertMonthWorkDays>[0];
+
+    payload.workspaceID = workspaceID;
+
+    keys.forEach((k) => {
+      payload[`${k}_work`] = monthForm[`${k}_work`] ?? 0;
+      payload[`${k}_hypo`] = monthForm[`${k}_hypo`] ?? 0;
+    });
+
+    await upsertMonthWorkDays(payload);
+
     setMonthWorkDays(monthForm);
     setEditMonthOpen(false);
   };
-
   return (
     <div className="space-y-6 p-6">
 
       {/* HEADER */}
       <div className="flex items-end justify-between mb-4">
-        <div className="flex items-end gap-4">
+        <div className="flex items-end gap-10">
 
           {/* NAME */}
           <div>
@@ -243,13 +255,13 @@ export default function EmployeeProjects() {
               Status: {status}
             </div>
 
-            <hr className="my-2 border-current border-[2px] opacity-80" />
+            <hr className=" my-2 border-current border-[2px] opacity-80" />
 
             <div className="text-xs">
               {status === "Underallocated" &&
-                `${targetDays - totalAllocated} days left`}
+                `${targetDays - totalAllocated} days left to allocate`}
               {status === "Overallocated" &&
-                `${totalAllocated - targetDays} days over`}
+                `${totalAllocated - targetDays} days overallocated`}
               {status === "Fully allocated" && "All days allocated"}
             </div>
           </div>
@@ -268,7 +280,12 @@ export default function EmployeeProjects() {
             onClick={() => setFiltersOpen(true)}
             className="border rounded px-3 py-1"
           >
-            Filters
+            <div className="flex justify-end gap-2">
+              <span className="material-icons-outlined text">
+                filter_alt
+              </span>
+              Filters
+            </div>
           </button>
 
           {/* SORT BACK IN UI */}
@@ -404,7 +421,12 @@ export default function EmployeeProjects() {
       {filtersOpen && (
         <div className="fixed inset-0 bg-black/30 flex justify-center items-center z-[9999]">
           <div className="bg-white rounded-xl p-6 w-96 space-y-3">
-            <h3 className="font-semibold text-lg">Filters</h3>
+            <div className="flex gap-2">
+              <span className="material-icons-outlined text">
+                filter_alt
+              </span>
+              <h2 className="font-semibold text-lg">Filters</h2>
+            </div>
             <input placeholder="Client" value={clientFilter} onChange={e => setClientFilter(e.target.value)} className="border rounded-xl w-full px-2 py-1"/>
             <input
               placeholder="Project name"

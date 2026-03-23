@@ -141,10 +141,13 @@ class ResourceManagementAgent:
         snapshot = []
         try:
             async with httpx.AsyncClient() as client:
-                resp = await client.get(f"{self.backend_url}/api/forecast-entries")
-                all_entries = resp.json() if resp.status_code == 200 else []
+                entries_resp = await client.get(f"{self.backend_url}/api/forecast-entries")
+                all_entries = entries_resp.json() if entries_resp.status_code == 200 else []
+                jobs_resp = await client.get(f"{self.backend_url}/api/job-codes")
+                all_jobs = jobs_resp.json() if jobs_resp.status_code == 200 else []
         except Exception:
             all_entries = []
+            all_jobs = []
 
         for tc in tool_calls:
             tool_name = tc["name"]
@@ -165,6 +168,16 @@ class ResourceManagementAgent:
                         current_days = entry.get("days")
                         break
                 snapshot.append({"tool_name": tool_name, "args": args, "before_value": {"days": current_days}})
+
+            elif tool_name == "create_job":
+                # No before state needed — undo just deletes the job
+                snapshot.append({"tool_name": tool_name, "args": args, "before_value": None})
+
+            elif tool_name == "delete_job":
+                # Capture the full job data so we can recreate it on undo
+                job_code = args.get("job_code")
+                job_data = next((j for j in all_jobs if j.get("jobCode") == job_code), None)
+                snapshot.append({"tool_name": tool_name, "args": args, "before_value": job_data})
 
         return snapshot
 
@@ -231,6 +244,36 @@ class ResourceManagementAgent:
                                 results.append(f"Restored **{args.get('employee_name')}**'s allocation on {args.get('job_code')} for {args.get('month')}")
                         else:
                             results.append(f"⚠️ Could not restore deletion for **{args.get('employee_name')}** — original data not captured")
+                    elif tool_name == "create_job":
+                        resp = await client.request(
+                            "DELETE", f"{self.backend_url}/api/jobs/{args.get('job_code')}",
+                            json={"workspaceID": args.get("workspace_id")}
+                        )
+                        if resp.status_code < 300:
+                            results.append(f"Deleted job **{args.get('job_code')}** (undid creation)")
+
+                    elif tool_name == "delete_job":
+                        if before:
+                            resp = await client.post(
+                                f"{self.backend_url}/api/jobs",
+                                json={
+                                    "jobCode": before.get("jobCode"),
+                                    "workspaceID": args.get("workspace_id"),
+                                    "description": before.get("description"),
+                                    "businessUnit": before.get("businessUnit"),
+                                    "customer": before.get("customerName"),
+                                    "startDate": before.get("startDate"),
+                                    "finishDate": before.get("finishDate"),
+                                    "timeBudget": before.get("budgetTime"),
+                                    "monetaryBudget": before.get("budgetCost"),
+                                    "currencySymbol": before.get("budgetCostCurrency"),
+                                }
+                            )
+                            if resp.status_code < 300:
+                                results.append(f"Recreated job **{args.get('job_code')}** (undid deletion)")
+                        else:
+                            results.append(f"⚠️ Could not restore job **{args.get('job_code')}** — original data was not captured")
+
                 except Exception as e:
                     results.append(f"Error undoing {tool_name}: {str(e)}")
 

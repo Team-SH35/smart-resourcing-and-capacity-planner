@@ -291,18 +291,115 @@ export async function updateCurrencySymbol({
  
 export async function addSpecialism({
   specialisms,
-  employeeID,
+  employeeName,
 }: {
   specialisms: string[];
-  employeeID: number;
+  employeeName: string;
 }) {
   const res = await fetch(`${API_BASE}/api/add-specialisms`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ specialisms, employeeID }),
+    body: JSON.stringify({ specialisms, employeeName }),
   });
  
   if (!res.ok) throw new Error("Failed to add specialisms");
   return res.json();
 }
  
+export async function getMonthWorkDays(workspaceId: number) {
+  const res = await fetch(
+    `${API_BASE}/api/month-work-days?workspaceId=${workspaceId}`
+  );
+
+  if (!res.ok) {
+    throw new Error(`Failed to fetch month work days: ${res.status}`);
+  }
+
+  return res.json();
+}
+
+export async function upsertMonthWorkDays(data: {
+  workspaceID: number;
+
+  jan_work: number; jan_hypo: number;
+  feb_work: number; feb_hypo: number;
+  mar_work: number; mar_hypo: number;
+  apr_work: number; apr_hypo: number;
+  may_work: number; may_hypo: number;
+  jun_work: number; jun_hypo: number;
+  jul_work: number; jul_hypo: number;
+  aug_work: number; aug_hypo: number;
+  sep_work: number; sep_hypo: number;
+  oct_work: number; oct_hypo: number;
+  nov_work: number; nov_hypo: number;
+  dec_work: number; dec_hypo: number;
+}) {
+  const res = await fetch(`${API_BASE}/api/month-work-days`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to update month work days: ${res.status}`);
+  }
+
+  return res.json();
+}
+
+export async function exportExcel(workspaceId: string) {
+  const res = await fetch(
+    `${API_BASE}/api/export-excel-sheet?workspaceId=${workspaceId}`
+  );
+
+  if (!res.ok) {
+    throw new Error(`Failed to export Excel: ${res.status}`);
+  }
+
+  return res.blob();
+}
+
+export async function createJob(data: {
+  jobCode: string;
+  description?: string;
+  businessUnit?: string;
+  resourceBu?: string;
+  jobOrigin?: string;
+  replyEntity?: string;
+  customer?: string;
+  tCode?: string;
+  timeBudget?: number;
+  monetaryBudget?: number;
+  currencySymbol?: string;
+  startDate?: string;
+  finishDate?: string;
+  workspaceID: number;
+}) {
+  const res = await fetch(`${API_BASE}/api/jobs`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to create job: ${res.status}`);
+  }
+
+  return res.json();
+}
+
+export async function deleteJob(jobCode: string, workspaceID: number) {
+  const res = await fetch(`${API_BASE}/api/jobs/${jobCode}`, {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ workspaceID }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to delete job: ${res.status}`);
+  }
+
+  return res.json();
+}
+
+

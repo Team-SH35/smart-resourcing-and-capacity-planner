@@ -26,3 +26,18 @@ This is the Express + TypeScript backend for the project. It provides API endpoi
 Install dependencies:
 ```bash
 npm install
+```
+
+Run the development server:
+```bash
+npm run dev
+```
+
+## Running Tests
+
+Run all tests:
+```bash
+npm test
+```
+
+Tests use an in-memory SQLite database and cover all API endpoints. No running server or real database is needed.

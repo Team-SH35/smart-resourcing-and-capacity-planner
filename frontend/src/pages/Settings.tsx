@@ -2,12 +2,16 @@ import { useState, useEffect } from "react";
 import {
   uploadExcel,
   getJobs,
+  getEmployees,
   updateStartDate,
   updateEndDate,
   updateBudget,
   updateTimeBudget,
   updateCurrencySymbol,
+  addSpecialism,
 } from "../api/client";
+
+/* ================= TYPES ================= */
 
 type JobRow = {
   jobCode: string;
@@ -29,7 +33,15 @@ type JobApi = {
   budgetCostCurrency?: string;
 };
 
+type EmployeeRow = {
+  employeeID: number;
+  name: string;
+  specialisms: string;
+};
+
 const CURRENCIES = ["£", "$", "€"];
+
+/* ================= SETTINGS ================= */
 
 export default function Settings() {
   const [loading, setLoading] = useState(false);
@@ -37,10 +49,17 @@ export default function Settings() {
   const [fileName, setFileName] = useState<string | null>(null);
 
   const [showJobModal, setShowJobModal] = useState(false);
+  const [showEmployeeModal, setShowEmployeeModal] = useState(false);
 
   useEffect(() => {
     const uploaded = sessionStorage.getItem("excelUploaded");
+    const savedFileName = sessionStorage.getItem("excelFileName");
+
     if (uploaded === "true") setHasUploaded(true);
+
+    if (savedFileName) {
+      setFileName(savedFileName);
+    }
   }, []);
 
   const handleFileChange = async (
@@ -56,9 +75,11 @@ export default function Settings() {
       await uploadExcel(file);
 
       sessionStorage.setItem("excelUploaded", "true");
+      sessionStorage.setItem("excelFileName", file.name);
       setHasUploaded(true);
 
       alert("Upload successful");
+      window.location.reload();
     } catch {
       alert("Upload failed");
       setFileName(null);
@@ -69,15 +90,26 @@ export default function Settings() {
 
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-xl font-semibold">Settings</h1>
+      <div className="flex gap-2">
+        <span className="material-icons-outlined text-xxl">
+          settings
+        </span>
+        <h1 className="text-xl font-semibold">Settings</h1>
+      </div>
 
       <div className="bg-white p-4 rounded-xl border space-y-3">
+        <div className="flex gap-2">
+          <span className="material-icons-outlined text-xxl">
+            upload
+          </span>
+          <h1 className="text-xl font-semibold">Upload</h1>
+        </div>
         <input type="file" onChange={handleFileChange} />
 
         {loading && <p>Uploading...</p>}
 
         {fileName && (
-          <p className="text-sm text-slate-600">
+          <p className="text-lg text-slate-600">
             Loaded file: <span className="font-medium">{fileName}</span>
           </p>
         )}
@@ -91,6 +123,12 @@ export default function Settings() {
               Complete Job Data
             </button>
 
+            <button
+              onClick={() => setShowEmployeeModal(true)}
+              className="border-2 border-blue-600 rounded text-blue-600 px-3 py-1"
+            >
+              Add Employee Specialisms
+            </button>
           </div>
         )}
       </div>
@@ -99,6 +137,9 @@ export default function Settings() {
         <JobModal onClose={() => setShowJobModal(false)} />
       )}
 
+      {showEmployeeModal && (
+        <EmployeeModal onClose={() => setShowEmployeeModal(false)} />
+      )}
     </div>
   );
 }
@@ -152,7 +193,6 @@ function JobModal({ onClose }: { onClose: () => void }) {
     );
   };
 
-  // ✅ typed handlers
   const handleInputChange =
     (row: number, field: keyof JobRow) =>
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -223,26 +263,172 @@ function JobModal({ onClose }: { onClose: () => void }) {
     <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
       <div className="bg-white rounded-xl p-6 w-[900px] max-h-[80vh] overflow-auto space-y-4">
         <h2 className="text-lg font-semibold">Complete Job Data</h2>
+        <div className="grid grid-cols-7 gap-2 text-sm font-semibold text-slate-500 border-b pb-2">
+          <div>Code</div>
+          <div>Description</div>
+          <div>Start</div>
+          <div>End</div>
+          <div>Budget</div>
+          <div>Time</div>
+          <div>Currency</div>
+        </div>
 
+        {/* DATA ROWS */}
         {jobs.map((job, i) => (
-          <div key={job.jobCode} className="grid grid-cols-7 gap-2">
-            <div>{job.jobCode}</div>
-            <div>{job.description}</div>
+          <div key={job.jobCode}>
 
-            <input type="date" value={job.startDate} onChange={handleInputChange(i, "startDate")} />
-            <input type="date" value={job.endDate} onChange={handleInputChange(i, "endDate")} />
-            <input type="number" value={job.budget} onChange={handleInputChange(i, "budget")} />
-            <input type="number" value={job.timeBudget} onChange={handleInputChange(i, "timeBudget")} />
+            <div className="grid grid-cols-7 gap-2 items-center py-2">
+              <div className="text-sm">{job.jobCode}</div>
+              <div className="text-sm">{job.description}</div>
 
-            <select value={job.currency} onChange={handleSelectChange(i)}>
-              {CURRENCIES.map((c) => (
-                <option key={c}>{c}</option>
-              ))}
-            </select>
+              <input
+                type="date"
+                value={job.startDate}
+                onChange={handleInputChange(i, "startDate")}
+                className="border rounded px-2 py-1"
+              />
+
+              <input
+                type="date"
+                value={job.endDate}
+                onChange={handleInputChange(i, "endDate")}
+                className="border rounded px-2 py-1"
+              />
+
+              <input
+                type="number"
+                value={job.budget}
+                onChange={handleInputChange(i, "budget")}
+                className="border rounded px-2 py-1"
+              />
+
+              <input
+                type="number"
+                value={job.timeBudget}
+                onChange={handleInputChange(i, "timeBudget")}
+                className="border rounded px-2 py-1"
+              />
+
+              <select
+                value={job.currency}
+                onChange={handleSelectChange(i)}
+                className="border rounded px-2 py-1"
+              >
+                {CURRENCIES.map((c) => (
+                  <option key={c}>{c}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* THIN GREY DIVIDER */}
+            <div className="border-t border-slate-200" />
+          </div>
+        ))}
+        <div className="flex justify-end gap-3 pt-4 border-t mt-4">
+          <button onClick={onClose} className="px-3 py-1 border rounded">
+            Cancel
+          </button>
+
+          <button
+            onClick={handleSave}
+            className="bg-blue-600 text-white px-4 py-1 rounded"
+          >
+            Save
+          </button>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+type EmployeeApi = {
+  employeeID: number;
+  name: string;
+  specialisms?: string[];
+};
+
+
+/* ================= EMPLOYEE MODAL (NEW) ================= */
+
+function EmployeeModal({ onClose }: { onClose: () => void }) {
+  const [employees, setEmployees] = useState<EmployeeRow[]>([]);
+
+  useEffect(() => {
+    const init = async () => {
+      const data = (await getEmployees()) as EmployeeApi[];
+
+      const mapped = data.map((e) => ({
+        employeeID: e.employeeID,
+        name: e.name,
+        specialisms: (e.specialisms || []).join(", "),
+      }));
+
+      setEmployees(mapped);
+    };
+
+    init();
+  }, []);
+
+  const updateField = (row: number, value: string) => {
+    setEmployees((prev) =>
+      prev.map((e, i) =>
+        i === row ? { ...e, specialisms: value } : e
+      )
+    );
+  };
+
+  const handleSave = async () => {
+    const updates: Promise<void>[] = [];
+
+    employees.forEach((emp) => {
+      const specialismsArray = emp.specialisms
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+
+      updates.push(
+        addSpecialism({
+          employeeName: emp.name,
+          specialisms: specialismsArray,
+        })
+      );
+    });
+
+    await Promise.all(updates);
+
+    alert("Specialisms saved");
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
+      <div className="bg-white rounded-xl p-6 w-[600px] max-h-[80vh] overflow-auto space-y-4">
+        <h2 className="text-lg font-semibold">Add Employee Specialisms</h2>
+
+        {employees.map((emp, i) => (
+          <div key={`${emp.employeeID}-${i}`} className="grid grid-cols-2 gap-2">
+            <div>{emp.name}</div>
+
+            <input
+              type="text"
+              placeholder="e.g. React, Finance"
+              value={emp.specialisms}
+              onChange={(e) => updateField(i, e.target.value)}
+              className="border px-2 py-1 rounded"
+            />
           </div>
         ))}
 
-        <button onClick={handleSave}>Save</button>
+        <div className="flex justify-end gap-3">
+          <button onClick={onClose}>Cancel</button>
+          <button
+            onClick={handleSave}
+            className="border-blue-600 rounded text-blue-600 px-3 py-1"
+          >
+            Save
+          </button>
+        </div>
       </div>
     </div>
   );

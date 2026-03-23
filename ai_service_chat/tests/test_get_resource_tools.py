@@ -7,9 +7,9 @@ def test_get_resource_tools_returns_list():
     assert isinstance(tools, list)
 
 
-def test_get_resource_tools_returns_fifteen_tools():
+def test_get_resource_tools_returns_nineteen_tools():
     tools = get_resource_tools("http://localhost:4000")
-    assert len(tools) == 15
+    assert len(tools) == 19
 
 
 def test_get_resource_tools_includes_get_employees():
@@ -90,6 +90,30 @@ def test_get_resource_tools_includes_update_job_end_date():
     tools = get_resource_tools("http://localhost:4000")
     names = [t.name for t in tools]
     assert "update_job_end_date" in names
+
+
+def test_get_resource_tools_includes_get_business_units():
+    tools = get_resource_tools("http://localhost:4000")
+    names = [t.name for t in tools]
+    assert "get_business_units" in names
+
+
+def test_get_resource_tools_includes_create_job():
+    tools = get_resource_tools("http://localhost:4000")
+    names = [t.name for t in tools]
+    assert "create_job" in names
+
+
+def test_get_resource_tools_includes_delete_job():
+    tools = get_resource_tools("http://localhost:4000")
+    names = [t.name for t in tools]
+    assert "delete_job" in names
+
+
+def test_get_resource_tools_includes_add_employee_specialisms():
+    tools = get_resource_tools("http://localhost:4000")
+    names = [t.name for t in tools]
+    assert "add_employee_specialisms" in names
 
 
 def test_get_resource_tools_sets_backend_url():

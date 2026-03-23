@@ -78,6 +78,13 @@ export default function IndividualProject() {
     setNewDays(0);
   };
 
+  const filteredForecasts = forecastEntries.filter(
+    (f) =>
+      f.jobCode === jobCode &&
+      f.month === monthKey &&
+      f.days > 0
+  );
+
   return (
     <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
@@ -97,7 +104,12 @@ export default function IndividualProject() {
           </button>
 
           <button onClick={() => setFiltersOpen(true)} className="bg-white border rounded px-3 py-1 hover:bg-gray-100">
-            Filters
+            <div className="flex justify-end gap-2">
+              <span className="material-icons-outlined text">
+                filter_alt
+              </span>
+              Filters
+            </div>
           </button>
 
           <select value={sortBy} 
@@ -158,19 +170,25 @@ export default function IndividualProject() {
       </div>
 
       {/* Schedule */}
-      <div className="p-4">
-        <EmployeeSchedule
-          employees={employees}
-          forecastEntries={forecastEntries}
-          currentDate={currentDate}
-          jobCode={jobCode}
-          sortBy={sortBy}
-          filtersOpen={filtersOpen}
-          setFiltersOpen={setFiltersOpen}
-          onUpdateAllocation={updateAllocation}
-          onDeleteAllocation={deleteAllocation}
-        />
-      </div>
+      {filteredForecasts.length === 0 ? (
+        <div className="text-center text-slate-400 py-10">
+          No forecasts for this month
+        </div>
+      ) : (
+        <div className="p-4">
+              <EmployeeSchedule
+                employees={employees}
+                forecastEntries={forecastEntries}
+                currentDate={currentDate}
+                jobCode={jobCode}
+                sortBy={sortBy}
+                filtersOpen={filtersOpen}
+                setFiltersOpen={setFiltersOpen}
+                onUpdateAllocation={updateAllocation}
+                onDeleteAllocation={deleteAllocation}
+              />
+            </div>
+      )}
       
     </div>
     {addOpen && (

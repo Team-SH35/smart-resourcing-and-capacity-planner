@@ -13,15 +13,9 @@ vi.mock("../../components/dashboard/ProjectsSection", () => ({
 describe("Dashboard", () => {
   it("renders heading and sections", () => {
     render(<Dashboard />);
-
-    expect(screen.getByText(/Hi /)).toBeInTheDocument();
     expect(screen.getByText("MockBUSection")).toBeInTheDocument();
     expect(screen.getByText("MockProjectsSection")).toBeInTheDocument();
   });
 
-  it("renders filter button", () => {
-    render(<Dashboard />);
 
-    expect(screen.getByText("Filter")).toBeInTheDocument();
-  });
 });

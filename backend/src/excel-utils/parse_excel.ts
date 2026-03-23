@@ -21,11 +21,11 @@ interface MonthAllocation {
     HYPO: number | null,
     work: number | null,
 }
- 
+
 interface ForecastEntry {
     employeeID              : number,
-    name                    : string, 
-    job_code                : string, 
+    name                    : string,
+    job_code                : string,
     resource_allocation     : (string)[]
 }
 
@@ -66,7 +66,7 @@ const RESOURCE_ALLOCATION_RANGE = [11,23];
 
 
 export default async function parseExcelInfo(excelFileStream: Readable) : Promise<ParsedExcelInfo> {
-    
+
     const workbook = new Excel.Workbook();
     await workbook.xlsx.read(excelFileStream);
     const worksheet = workbook.worksheets[0];
@@ -77,7 +77,7 @@ export default async function parseExcelInfo(excelFileStream: Readable) : Promis
         forecast_entries    : [],
         jobs                : []
     };
-    
+
     // Row 20 is where the first row of forecast data is
     let currentRow = 20;
     let row = worksheet.getRow(currentRow);
@@ -110,10 +110,8 @@ export default async function parseExcelInfo(excelFileStream: Readable) : Promis
         });
     }
 
-
         // If job has not appeared yet add it to jobs array
         if (!registered_jobs.has(getCellString(row.getCell(JOB_CODE_INDEX)))) {
-            console.log(getCellString(row.getCell(RESOURCE_BU_INDEX)))
             parsed_excel_data.jobs.push({
                 job_code        : getCellString(row.getCell(JOB_CODE_INDEX)),
                 description     : getCellString(row.getCell(DESCRIPTION_INDEX)),
@@ -135,7 +133,7 @@ export default async function parseExcelInfo(excelFileStream: Readable) : Promis
         });
 
         row = worksheet.getRow(++currentRow);
-    } 
+    }
 
     return parsed_excel_data;
 }

@@ -162,4 +162,6 @@ Desktop.ini
 __pycache__
 
 #Ignore excel cache file
-backend\__tests__\~$test_excel_data.xlsx
+backend\__tests__\~$test_excel_data.xlsxbackend/hr.db
+backend/seed.ts
+sh35-main.zip

@@ -1,6 +1,6 @@
 # AI Chat Service
 
-A FastAPI-based AI microservice that powers the resource management chatbot. It uses a LangGraph agent backed by GPT-4o to answer questions about employee allocations and project staffing, and to propose, approve, reject, and undo changes to forecast data.
+A FastAPI-based AI microservice that powers the resource management chatbot. It uses a LangGraph agent backed by gpt-5-nano-2025-08-07 to answer questions about employee allocations and project staffing, and to propose, approve, reject, and undo changes to forecast data.
 
 ## Architecture
 
@@ -45,7 +45,7 @@ Session continuity is maintained via LangGraph's `MemorySaver` checkpointer, key
 | Web framework | [FastAPI](https://fastapi.tiangolo.com/) |
 | ASGI server | [Uvicorn](https://www.uvicorn.org/) |
 | AI agent framework | [LangGraph](https://langchain-ai.github.io/langgraph/) |
-| LLM | GPT-4o via [LangChain OpenAI](https://python.langchain.com/docs/integrations/chat/openai/) |
+| LLM | gpt-5-nano-2025-08-07 via [LangChain OpenAI](https://python.langchain.com/docs/integrations/chat/openai/) |
 | HTTP client | [httpx](https://www.python-httpx.org/) |
 | Data validation | [Pydantic v2](https://docs.pydantic.dev/) |
 | Container | Python 3.11-slim (Docker) |
@@ -67,6 +67,7 @@ Session continuity is maintained via LangGraph's `MemorySaver` checkpointer, key
 |------|-------------|
 | `get_employees` | List employees, optionally filtered by specialism |
 | `get_jobs` | List all jobs/projects |
+| `get_business_units` | List all distinct business units |
 | `get_employee_availability` | Check free capacity for an employee by month |
 | `get_project_staffing` | Get staffing levels for a specific project |
 | `get_understaffed_projects` | Find projects below required staffing |
@@ -84,6 +85,9 @@ Session continuity is maintained via LangGraph's `MemorySaver` checkpointer, key
 | `update_job_time_budget` | Update a job's time budget |
 | `update_job_start_date` | Update a job's start date |
 | `update_job_end_date` | Update a job's end date |
+| `create_job` | Create a new job/project |
+| `delete_job` | Delete a job and all its forecast entries |
+| `add_employee_specialisms` | Add one or more specialisms to an employee's profile |
 
 ## Environment Variables
 
@@ -91,7 +95,7 @@ Create a `.env` file in `ai_service_chat/` (copy from `.env.example`):
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `OPENAI_API_KEY` | Yes | — | OpenAI API key for GPT-4o |
+| `OPENAI_API_KEY` | Yes | — | OpenAI API key |
 | `BACKEND_URL` | No | `http://localhost:4000` | URL of the Express backend API |
 | `WORKSPACE_ID` | No | `1` | Workspace ID used to scope all data queries |
 | `ENVIRONMENT` | No | `development` | Set to `production` to disable auto-reload |
@@ -170,7 +174,7 @@ ai_service_chat/
 │   ├── tools/
 │   │   └── resource_tools.py LangChain tools wrapping backend API calls
 │   └── main.py               FastAPI app factory
-├── tests/                    pytest test suite (199 tests)
+├── tests/                    pytest test suite (203 tests)
 ├── Dockerfile
 ├── requirements.txt
 ├── requirements-dev.txt

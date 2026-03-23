@@ -22,6 +22,9 @@ WRITE_TOOL_NAMES = {
     "update_job_time_budget",
     "update_job_start_date",
     "update_job_end_date",
+    "create_job",
+    "delete_job",
+    "add_employee_specialisms",
 }
 
 
@@ -40,7 +43,7 @@ class ResourceManagementAgent:
         self.checkpointer = MemorySaver()
 
         self.llm = ChatOpenAI(
-            model="gpt-4o",
+            model="gpt-5-nano-2025-08-07",
             api_key=os.getenv("OPENAI_API_KEY"),
             temperature=0,
         )
@@ -138,10 +141,13 @@ class ResourceManagementAgent:
         snapshot = []
         try:
             async with httpx.AsyncClient() as client:
-                resp = await client.get(f"{self.backend_url}/api/forecast-entries")
-                all_entries = resp.json() if resp.status_code == 200 else []
+                entries_resp = await client.get(f"{self.backend_url}/api/forecast-entries")
+                all_entries = entries_resp.json() if entries_resp.status_code == 200 else []
+                jobs_resp = await client.get(f"{self.backend_url}/api/job-codes")
+                all_jobs = jobs_resp.json() if jobs_resp.status_code == 200 else []
         except Exception:
             all_entries = []
+            all_jobs = []
 
         for tc in tool_calls:
             tool_name = tc["name"]
@@ -162,6 +168,16 @@ class ResourceManagementAgent:
                         current_days = entry.get("days")
                         break
                 snapshot.append({"tool_name": tool_name, "args": args, "before_value": {"days": current_days}})
+
+            elif tool_name == "create_job":
+                # No before state needed — undo just deletes the job
+                snapshot.append({"tool_name": tool_name, "args": args, "before_value": None})
+
+            elif tool_name == "delete_job":
+                # Capture the full job data so we can recreate it on undo
+                job_code = args.get("job_code")
+                job_data = next((j for j in all_jobs if j.get("jobCode") == job_code), None)
+                snapshot.append({"tool_name": tool_name, "args": args, "before_value": job_data})
 
         return snapshot
 
@@ -228,6 +244,36 @@ class ResourceManagementAgent:
                                 results.append(f"Restored **{args.get('employee_name')}**'s allocation on {args.get('job_code')} for {args.get('month')}")
                         else:
                             results.append(f"⚠️ Could not restore deletion for **{args.get('employee_name')}** — original data not captured")
+                    elif tool_name == "create_job":
+                        resp = await client.request(
+                            "DELETE", f"{self.backend_url}/api/jobs/{args.get('job_code')}",
+                            json={"workspaceID": args.get("workspace_id")}
+                        )
+                        if resp.status_code < 300:
+                            results.append(f"Deleted job **{args.get('job_code')}** (undid creation)")
+
+                    elif tool_name == "delete_job":
+                        if before:
+                            resp = await client.post(
+                                f"{self.backend_url}/api/jobs",
+                                json={
+                                    "jobCode": before.get("jobCode"),
+                                    "workspaceID": args.get("workspace_id"),
+                                    "description": before.get("description"),
+                                    "businessUnit": before.get("businessUnit"),
+                                    "customer": before.get("customerName"),
+                                    "startDate": before.get("startDate"),
+                                    "finishDate": before.get("finishDate"),
+                                    "timeBudget": before.get("budgetTime"),
+                                    "monetaryBudget": before.get("budgetCost"),
+                                    "currencySymbol": before.get("budgetCostCurrency"),
+                                }
+                            )
+                            if resp.status_code < 300:
+                                results.append(f"Recreated job **{args.get('job_code')}** (undid deletion)")
+                        else:
+                            results.append(f"⚠️ Could not restore job **{args.get('job_code')}** — original data was not captured")
+
                 except Exception as e:
                     results.append(f"Error undoing {tool_name}: {str(e)}")
 
@@ -259,8 +305,8 @@ class ResourceManagementAgent:
         return """You are the HR Resource Management & Capacity Planning Lead AI. Your goal is to ensure project staffing is optimized and burnout is minimized.
 
 ### SCOPE:
-You ONLY answer questions related to HR resource management, employee capacity, project staffing, and forecast planning.
-If the user asks anything outside this scope (e.g. general knowledge, entertainment, travel, personal advice, or anything unrelated to workforce planning), you must politely refuse and redirect them. Example refusal: "I can only help with HR resource management and capacity planning. Is there something related to staffing or project allocation I can help you with?"
+You help with anything related to employees, jobs, projects, staffing, capacity, forecasts, allocations, schedules, budgets, specialisms, and business units.
+Only refuse requests that are clearly unrelated to the workplace — e.g. general knowledge, entertainment, travel, or personal advice. When in doubt, assume the user is asking about something work-related and try to help. Example refusal (only for clearly off-topic): "I can only help with HR resource management and capacity planning. Is there something related to staffing or project allocation I can help you with?"
 
 ### AVAILABLE TOOLS:
 - get_employees: Retrieve all employees, optionally filtered by specialism (e.g. "Developer", "Designer").
@@ -278,6 +324,10 @@ If the user asks anything outside this scope (e.g. general knowledge, entertainm
 - update_job_time_budget: Update the time budget in days for a job (job_code, time_budget).
 - update_job_start_date: Update the start date for a job (job_code, start_date in ISO format e.g. "2024-03-01").
 - update_job_end_date: Update the end date for a job (job_code, end_date in ISO format e.g. "2024-06-30").
+- get_business_units: Retrieve all distinct business units available in the system.
+- create_job: Create a new job/project (job_code, workspace_id, and optional description, business_unit, customer, dates, budgets).
+- delete_job: Delete a job and all its forecast entries (job_code, workspace_id). Use with caution — this removes all allocations for the job.
+- add_employee_specialisms: Add one or more specialisms to an employee's profile (employee_name, specialisms as a list).
 
 ### OPERATIONAL RULES:
 1. DATA INTEGRITY: Use ONLY the data returned from tools. Do not invent employee names, job codes, or availability figures.

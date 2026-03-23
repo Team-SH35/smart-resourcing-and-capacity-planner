@@ -18,6 +18,11 @@ import {
   updateStartTime,
   updateEndTime,
   addSpecialism,
+  getBusinessUnits,
+  createJob,
+  deleteJob,
+  getMonthWorkDays,
+  upsertMonthWorkDays,
 } from "../services/dataService";
 import parseExcelInfo from "../excel-utils/parse_excel";
 import { writeExcelToDB } from "../db/write_to_db";
@@ -71,11 +76,11 @@ router.get("/forecast-entries", (_req, res) => {
 // Exports current database to excel sheet and sends it to frontend
 router.get("/export-excel-sheet", async (req, res) => {
   try {
-    const { workspaceID } = req.body;
+    const workspaceID = req.query.workspaceId as string | undefined;
 
     // Validate input
     if (!workspaceID) {
-      return res.status(400).json({ error: "workspaceID is required" });
+      return res.status(400).json({ error: "workspaceId query param is required" });
     }
 
     // Generate the Excel workbook (assuming exportDbExcel returns a Promise<Workbook>)
@@ -444,7 +449,7 @@ router.post("/update-end-date", (req, res) => {
 // Add one or more specialisms to an employee.
 router.post("/add-specialisms", (req, res) => {
   try {
-    const { specialisms, employeeID } = req.body;
+    const { specialisms, employeeName } = req.body;
 
     if (!Array.isArray(specialisms) || specialisms.length === 0) {
       return res.status(400).json({
@@ -452,13 +457,13 @@ router.post("/add-specialisms", (req, res) => {
       });
     }
 
-    if (employeeID === undefined || employeeID === null) {
+    if (!employeeName) {
       return res.status(400).json({
-        error: "employeeID is required",
+        error: "employeeName is required",
       });
     }
 
-    const result = addSpecialism({ specialisms, employeeID });
+    const result = addSpecialism({ specialisms, employeeName });
     return res.status(201).json(result);
   } catch (error) {
     console.error("POST /api/add-specialisms failed:", error);
@@ -471,6 +476,207 @@ router.post("/add-specialisms", (req, res) => {
     }
 
     return res.status(500).json({ error: "Failed to add specialisms" });
+  }
+});
+
+// Return all distinct business units derived from the Job table.
+router.get("/business-units", (_req, res) => {
+  try {
+    res.json(getBusinessUnits());
+  } catch (error) {
+    console.error("GET /api/business-units failed:", error);
+    res.status(500).json({ error: "Failed to fetch business units" });
+  }
+});
+
+// Create a new job/project.
+router.post("/jobs", (req, res) => {
+  try {
+    const {
+      jobCode,
+      description,
+      businessUnit,
+      resourceBu,
+      jobOrigin,
+      replyEntity,
+      customer,
+      tCode,
+      timeBudget,
+      monetaryBudget,
+      currencySymbol,
+      startDate,
+      finishDate,
+      workspaceID,
+    } = req.body;
+
+    if (!jobCode) {
+      return res.status(400).json({ error: "jobCode is required" });
+    }
+
+    if (workspaceID === undefined || workspaceID === null) {
+      return res.status(400).json({ error: "workspaceID is required" });
+    }
+
+    if (startDate) {
+      const parsed = new Date(startDate);
+      if (Number.isNaN(parsed.getTime())) {
+        return res.status(400).json({ error: "startDate must be a valid date" });
+      }
+    }
+
+    if (finishDate) {
+      const parsed = new Date(finishDate);
+      if (Number.isNaN(parsed.getTime())) {
+        return res.status(400).json({ error: "finishDate must be a valid date" });
+      }
+    }
+
+    if (currencySymbol && currencySymbol.length !== 1) {
+      return res.status(400).json({ error: "currencySymbol must be a single character" });
+    }
+
+    const result = createJob({
+      jobCode,
+      description,
+      businessUnit,
+      resourceBu,
+      jobOrigin,
+      replyEntity,
+      customer,
+      tCode,
+      timeBudget,
+      monetaryBudget,
+      currencySymbol,
+      startDate: startDate ? new Date(startDate).toISOString() : null,
+      finishDate: finishDate ? new Date(finishDate).toISOString() : null,
+      workspaceID,
+    });
+
+    return res.status(201).json(result);
+  } catch (error) {
+    console.error("POST /api/jobs failed:", error);
+
+    const message = error instanceof Error ? error.message : "Failed to create job";
+
+    if (message.includes("already exists")) {
+      return res.status(409).json({ error: message });
+    }
+
+    return res.status(500).json({ error: "Failed to create job" });
+  }
+});
+
+// Delete a job and its forecast entries.
+router.delete("/jobs/:jobCode", (req, res) => {
+  try {
+    const { jobCode } = req.params;
+    const { workspaceID } = req.body;
+
+    if (workspaceID === undefined || workspaceID === null) {
+      return res.status(400).json({ error: "workspaceID is required" });
+    }
+
+    const result = deleteJob(jobCode, workspaceID);
+    return res.json(result);
+  } catch (error) {
+    console.error("DELETE /api/jobs/:jobCode failed:", error);
+
+    const message = error instanceof Error ? error.message : "Failed to delete job";
+
+    if (message.includes("not found")) {
+      return res.status(404).json({ error: message });
+    }
+
+    return res.status(500).json({ error: "Failed to delete job" });
+  }
+});
+
+// Get month work/HYPO day counts for a workspace.
+router.get("/month-work-days", (req, res) => {
+  try {
+    const workspaceIdRaw = req.query.workspaceId;
+
+    if (!workspaceIdRaw) {
+      return res.status(400).json({ error: "workspaceId query param is required" });
+    }
+
+    const workspaceID = Number(workspaceIdRaw);
+    if (!Number.isInteger(workspaceID)) {
+      return res.status(400).json({ error: "workspaceId must be an integer" });
+    }
+
+    const result = getMonthWorkDays(workspaceID);
+
+    if (!result) {
+      return res.status(404).json({ error: "No month work days found for this workspace" });
+    }
+
+    return res.json(result);
+  } catch (error) {
+    console.error("GET /api/month-work-days failed:", error);
+    res.status(500).json({ error: "Failed to fetch month work days" });
+  }
+});
+
+// Create or update month work/HYPO day counts for a workspace.
+router.post("/month-work-days", (req, res) => {
+  try {
+    const {
+      workspaceID,
+      jan_work, jan_hypo,
+      feb_work, feb_hypo,
+      mar_work, mar_hypo,
+      apr_work, apr_hypo,
+      may_work, may_hypo,
+      jun_work, jun_hypo,
+      jul_work, jul_hypo,
+      aug_work, aug_hypo,
+      sep_work, sep_hypo,
+      oct_work, oct_hypo,
+      nov_work, nov_hypo,
+      dec_work, dec_hypo,
+    } = req.body;
+
+    if (workspaceID === undefined || workspaceID === null) {
+      return res.status(400).json({ error: "workspaceID is required" });
+    }
+
+    const months = [
+      "jan_work", "jan_hypo", "feb_work", "feb_hypo",
+      "mar_work", "mar_hypo", "apr_work", "apr_hypo",
+      "may_work", "may_hypo", "jun_work", "jun_hypo",
+      "jul_work", "jul_hypo", "aug_work", "aug_hypo",
+      "sep_work", "sep_hypo", "oct_work", "oct_hypo",
+      "nov_work", "nov_hypo", "dec_work", "dec_hypo",
+    ];
+
+    for (const field of months) {
+      const val = req.body[field];
+      if (val === undefined || val === null || typeof val !== "number" || val < 0) {
+        return res.status(400).json({ error: `${field} must be a non-negative number` });
+      }
+    }
+
+    const result = upsertMonthWorkDays({
+      workspaceID,
+      jan_work, jan_hypo,
+      feb_work, feb_hypo,
+      mar_work, mar_hypo,
+      apr_work, apr_hypo,
+      may_work, may_hypo,
+      jun_work, jun_hypo,
+      jul_work, jul_hypo,
+      aug_work, aug_hypo,
+      sep_work, sep_hypo,
+      oct_work, oct_hypo,
+      nov_work, nov_hypo,
+      dec_work, dec_hypo,
+    });
+
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error("POST /api/month-work-days failed:", error);
+    res.status(500).json({ error: "Failed to update month work days" });
   }
 });
 

@@ -6,7 +6,7 @@ export default function EmptyStateCard() {
       </span>
       <p className="font-semibold">No data available</p>
       <p className="text-sm">
-        Upload a resource plan to get started
+        Upload a resource plan in settings to get started
       </p>
     </div>
   );

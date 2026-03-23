@@ -54,7 +54,7 @@ type StartDateUpdate = {
 // Input for adding employee specialisms.
 type SpecialismsInput = {
   specialisms: string[];
-  employeeID: number | string;
+  employeeName: string;
 };
 
 // SQL result shape for jobs.
@@ -676,13 +676,8 @@ export function updateForecastEntryDays(input: ForecastWriteInput) {
   };
 }
 
-export function updateCost(input :CostUpdate) {
-    const { cost, employeeID, jobCode, workspaceID} = input
-    db.prepare(
-        `UPDATE ForecastEntry
-        SET Cost = ?
-        WHERE ForecastEntry.JobCode = ? AND ForecastEntry.EmployeeID = ? AND workspaceID = ?`
-    ).run( cost, jobCode, workspaceID);
+export function updateCost(input: CostUpdate) {
+  const { cost, employeeID, jobCode, workspaceID } = input;
 
   const result = db
     .prepare(`
@@ -785,13 +780,8 @@ export function updateCurrencySymbol(input: CurrencySymbolUpdate) {
   };
 }
 
-export function updateStartTime(input :StartDateUpdate) {
-    const { startDateISO, jobCode, workspaceID } = input
-    db.prepare(
-        `UPDATE Job
-        SET StartDate = ?
-        WHERE Job.JobCode = ? AND workspaceID = ?`
-    ).run(startDateISO, jobCode, workspaceID);
+export function updateStartTime(input: StartDateUpdate) {
+  const { startDateISO, jobCode, workspaceID } = input;
 
   const result = db
     .prepare(`
@@ -839,18 +829,231 @@ export function updateEndTime(input: StartDateUpdate) {
   };
 }
 
+// Input for creating a new job.
+type CreateJobInput = {
+  jobCode: string;
+  description?: string;
+  businessUnit?: string;
+  resourceBu?: string;
+  jobOrigin?: string;
+  replyEntity?: string;
+  customer?: string;
+  tCode?: string;
+  timeBudget?: number | null;
+  monetaryBudget?: number | null;
+  currencySymbol?: string | null;
+  startDate?: string | null;
+  finishDate?: string | null;
+  workspaceID: number | string;
+};
+
+// Input for upserting month work/HYPO days.
+type MonthWorkDaysInput = {
+  workspaceID: number | string;
+  jan_work: number; jan_hypo: number;
+  feb_work: number; feb_hypo: number;
+  mar_work: number; mar_hypo: number;
+  apr_work: number; apr_hypo: number;
+  may_work: number; may_hypo: number;
+  jun_work: number; jun_hypo: number;
+  jul_work: number; jul_hypo: number;
+  aug_work: number; aug_hypo: number;
+  sep_work: number; sep_hypo: number;
+  oct_work: number; oct_hypo: number;
+  nov_work: number; nov_hypo: number;
+  dec_work: number; dec_hypo: number;
+};
+
+// SQL result shape for month work days.
+type MonthWorkDaysRow = {
+  workspaceId: number;
+  jan_work: number; jan_hypo: number;
+  feb_work: number; feb_hypo: number;
+  mar_work: number; mar_hypo: number;
+  apr_work: number; apr_hypo: number;
+  may_work: number; may_hypo: number;
+  jun_work: number; jun_hypo: number;
+  jul_work: number; jul_hypo: number;
+  aug_work: number; aug_hypo: number;
+  sep_work: number; sep_hypo: number;
+  oct_work: number; oct_hypo: number;
+  nov_work: number; nov_hypo: number;
+  dec_work: number; dec_hypo: number;
+};
+
+/**
+ * Returns all distinct business units that exist on jobs.
+ */
+export function getBusinessUnits(): string[] {
+  if (!tableExists("Job")) return [];
+
+  const rows = db
+    .prepare(`
+      SELECT DISTINCT BusinessUnit
+      FROM Job
+      WHERE BusinessUnit IS NOT NULL AND BusinessUnit != ''
+      ORDER BY BusinessUnit ASC
+    `)
+    .all() as { BusinessUnit: string }[];
+
+  return rows.map((r) => r.BusinessUnit);
+}
+
+/**
+ * Creates a new job. Throws if the job code already exists.
+ */
+export function createJob(input: CreateJobInput) {
+  const {
+    jobCode,
+    description,
+    businessUnit,
+    resourceBu,
+    jobOrigin,
+    replyEntity,
+    customer,
+    tCode,
+    timeBudget,
+    monetaryBudget,
+    currencySymbol,
+    startDate,
+    finishDate,
+    workspaceID,
+  } = input;
+
+  const existing = getJobByCode(jobCode);
+  if (existing) {
+    throw new Error(`Job already exists: ${jobCode}`);
+  }
+
+  db.prepare(`
+    INSERT INTO Job (
+      JobCode, Description, BusinessUnit,
+      ResourceBu, JobOrigin, ReplyEntity,
+      customer, t_code,
+      TimeBudget, MonetaryBudget, CurrencySymbol,
+      StartDate, FinishDate, WorkspaceID
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    jobCode,
+    description ?? null,
+    businessUnit ?? null,
+    resourceBu ?? null,
+    jobOrigin ?? null,
+    replyEntity ?? null,
+    customer ?? null,
+    tCode ?? null,
+    timeBudget ?? null,
+    monetaryBudget ?? null,
+    currencySymbol ?? null,
+    startDate ?? null,
+    finishDate ?? null,
+    workspaceID,
+  );
+
+  return { message: "Job created", jobCode };
+}
+
+/**
+ * Deletes a job and all its associated forecast entries.
+ * Uses a transaction so either both deletions succeed or neither does.
+ */
+export function deleteJob(jobCode: string, workspaceID: number | string) {
+  const existing = getJobByCode(jobCode);
+  if (!existing) {
+    throw new Error(`Job not found: ${jobCode}`);
+  }
+
+  const transaction = db.transaction(() => {
+    db.prepare(`DELETE FROM ForecastEntry WHERE JobCode = ?`).run(jobCode);
+    db.prepare(`DELETE FROM Job WHERE JobCode = ? AND WorkspaceID = ?`).run(jobCode, workspaceID);
+  });
+
+  transaction();
+
+  return { message: "Job deleted", jobCode };
+}
+
+/**
+ * Returns the month work/HYPO day counts for a workspace.
+ */
+export function getMonthWorkDays(workspaceID: number | string): MonthWorkDaysRow | null {
+  if (!tableExists("Month_Work_Days")) return null;
+
+  const row = db
+    .prepare(`
+      SELECT
+        WorkspaceID AS workspaceId,
+        jan_work, jan_hypo, feb_work, feb_hypo,
+        mar_work, mar_hypo, apr_work, apr_hypo,
+        may_work, may_hypo, jun_work, jun_hypo,
+        jul_work, jul_hypo, aug_work, aug_hypo,
+        sep_work, sep_hypo, oct_work, oct_hypo,
+        nov_work, nov_hypo, dec_work, dec_hypo
+      FROM Month_Work_Days
+      WHERE WorkspaceID = ?
+    `)
+    .get(workspaceID) as MonthWorkDaysRow | undefined;
+
+  return row ?? null;
+}
+
+/**
+ * Creates or replaces the month work/HYPO day counts for a workspace.
+ * Ensures the workspace row exists first.
+ */
+export function upsertMonthWorkDays(input: MonthWorkDaysInput) {
+  const { workspaceID } = input;
+
+  db.prepare(`INSERT OR IGNORE INTO Workspace (WorkspaceID) VALUES (?)`).run(workspaceID);
+
+  db.prepare(`
+    INSERT OR REPLACE INTO Month_Work_Days (
+      WorkspaceID,
+      jan_work, jan_hypo, feb_work, feb_hypo,
+      mar_work, mar_hypo, apr_work, apr_hypo,
+      may_work, may_hypo, jun_work, jun_hypo,
+      jul_work, jul_hypo, aug_work, aug_hypo,
+      sep_work, sep_hypo, oct_work, oct_hypo,
+      nov_work, nov_hypo, dec_work, dec_hypo
+    )
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+  `).run(
+    workspaceID,
+    input.jan_work, input.jan_hypo,
+    input.feb_work, input.feb_hypo,
+    input.mar_work, input.mar_hypo,
+    input.apr_work, input.apr_hypo,
+    input.may_work, input.may_hypo,
+    input.jun_work, input.jun_hypo,
+    input.jul_work, input.jul_hypo,
+    input.aug_work, input.aug_hypo,
+    input.sep_work, input.sep_hypo,
+    input.oct_work, input.oct_hypo,
+    input.nov_work, input.nov_hypo,
+    input.dec_work, input.dec_hypo,
+  );
+
+  return { message: "Month work days updated", workspaceID };
+}
+
 /**
  * Adds one or more specialisms to an employee in a transaction.
  */
 export function addSpecialism(input: SpecialismsInput) {
-  const { employeeID, specialisms } = input;
+  const { employeeName, specialisms } = input;
+
+  const employee = getEmployeeByName(employeeName);
+  if (!employee) {
+    throw new Error(`Employee not found: ${employeeName}`);
+  }
 
   const transaction = db.transaction(() => {
     for (const specialism of specialisms) {
       db.prepare(`
         INSERT INTO EmployeeSpecialisms (EmployeeID, Specialism)
         VALUES (?, ?)
-      `).run(employeeID, specialism);
+      `).run(employee.employeeId, specialism);
     }
   });
 
@@ -858,7 +1061,7 @@ export function addSpecialism(input: SpecialismsInput) {
 
   return {
     message: "Specialisms added",
-    employeeID,
+    employeeName,
     added: specialisms.length,
   };
 }

@@ -561,6 +561,127 @@ async def update_job_end_date(
             return json.dumps({"error": f"Failed with status {response.status_code}", "text": response.text})
 
 
+@tool
+async def get_business_units() -> str:
+    """
+    Get all distinct business units from the jobs data.
+
+    Returns:
+        JSON string with list of business unit names
+    """
+    async with httpx.AsyncClient() as client:
+        response = await client.get(f"{_backend_url}/api/business-units")
+        if not response.is_success:
+            return json.dumps({"error": f"Backend error: {response.status_code}"})
+
+        return json.dumps(response.json())
+
+
+@tool
+async def create_job(
+    job_code: str,
+    workspace_id: int,
+    description: Optional[str] = None,
+    business_unit: Optional[str] = None,
+    customer: Optional[str] = None,
+    start_date: Optional[str] = None,
+    finish_date: Optional[str] = None,
+    time_budget: Optional[float] = None,
+    monetary_budget: Optional[float] = None,
+    currency_symbol: Optional[str] = None,
+) -> str:
+    """
+    Create a new job/project.
+
+    Args:
+        job_code: Unique job code (e.g. "P001")
+        workspace_id: Workspace ID the job belongs to
+        description: Job description
+        business_unit: Business unit name
+        customer: Customer name
+        start_date: Start date in ISO format (e.g. "2024-03-01")
+        finish_date: Finish date in ISO format (e.g. "2024-12-31")
+        time_budget: Time budget in days
+        monetary_budget: Monetary budget value
+        currency_symbol: Single character currency symbol (e.g. "$")
+
+    Returns:
+        JSON string with creation result or error
+    """
+    payload = {
+        "jobCode": job_code,
+        "workspaceID": workspace_id,
+        "description": description,
+        "businessUnit": business_unit,
+        "customer": customer,
+        "startDate": start_date,
+        "finishDate": finish_date,
+        "timeBudget": time_budget,
+        "monetaryBudget": monetary_budget,
+        "currencySymbol": currency_symbol,
+    }
+
+    async with httpx.AsyncClient() as client:
+        response = await client.post(f"{_backend_url}/api/jobs", json=payload)
+        try:
+            return json.dumps(response.json())
+        except Exception:
+            return json.dumps({"error": f"Failed with status {response.status_code}", "text": response.text})
+
+
+@tool
+async def delete_job(
+    job_code: str,
+    workspace_id: int,
+) -> str:
+    """
+    Delete a job and all its associated forecast entries.
+
+    Args:
+        job_code: Job code to delete (e.g. "P001")
+        workspace_id: Workspace ID the job belongs to
+
+    Returns:
+        JSON string with deletion result or error
+    """
+    payload = {"workspaceID": workspace_id}
+
+    async with httpx.AsyncClient() as client:
+        response = await client.request("DELETE", f"{_backend_url}/api/jobs/{job_code}", json=payload)
+        try:
+            return json.dumps(response.json())
+        except Exception:
+            return json.dumps({"error": f"Failed with status {response.status_code}", "text": response.text})
+
+
+@tool
+async def add_employee_specialisms(
+    employee_name: str,
+    specialisms: List[str],
+) -> str:
+    """
+    Add one or more specialisms to an employee's profile.
+
+    Args:
+        employee_name: Full name of the employee (e.g. "SMITH, John")
+        specialisms: List of specialism strings to add (e.g. ["Civil Engineering", "Structural"])
+
+    Returns:
+        JSON string with result or error
+    """
+    payload = {
+        "employeeName": employee_name,
+        "specialisms": specialisms,
+    }
+
+    async with httpx.AsyncClient() as client:
+        response = await client.post(f"{_backend_url}/api/add-specialisms", json=payload)
+        try:
+            return json.dumps(response.json())
+        except Exception:
+            return json.dumps({"error": f"Failed with status {response.status_code}", "text": response.text})
+
+
 def get_resource_tools(backend_url: str) -> List:
     """Get list of resource management tools for LangGraph."""
     set_backend_url(backend_url)
@@ -568,6 +689,7 @@ def get_resource_tools(backend_url: str) -> List:
     return [
         get_employees,
         get_jobs,
+        get_business_units,
         get_employee_availability,
         get_project_staffing,
         get_understaffed_projects,
@@ -581,4 +703,7 @@ def get_resource_tools(backend_url: str) -> List:
         update_job_time_budget,
         update_job_start_date,
         update_job_end_date,
+        create_job,
+        delete_job,
+        add_employee_specialisms,
     ]

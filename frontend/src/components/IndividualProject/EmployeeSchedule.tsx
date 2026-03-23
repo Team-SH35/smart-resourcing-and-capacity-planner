@@ -124,7 +124,12 @@ export default function EmployeeSchedule({
       {filtersOpen && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 w-96 space-y-4">
-            <h2 className="font-semibold text-lg">Filters</h2>
+            <div className="flex gap-2">
+              <span className="material-icons-outlined text">
+                filter_alt
+              </span>
+              <h2 className="font-semibold text-lg">Filters</h2>
+            </div>
 
             <input
               placeholder="Search employee"

@@ -29,7 +29,7 @@ Frontend (React + Vite)          :5173
 |---------|------|------|-----------|
 | Frontend | React 19, TypeScript, Vite, Tailwind CSS | 5173 | `frontend/` |
 | Backend API | Node.js, Express 5, TypeScript, SQLite | 4000 | `backend/` |
-| AI Service | Python 3.11, FastAPI, LangGraph, GPT-4o | 8000 | `ai_service_chat/` |
+| AI Service | Python 3.11, FastAPI, LangGraph, gpt-5-nano-2025-08-07 | 8000 | `ai_service_chat/` |
 | Database init | Python 3.10 | — | `database/` |
 
 ---
@@ -146,6 +146,12 @@ Provides all data access and mutation endpoints. The database is a SQLite file s
 | `POST` | `/api/update-start-date` | Update job start date |
 | `POST` | `/api/update-end-date` | Update job end date |
 | `POST` | `/api/add-specialisms` | Add employee specialisms |
+| `POST` | `/api/jobs` | Create a new job |
+| `DELETE` | `/api/jobs/:jobCode` | Delete a job and its forecast entries |
+| `GET` | `/api/business-units` | List distinct business units |
+| `GET` | `/api/export-excel-sheet` | Export database to Excel file |
+| `GET` | `/api/month-work-days` | Get monthly working day counts |
+| `POST` | `/api/month-work-days` | Create or update monthly working day counts |
 
 **Local development** (without Docker):
 
@@ -170,9 +176,9 @@ See [backend/README.md](backend/README.md) for full details.
 
 ## AI Service
 
-**Python 3.11 + FastAPI + LangGraph + GPT-4o**
+**Python 3.11 + FastAPI + LangGraph + gpt-5-nano-2025-08-07**
 
-An AI microservice that powers the chatbot. A LangGraph agent uses GPT-4o to answer questions and propose changes to forecast data. Write operations require explicit user approval and can be undone after approval.
+An AI microservice that powers the chatbot. A LangGraph agent uses gpt-5-nano-2025-08-07 to answer questions and propose changes to forecast data. Write operations require explicit user approval and can be undone after approval.
 
 **Environment variables** — create `ai_service_chat/.env`:
 

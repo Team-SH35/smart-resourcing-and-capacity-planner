@@ -181,24 +181,31 @@ export default function AppLayout({ children }: AppLayoutProps) {
 
       <ChatbotOverlay />
 
-      <aside className="w-64 bg-white border-r px-4 py-6">
+      <aside >
         <Sidebar />
       </aside>
 
       <main className="flex-1 flex flex-col overflow-y-auto">
         {/* Search */}
         <div className="flex justify-center p-10 relative" ref={wrapperRef}>
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onFocus={() => setIsFocused(true)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleSearch();
-            }}
-            placeholder="Search for employee, project or client..."
-            className="w-full max-w-5xl px-5 py-3 rounded-full border-[3px] border-black focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
+          <div className="relative w-full max-w-5xl">
+            <span className="material-icons-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+              search
+            </span>
+
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onFocus={() => setIsFocused(true)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleSearch();
+              }}
+              placeholder="Search for employee, project or client..."
+              className="w-full pl-12 pr-5 py-3 rounded-full border-[3px] border-black focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+
+          </div>
 
           {isFocused && (
             <div className="absolute top-16 w-full max-w-5xl bg-white border rounded-xl shadow mt-8 z-20">

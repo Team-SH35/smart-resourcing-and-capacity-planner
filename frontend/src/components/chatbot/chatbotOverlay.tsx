@@ -121,9 +121,9 @@ export default function ChatbotOverlay() {
         className={`fixed top-2 right-4 z-[9999] w-12 h-12 rounded-full bg-[#E4F2D6] flex items-center justify-center shadow-lg transition-transform duration-300 ease-in-out
           ${open ? "scale-0 pointer-events-none" : "scale-100"}`}
       >
-        <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-        </svg>
+       <span className="material-icons-outlined text-lime-600">
+          chat
+        </span>
       </button>
 
       {/* Chat Overlay */}

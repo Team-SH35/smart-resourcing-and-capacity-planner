@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { updateBudget, updateStartDate, updateEndDate } from "../../api/client";
 
 interface Avatar {
   initials: string;
@@ -47,6 +48,8 @@ export default function ProjectCard({
     daysLeft,
     budget,
     progress,
+    startDate: "",
+    endDate: "",
   });
 
   const getDaysColor = () => {
@@ -57,9 +60,41 @@ export default function ProjectCard({
     return "bg-slate-100 dark:bg-slate-800 text-slate-500";
   };
 
-  const handleSave = () => {
-    if (onSave) onSave(form);
-    setIsEditing(false);
+  const handleSave = async () => {
+    try {
+      const numericBudget = Number(form.budget.replace(/[^0-9.-]+/g, ""));
+
+      await Promise.all([
+        updateBudget({
+          newBudget: numericBudget,
+          jobCode: form.jobCode,
+          workspaceID: 1,
+        }),
+
+        form.startDate
+          ? updateStartDate({
+              startDate: form.startDate,
+              jobCode: form.jobCode,
+              workspaceID: 1,
+            })
+          : Promise.resolve(),
+
+        form.endDate
+          ? updateEndDate({
+              endDate: form.endDate,
+              jobCode: form.jobCode,
+              workspaceID: 1,
+            })
+          : Promise.resolve(),
+      ]);
+
+      if (onSave) onSave(form);
+
+      setIsEditing(false);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to update project");
+    }
   };
 
   return (
@@ -159,60 +194,27 @@ export default function ProjectCard({
               <h4 className="font-semibold mt-4 mb-2">
                 Project Name
               </h4>
-              <input
-                className="border rounded w-full px-3 py-2"
-                value={form.name}
-                onChange={(e) =>
-                  setForm({ ...form, name: e.target.value })
-                }
-              />
+                <div className="border rounded w-full px-3 py-2 bg-gray-100 dark:bg-gray-800">
+                  {form.name}
+                </div>
             </div>
 
             <div>
               <h4 className="font-semibold mt-4 mb-2">
                 Department
               </h4>
-              <input
-                className="border rounded w-full px-3 py-2"
-                value={form.department}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    department: e.target.value,
-                  })
-                }
-              />
+                <div className="border rounded w-full px-3 py-2 bg-gray-100 dark:bg-gray-800">
+                  {form.department}
+                </div>
             </div>
 
             <div>
               <h4 className="font-semibold mt-4 mb-2">
                 Client
               </h4>
-              <input
-                className="border rounded w-full px-3 py-2"
-                value={form.client}
-                onChange={(e) =>
-                  setForm({ ...form, client: e.target.value })
-                }
-              />
-            </div>
-
-            <div>
-              <h4 className="font-semibold mt-4 mb-2">
-                Days Left
-              </h4>
-              <input
-                type="number"
-                className="border rounded w-full px-3 py-2"
-                value={form.daysLeft}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    daysLeft:
-                      parseInt(e.target.value) || 0,
-                  })
-                }
-              />
+                <div className="border rounded w-full px-3 py-2 bg-gray-100 dark:bg-gray-800">
+                  {form.client}
+                </div>
             </div>
 
             <div>
@@ -227,6 +229,29 @@ export default function ProjectCard({
                     ...form,
                     budget: e.target.value,
                   })
+                }
+              />
+            </div>
+
+            <div>
+              <h4 className="font-semibold mt-4 mb-2">Start Date: {form.startDate}</h4>
+              <input
+                type="date"
+                className="border rounded w-full px-3 py-2"
+                value={form.startDate}
+                onChange={(e) =>
+                  setForm({ ...form, startDate: e.target.value })
+                }
+              />
+            </div>
+
+            <div>
+              <h4 className="font-semibold mt-4 mb-2">End Date: {form.endDate}</h4>
+              <input
+                type="date"
+                className="border rounded w-full px-3 py-2"
+                onChange={(e) =>
+                  setForm({ ...form, endDate: e.target.value })
                 }
               />
             </div>

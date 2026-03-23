@@ -22,6 +22,9 @@ WRITE_TOOL_NAMES = {
     "update_job_time_budget",
     "update_job_start_date",
     "update_job_end_date",
+    "create_job",
+    "delete_job",
+    "add_employee_specialisms",
 }
 
 
@@ -278,6 +281,10 @@ If the user asks anything outside this scope (e.g. general knowledge, entertainm
 - update_job_time_budget: Update the time budget in days for a job (job_code, time_budget).
 - update_job_start_date: Update the start date for a job (job_code, start_date in ISO format e.g. "2024-03-01").
 - update_job_end_date: Update the end date for a job (job_code, end_date in ISO format e.g. "2024-06-30").
+- get_business_units: Retrieve all distinct business units available in the system.
+- create_job: Create a new job/project (job_code, workspace_id, and optional description, business_unit, customer, dates, budgets).
+- delete_job: Delete a job and all its forecast entries (job_code, workspace_id). Use with caution — this removes all allocations for the job.
+- add_employee_specialisms: Add one or more specialisms to an employee's profile (employee_name, specialisms as a list).
 
 ### OPERATIONAL RULES:
 1. DATA INTEGRITY: Use ONLY the data returned from tools. Do not invent employee names, job codes, or availability figures.

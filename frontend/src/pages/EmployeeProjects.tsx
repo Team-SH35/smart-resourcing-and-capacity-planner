@@ -237,7 +237,7 @@ export default function EmployeeProjects() {
               {employee.name}
             </h1>
             <p className="text-slate-400">
-              {employee.specialisms?.[0] || ""}
+              {employee.specialisms?.join(", ") || ""}
             </p>
           </div>
 

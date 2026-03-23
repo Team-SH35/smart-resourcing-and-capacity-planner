@@ -91,6 +91,7 @@ export default function ProjectCard({
       if (onSave) onSave(form);
 
       setIsEditing(false);
+      window.location.reload();
     } catch (err) {
       console.error(err);
       alert("Failed to update project");

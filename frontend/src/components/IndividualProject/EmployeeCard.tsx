@@ -57,7 +57,7 @@ export default function EmployeeCard({
             {employee.name}
           </div>
           <div className="text-xs text-slate-500">
-            {employee.specialisms[0]}
+            {employee.specialisms.join(", ")}
           </div>
         </div>
 

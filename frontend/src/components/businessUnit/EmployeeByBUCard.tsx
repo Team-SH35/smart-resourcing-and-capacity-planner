@@ -145,7 +145,7 @@ export default function EmployeeByBUCard({
             <div>
               <div className="font-medium">{e.name}</div>
               <div className="text-slate-500">
-                {e.specialisms?.[0]}
+                {e.specialisms?.join(", ")}
               </div>
             </div>
 

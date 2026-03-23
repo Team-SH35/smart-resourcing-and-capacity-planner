@@ -77,10 +77,10 @@ export default function EmployeeByBUCard({
     }
 
     if (filterSpecialism) {
-      result = result.filter(
-        (e) =>
-          e.specialisms?.[0]?.toLowerCase() ===
-          filterSpecialism.toLowerCase()
+      result = result.filter((e) =>
+        e.specialisms?.some(
+          (s) => s.toLowerCase() === filterSpecialism.toLowerCase()
+        )
       );
     }
 
